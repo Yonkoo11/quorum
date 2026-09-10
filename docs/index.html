@@ -10,45 +10,104 @@
 <meta property="og:description" content="Six agents. One memory. No messages between them.">
 <meta property="og:image" content="post-2.png">
 <style>
+  /* ---- tokens: one type scale, one space scale, two radii ---- */
   :root{
-    --bg:#080c09; --card:rgba(15,30,18,.55); --line:rgba(63,185,80,.22);
-    --green:#3fb950; --bright:#5ddb70; --white:#eef5ef; --soft:#a8b8ac; --dim:#5a6e5e;
+    --bg:#080c09; --panel:#0e1410; --card:rgba(15,30,18,.5);
+    --line:rgba(63,185,80,.18); --line-strong:rgba(63,185,80,.42);
+    --green:#3fb950; --bright:#5ddb70; --ink:#eef5ef; --soft:#a8b8ac; --mute:#7d9384;
     --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
     --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+
+    --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:72px; --s7:112px;
+    --t-1:14px; --t0:16px; --t1:19px; --t2:22px; --t3:28px;
+    --r:10px; --r-lg:16px;
+    --ease:cubic-bezier(.2,.7,.3,1); --fast:140ms; --med:200ms;
   }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--white);font-family:var(--sans);line-height:1.55;
-       background-image:radial-gradient(680px 480px at 12% -8%,rgba(63,185,80,.10),transparent 60%),
-                        radial-gradient(620px 520px at 96% 108%,rgba(34,211,238,.07),transparent 60%);}
-  .wrap{max-width:960px;margin:0 auto;padding:0 24px}
-  header{padding:56px 0 12px;display:flex;align-items:center;gap:16px}
-  header img{width:52px;height:52px}
-  header .name{font-family:var(--mono);font-size:30px;color:var(--green);font-weight:600}
-  h1{font-size:clamp(34px,5.4vw,60px);line-height:1.1;margin:36px 0 14px;letter-spacing:-.5px}
-  .lede{font-size:21px;color:var(--soft);max-width:70ch;margin:0 0 30px}
-  .cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:56px}
-  .btn{display:inline-block;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:600;font-size:16px}
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:var(--t0);line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(720px 520px at 8% -10%,rgba(63,185,80,.09),transparent 62%),
+      radial-gradient(680px 560px at 98% 106%,rgba(34,211,238,.06),transparent 60%);
+    background-attachment:fixed;
+  }
+  ::selection{background:rgba(63,185,80,.28);color:#fff}
+  .wrap{max-width:940px;margin:0 auto;padding:0 var(--s3)}
+  a{color:var(--bright);text-decoration-color:rgba(93,219,112,.35);text-underline-offset:3px;
+    transition:color var(--fast) var(--ease),text-decoration-color var(--fast) var(--ease)}
+  a:hover{color:#8fe89c;text-decoration-color:rgba(143,232,156,.9)}
+  :focus-visible{outline:2px solid var(--bright);outline-offset:3px;border-radius:4px}
+
+  /* ---- masthead ---- */
+  .masthead{display:flex;align-items:center;gap:var(--s2);padding:var(--s6) 0 0}
+  .masthead img{width:44px;height:44px;border-radius:var(--r)}
+  .masthead .name{font-family:var(--mono);font-size:var(--t2);color:var(--green);font-weight:600;letter-spacing:.5px}
+  .masthead .tag{margin-left:auto;font-family:var(--mono);font-size:var(--t-1);color:var(--mute)}
+
+  /* ---- hero ---- */
+  h1{font-size:clamp(38px,5.6vw,62px);line-height:1.06;letter-spacing:-1px;margin:var(--s5) 0 var(--s3);font-weight:800}
+  .lede{font-size:var(--t1);color:var(--soft);max-width:62ch;margin:0 0 var(--s4)}
+  .cta{display:flex;gap:var(--s1);flex-wrap:wrap;margin-bottom:var(--s6)}
+  .btn{
+    display:inline-flex;align-items:center;min-height:46px;padding:0 var(--s3);
+    border-radius:var(--r);text-decoration:none;font-weight:650;font-size:var(--t0);
+    border:1px solid transparent;
+    transition:background var(--fast) var(--ease),border-color var(--fast) var(--ease),
+               color var(--fast) var(--ease),transform var(--fast) var(--ease);
+  }
   .btn.primary{background:var(--green);color:#04170a}
-  .btn.ghost{border:1px solid var(--line);color:var(--white)}
-  h2{font-size:15px;text-transform:uppercase;letter-spacing:2.4px;color:var(--dim);margin:56px 0 18px;font-weight:700}
-  pre{background:#121314;border:1px solid var(--line);border-radius:12px;padding:20px 22px;overflow-x:auto;
-      font-family:var(--mono);font-size:14px;line-height:1.7;color:#c9d9cd;margin:0}
-  .g{color:var(--green)} .y{color:#d29922} .r{color:#f85149} .d{color:var(--dim)}
-  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
-  .card h3{margin:0 0 8px;font-size:16px;color:var(--bright)}
-  .card p{margin:0;color:var(--soft);font-size:15px}
-  table{width:100%;border-collapse:collapse;font-size:15px}
-  td{padding:11px 0;border-bottom:1px solid rgba(63,185,80,.12);vertical-align:top;color:var(--soft)}
-  td:first-child{font-family:var(--mono);color:var(--bright);white-space:nowrap;padding-right:22px;width:1%}
-  a{color:var(--bright)}
-  footer{margin:72px 0 56px;padding-top:22px;border-top:1px solid var(--line);color:var(--dim);font-size:14px}
-  .note{color:var(--dim);font-size:14px;margin-top:10px}
+  .btn.primary:hover{background:var(--bright);transform:translateY(-1px)}
+  .btn.primary:active{transform:translateY(0);background:#35a144}
+  .btn.ghost{border-color:var(--line-strong);color:var(--ink)}
+  .btn.ghost:hover{background:rgba(63,185,80,.09);border-color:var(--bright);transform:translateY(-1px)}
+  .btn.ghost:active{transform:translateY(0);background:rgba(63,185,80,.14)}
+
+  /* ---- sections ---- */
+  h2{font-size:var(--t-1);text-transform:uppercase;letter-spacing:2.2px;color:var(--mute);
+     margin:var(--s6) 0 var(--s3);font-weight:700}
+  pre{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:var(--s3);overflow-x:auto;font-family:var(--mono);font-size:var(--t-1);
+    line-height:1.75;color:#c9d9cd;margin:0;
+    scrollbar-color:rgba(63,185,80,.35) transparent;
+  }
+  pre:focus-visible{border-color:var(--line-strong)}
+  pre::-webkit-scrollbar{height:8px}
+  pre::-webkit-scrollbar-thumb{background:rgba(63,185,80,.3);border-radius:99px}
+  .g{color:var(--green)} .y{color:#d29922} .r{color:#f85149} .d{color:var(--mute)}
+  .note{color:var(--mute);font-size:var(--t-1);margin:var(--s2) 0 0;max-width:70ch}
+  .note code{font-family:var(--mono);color:var(--soft)}
+
+  .grid{display:grid;gap:var(--s2);grid-template-columns:1fr}
+  @media(min-width:620px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+    padding:var(--s3);transition:border-color var(--med) var(--ease),background var(--med) var(--ease);
+  }
+  .card:hover{border-color:var(--line-strong);background:rgba(20,40,24,.55)}
+  .card h3{margin:0 0 var(--s1);font-size:var(--t0);color:var(--bright);font-family:var(--mono);font-weight:600}
+  .card p{margin:0;color:var(--soft);font-size:var(--t-1);line-height:1.65}
+
+  table{width:100%;border-collapse:collapse;font-size:var(--t-1)}
+  td{padding:var(--s2) 0;border-bottom:1px solid var(--line);vertical-align:top;color:var(--soft)}
+  tr:last-child td{border-bottom:0}
+  td:first-child{font-family:var(--mono);color:var(--bright);white-space:nowrap;padding-right:var(--s3);width:1%}
+
+  footer{margin:var(--s7) 0 var(--s6);padding-top:var(--s3);border-top:1px solid var(--line);
+         color:var(--mute);font-size:var(--t-1)}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+    .btn:hover,.btn:active{transform:none}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header><img src="logo.png" alt=""><span class="name">quorum</span></header>
+<main class="wrap">
+  <header class="masthead"><img src="logo.png" alt=""><span class="name">quorum</span><span class="tag">Sibyl Labs Hackathon · Sep 2026</span></header>
 
   <h1>Six agents. One memory.<br>No messages between them.</h1>
   <p class="lede">Quorum runs six security lenses over Solidity. They have no queue, no broker and no way to
@@ -61,12 +120,12 @@
   </div>
 
   <h2>It learns an idiom once</h2>
-  <pre><span class="d">$</span> quorum run --targets fixtures/*.sol
+  <pre tabindex="0" role="group" aria-label="terminal output"><span class="d">$</span> quorum run --targets fixtures/*.sol
   <span class="g">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
   <span class="y">candidate</span> VulnerableVault.sol:deposit  unguarded-state-write   only modifier-lens, held back</pre>
 
   <h2>Then it knows it everywhere</h2>
-  <pre><span class="d"># new process, contracts it has never read, verified source from Base mainnet</span>
+  <pre tabindex="0" role="group" aria-label="terminal output"><span class="d"># new process, contracts it has never read, verified source from Base mainnet</span>
 <span class="d">$</span> quorum run
 recalled before reading any code: 2 confirmed pattern(s)
   <span class="g">RECALLED</span>  FriendtechSharesV1.sol:buyShares   reentrancy
@@ -77,7 +136,7 @@ recalled before reading any code: 2 confirmed pattern(s)
   <span style="font-family:var(--mono)">weth.deposit{value: amountETH}()</span> does not.</p>
 
   <h2>Take the memory away and there is no swarm</h2>
-  <pre><span class="d">$</span> quorum run --no-memory
+  <pre tabindex="0" role="group" aria-label="terminal output"><span class="d">$</span> quorum run --no-memory
 scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 12
 <span class="r">nothing was confirmed, recalled or suppressed: without memory the swarm
 cannot corroborate, recognise or forget.</span></pre>
@@ -93,7 +152,7 @@ cannot corroborate, recognise or forget.</span></pre>
   </div>
 
   <h2>Try it</h2>
-  <pre>git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
+  <pre tabindex="0" role="group" aria-label="terminal output">git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
 python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .
 
 .venv/bin/quorum fetch 0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4
@@ -113,6 +172,6 @@ python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .
 
   <footer>Built for the Sibyl Labs Hackathon, September 2026. MIT licensed.
   <a href="https://github.com/Yonkoo11/quorum">github.com/Yonkoo11/quorum</a></footer>
-</div>
+</main>
 </body>
 </html>
