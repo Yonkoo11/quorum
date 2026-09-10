@@ -12,7 +12,10 @@
 from __future__ import annotations
 
 import argparse
+import json
+import subprocess
 import sys
+import time
 
 from .memory import DEFAULT_DB, QUORUM_THRESHOLD, NoMemory, SwarmMemory
 from .swarm import run_swarm
@@ -39,15 +42,25 @@ def cmd_run(args) -> int:
         print(f"{RED}no targets{RESET}. Run: quorum fetch 0x<address>")
         return 1
 
+    if getattr(args, "json", False):
+        pass
     banner = "MEMORY ON" if memory.enabled else "MEMORY REMOVED (ablation)"
     colour = GREEN if memory.enabled else RED
-    print(f"\n{BOLD}quorum{RESET} {colour}[{banner}]{RESET}  quorum threshold: {args.threshold}")
+    if not getattr(args, "json", False):
+        print(f"\n{BOLD}quorum{RESET} {colour}[{banner}]{RESET}  quorum threshold: {args.threshold}")
 
-    if memory.enabled:
+    if memory.enabled and not getattr(args, "json", False):
         patterns = memory.confirmed_patterns()
         print(f"{DIM}recalled before reading any code: {len(patterns)} confirmed pattern(s){RESET}")
 
-    report = run_swarm(memory, targets, threshold=args.threshold, fresh_claims=args.reclaim)
+    report = run_swarm(memory, targets, threshold=args.threshold, fresh_claims=args.reclaim,
+                       agent_id=getattr(args, "agent_id", None))
+
+    if getattr(args, "json", False):
+        print(json.dumps({"agent": getattr(args, "agent_id", None), "scanned": report.scanned,
+                          "skipped": report.duplicate_work, "confirmed": len(report.promoted),
+                          "recalled": len(report.recalled), "candidates": len(report.candidates)}))
+        return 0
 
     for f in report.recalled:
         print(f"  {GREEN}RECALLED{RESET}  {f['contract']}:{f['function']} {DIM}{f['risk']}{RESET}"
@@ -65,6 +78,41 @@ def cmd_run(args) -> int:
     if not memory.enabled:
         print(f"{RED}nothing was confirmed, recalled or suppressed: without memory the swarm "
               f"cannot corroborate, recognise or forget.{RESET}")
+    return 0
+
+
+def cmd_swarm(args) -> int:
+    """Run N agent processes against one memory. They coordinate only by claiming."""
+    SwarmMemory(args.db)  # create the database before the workers race for it
+    print(f"\n{BOLD}{args.workers} agent processes, one memory, no message bus{RESET}")
+
+    started = time.time()
+    procs = [
+        subprocess.Popen(
+            [sys.executable, "-m", "quorum.cli", "--db", args.db, "run", "--json",
+             "--agent-id", f"agent-{i + 1}"] + (["--reclaim"] if args.reclaim and i == 0 else []),
+            stdout=subprocess.PIPE, text=True,
+        )
+        for i in range(args.workers)
+    ]
+    rows = []
+    for proc in procs:
+        out, _ = proc.communicate()
+        for line in out.strip().splitlines():
+            try:
+                rows.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+
+    total_scanned = sum(r["scanned"] for r in rows)
+    total_skipped = sum(r["skipped"] for r in rows)
+    for r in sorted(rows, key=lambda x: x["agent"] or ""):
+        print(f"  {r['agent']:9} scanned {r['scanned']:3}  stood down on {r['skipped']:3} "
+              f"units a peer had already claimed")
+    print(f"\n  {BOLD}{total_scanned} units scanned in total, {total_skipped} skipped, "
+          f"in {time.time() - started:.1f}s{RESET}")
+    print(f"  {DIM}no agent sent a message to any other agent. The HOT tier decided "
+          f"who did what.{RESET}")
     return 0
 
 
@@ -161,7 +209,14 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--reclaim", action="store_true", help="release work claims before running")
     p.add_argument("--threshold", type=int, default=QUORUM_THRESHOLD)
     p.add_argument("--targets", nargs="*")
+    p.add_argument("--json", action="store_true", help="machine-readable summary")
+    p.add_argument("--agent-id", dest="agent_id", help="identity this agent claims work under")
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("swarm", help="run N agent processes against one memory")
+    p.add_argument("--workers", type=int, default=3)
+    p.add_argument("--reclaim", action="store_true", help="release work claims before running")
+    p.set_defaults(func=cmd_swarm, no_memory=False)
 
     p = sub.add_parser("recall", help="show what memory holds")
     p.add_argument("--since", help="ISO timestamp: only what the swarm learned after this point")

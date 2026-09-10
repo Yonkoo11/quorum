@@ -64,3 +64,17 @@ def test_retired_findings_stay_retired():
 def test_deletion_test_collapses_the_swarm():
     r = run_swarm(NoMemory(), {"V.sol": VULN})
     assert r.promoted == [] and r.recalled == [] and r.suppressed == []
+
+
+def test_only_one_agent_can_hold_a_claim():
+    db = _db()
+    a, b = SwarmMemory(db), SwarmMemory(db)
+    assert a.claim_work("Target.sol", "guard-lens", "agent-a") is True
+    assert b.claim_work("Target.sol", "guard-lens", "agent-b") is False
+
+
+def test_a_claim_does_not_block_a_different_unit():
+    db = _db()
+    a, b = SwarmMemory(db), SwarmMemory(db)
+    assert a.claim_work("Target.sol", "guard-lens", "agent-a") is True
+    assert b.claim_work("Target.sol", "sender-lens", "agent-b") is True

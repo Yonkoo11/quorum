@@ -21,6 +21,10 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import os
+import random
+import sqlite3
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -87,31 +91,61 @@ def signature(risk: str, evidence: str) -> str:
     return f"{risk}:{hashlib.sha256(shape.encode()).hexdigest()[:16]}"
 
 
+def _retry(fn, *args, **kwargs):
+    """SQLite is one file and the swarm is many processes.
+
+    Every agent writes to the same memory, so a write can land while a peer holds
+    the database. Back off and try again rather than losing the sighting.
+    """
+    delay = 0.02
+    last: Exception | None = None
+    for _ in range(10):
+        try:
+            return fn(*args, **kwargs)
+        except sqlite3.OperationalError as exc:  # pragma: no cover - timing dependent
+            if "locked" not in str(exc).lower() and "busy" not in str(exc).lower():
+                raise
+            last = exc
+            time.sleep(delay)
+            delay = min(delay * 1.7, 0.5)
+    raise last  # type: ignore[misc]
+
+
 class SwarmMemory:
     """The swarm's shared brain. All five tiers, all load-bearing."""
 
     enabled = True
 
     def __init__(self, path: str = DEFAULT_DB) -> None:
-        self.client = MemoryClient.local(path)
+        self.client = _retry(MemoryClient.local, path)
         self.path = path
 
     # ---------- HOT / state: work claims (agent-to-agent coordination) ----------
 
-    def claim_work(self, target: str, lens: str) -> bool:
-        """Claim a (target, lens) unit. False means another agent already has it.
+    def claim_work(self, target: str, lens: str, agent_id: str | None = None) -> bool:
+        """Claim a (target, lens) unit. False means a peer already holds it.
 
-        This is the only thing stopping two agents from doing identical work, and
-        it holds across processes and sessions because it lives in memory rather
-        than in any one agent's head.
+        Claiming is optimistic, because many agent processes share one memory and
+        a read-then-write is not atomic: an agent writes its own id into the
+        claim, waits out the window in which a peer could be writing too, then
+        reads the claim back. Exactly one agent sees its own id and proceeds; the
+        others stand down. This is the only coordination mechanism in Quorum, and
+        it lives entirely in the HOT tier.
         """
+        agent_id = agent_id or f"pid-{os.getpid()}"
         key = f"claim:{target}:{lens}"
+
         row = self.client.get_state(key)
         body = (row or {}).get("body") or {}
-        if body.get("claimed_at") and not body.get("released_at"):
+        if body.get("claimed_by") and not body.get("released_at"):
             return False
-        self.client.set_state(key, {"lens": lens, "target": target, "claimed_at": _now()})
-        return True
+
+        _retry(self.client.set_state, key, {"lens": lens, "target": target,
+                                            "claimed_by": agent_id, "claimed_at": _now()})
+        time.sleep(0.03 + random.random() * 0.02)
+
+        confirmed = (self.client.get_state(key) or {}).get("body") or {}
+        return confirmed.get("claimed_by") == agent_id
 
     def clear_claims(self, target: str, lens_names: list[str]) -> None:
         for lens in lens_names:
@@ -131,7 +165,7 @@ class SwarmMemory:
             "first_seen": body.get("first_seen", _now()),
             "last_seen": _now(),
         }
-        self.client.set_entity("finding", key, body)
+        _retry(self.client.set_entity, "finding", key, body)
         return body
 
     def get_finding(self, key: str) -> dict[str, Any] | None:
@@ -152,7 +186,7 @@ class SwarmMemory:
     # ---------- COLD / journal: append-only audit trail ----------
 
     def log(self, evaluated: Any, acted: Any, forward: Any = None) -> str:
-        return self.client.write_event(evaluated=evaluated, acted=acted, forward=forward)
+        return _retry(self.client.write_event, evaluated=evaluated, acted=acted, forward=forward)
 
     def events(self, limit: int = 50, since: str | None = None, until: str | None = None) -> list[dict[str, Any]]:
         """Read the journal, optionally only the slice inside a time window."""
@@ -172,7 +206,8 @@ class SwarmMemory:
         """Quorum reached. The pattern becomes permanent swarm knowledge."""
         sig = body["signature"]
         held = _elapsed(body.get("first_seen"))
-        self.client.set_reference(
+        _retry(
+            self.client.set_reference,
             f"pattern:{sig}",
             {
                 "risk": body["risk"],
@@ -184,7 +219,7 @@ class SwarmMemory:
                 "held_as_candidate_seconds": held,
             },
         )
-        self.client.set_entity("finding", key, {**body, "status": "confirmed"})
+        _retry(self.client.set_entity, "finding", key, {**body, "status": "confirmed"})
 
     @staticmethod
     def _body(row: Any) -> dict[str, Any] | None:
@@ -219,11 +254,12 @@ class SwarmMemory:
         body = self.get_finding(key)
         if body is None:
             return False
-        self.client.set_reference(
+        _retry(
+            self.client.set_reference,
             f"retired:{body['signature']}",
             {"risk": body["risk"], "signature": body["signature"], "reason": reason, "retired_at": _now()},
         )
-        self.client.archive_entity("finding", key, reason=reason)
+        _retry(self.client.archive_entity, "finding", key, reason=reason)
         self.log(evaluated={"finding": key}, acted={"retired": reason}, forward={"suppress": body["signature"]})
         return True
 
@@ -259,7 +295,7 @@ class NoMemory(SwarmMemory):
     def __init__(self, path: str | None = None) -> None:  # noqa: D107
         self.path = None
 
-    def claim_work(self, target: str, lens: str) -> bool:
+    def claim_work(self, target: str, lens: str, agent_id: str | None = None) -> bool:
         return True
 
     def clear_claims(self, target: str, lens_names: list[str]) -> None:

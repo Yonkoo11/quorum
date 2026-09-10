@@ -7,6 +7,7 @@ and it publishes only by writing to it.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 
 from .agents import LENSES, Sighting
@@ -37,8 +38,10 @@ def run_swarm(
     targets: dict[str, str],
     threshold: int = QUORUM_THRESHOLD,
     fresh_claims: bool = False,
+    agent_id: str | None = None,
 ) -> RunReport:
     report = RunReport(memory_enabled=memory.enabled)
+    agent_id = agent_id or f"pid-{os.getpid()}"
 
     for contract, src in targets.items():
         if fresh_claims:
@@ -46,7 +49,7 @@ def run_swarm(
 
         for lens_name, lens in LENSES.items():
             # COORDINATION: memory decides whether this agent works at all.
-            if not memory.claim_work(contract, lens_name):
+            if not memory.claim_work(contract, lens_name, agent_id):
                 report.duplicate_work += 1
                 continue
             report.scanned += 1

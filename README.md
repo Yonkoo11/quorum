@@ -59,6 +59,30 @@ Every claim succeeds, so agents duplicate work. Every sighting looks like the fi
 
 ---
 
+## Coordination without a message bus
+
+Quorum's agents are separate operating-system processes. They share one memory
+file and nothing else — no queue, no broker, no RPC between them.
+
+```console
+$ quorum swarm --workers 3
+
+3 agent processes, one memory, no message bus
+  agent-1   scanned   9  stood down on  15 units a peer had already claimed
+  agent-2   scanned   7  stood down on  17 units a peer had already claimed
+  agent-3   scanned   8  stood down on  16 units a peer had already claimed
+
+  24 units scanned in total, 48 skipped, in 0.7s
+  no agent sent a message to any other agent. The HOT tier decided who did what.
+```
+
+Three processes, twenty-four units of work, each done exactly once. Claiming is
+optimistic because a read-then-write across processes is not atomic: an agent
+writes its own id into the claim, waits out the window in which a peer could be
+writing too, then reads the claim back and stands down unless it sees itself
+([`claim_work`](quorum/memory.py#L110)). Take the HOT tier away and all three
+agents do all twenty-four units.
+
 ## Why a quorum
 
 A single detector that reports everything it sees is noise. Six of them are six times the noise.
@@ -106,13 +130,15 @@ python3 -m venv .venv && .venv/bin/pip install -e .
 .venv/bin/quorum run --targets fixtures/*.sol   # the swarm learns
 .venv/bin/quorum run                            # a fresh session recognises
 .venv/bin/quorum recall                         # what it knows, and how it knows it
+.venv/bin/quorum swarm --workers 3              # three processes, one memory
+.venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   # what it learned since
 .venv/bin/quorum run --no-memory                # the deletion test
 .venv/bin/python -m pytest tests -q             # 7 tests
 ```
 
 `quorum attest` additionally needs `BASE_RPC` and `DEPLOYER_PRIVATE_KEY` in the environment.
 
-Commands: `fetch`, `run`, `recall`, `retire <key> --reason`, `attest`, `status`.
+Commands: `fetch`, `run`, `swarm`, `recall [--since]`, `retire <key> --reason`, `attest`, `status`.
 
 ---
 
