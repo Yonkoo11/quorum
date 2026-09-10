@@ -6,3 +6,4 @@ ai/
 *.db
 targets/*.sol
 .env*
+quorum_swarm.egg-info/
