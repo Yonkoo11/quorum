@@ -100,3 +100,24 @@ def attest(finding: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
         "gas_used": receipt["gasUsed"],
         "status": receipt["status"],
     }
+
+
+PREFIX = b"QUORUM1"
+
+
+def read_claim(tx_hash: str) -> dict[str, Any]:
+    """Read a published claim back off Base."""
+    w3 = _w3()
+    tx = w3.eth.get_transaction(tx_hash)
+    receipt = w3.eth.get_transaction_receipt(tx_hash)
+    block = w3.eth.get_block(receipt["blockNumber"])
+    data = bytes(tx["input"])
+    if not data.startswith(PREFIX):
+        raise RuntimeError("not a Quorum claim: calldata is missing the QUORUM1 prefix")
+    return {
+        "from": tx["from"],
+        "digest": "0x" + data[len(PREFIX):].hex(),
+        "block": receipt["blockNumber"],
+        "timestamp": block["timestamp"],
+        "status": receipt["status"],
+    }

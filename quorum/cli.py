@@ -16,6 +16,7 @@ import json
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 
 from .memory import DEFAULT_DB, QUORUM_THRESHOLD, NoMemory, SwarmMemory
 from .swarm import run_swarm
@@ -195,6 +196,37 @@ def cmd_attest(args) -> int:
     return 0
 
 
+def cmd_verify(args) -> int:
+    """Re-derive a published claim from memory and check it against the chain.
+
+    This is the join between the two halves of the product: the claim on Base is
+    only meaningful if the evidence behind it is still in memory and still hashes
+    to the same digest.
+    """
+    from . import chain
+
+    memory = SwarmMemory(args.db)
+    claim = chain.read_claim(args.tx)
+    stamp = datetime.fromtimestamp(claim["timestamp"], tz=timezone.utc).isoformat(timespec="seconds")
+
+    print(f"\n{BOLD}claim on Base{RESET}  block {claim['block']}  {stamp}")
+    print(f"  published by {claim['from']}")
+    print(f"  digest       {claim['digest']}")
+
+    for finding in memory.findings():
+        if chain.claim_digest(finding).hex().lstrip("0x") == claim["digest"].lstrip("0x"):
+            print(f"\n  {GREEN}the evidence for this claim is still in memory{RESET}")
+            print(f"    {finding['key']}")
+            print(f"    corroborated by {', '.join(finding.get('seen_by', []))}"
+                  f"  {DIM}({finding.get('confirmed_via', 'quorum')}){RESET}")
+            print(f"    evidence: {DIM}{finding.get('evidence','')[:78]}{RESET}")
+            print(f"\n  {GREEN}digest recomputed from memory matches the chain{RESET}")
+            return 0
+
+    print(f"\n  {RED}no finding in this memory reproduces that digest{RESET}")
+    return 1
+
+
 def cmd_status(args) -> int:
     memory = SwarmMemory(args.db)
     for k, v in memory.status().items():
@@ -239,6 +271,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--limit", type=int, default=3)
     p.set_defaults(func=cmd_attest, no_memory=False)
+
+    p = sub.add_parser("verify", help="check a published Base claim against memory")
+    p.add_argument("tx")
+    p.set_defaults(func=cmd_verify, no_memory=False)
 
     p = sub.add_parser("status", help="memory tier report")
     p.set_defaults(func=cmd_status, no_memory=False)
