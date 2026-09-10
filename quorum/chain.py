@@ -19,6 +19,7 @@ from typing import Any
 from web3 import Web3
 
 CHAIN_ID = int(os.getenv("QUORUM_CHAIN_ID", "8453"))
+PREFIX = b"QUORUM1"  # so the calldata is self-describing on a block explorer
 EXPLORER = os.getenv("QUORUM_EXPLORER", "https://basescan.org/tx/")
 
 
@@ -70,7 +71,6 @@ def attest(finding: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
     w3 = _w3()
     acct = _account(w3)
     digest = claim_digest(finding)
-    prefix = b"QUORUM1"  # so the calldata is self-describing on the explorer
 
     if dry_run:
         return {"dry_run": True, "from": acct.address, "digest": digest.hex(), "chain_id": CHAIN_ID}
@@ -79,7 +79,7 @@ def attest(finding: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
         "from": acct.address,
         "to": acct.address,
         "value": 0,
-        "data": prefix + digest,
+        "data": PREFIX + digest,
         "nonce": w3.eth.get_transaction_count(acct.address),
         "chainId": CHAIN_ID,
     }
@@ -100,9 +100,6 @@ def attest(finding: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
         "gas_used": receipt["gasUsed"],
         "status": receipt["status"],
     }
-
-
-PREFIX = b"QUORUM1"
 
 
 def read_claim(tx_hash: str) -> dict[str, Any]:

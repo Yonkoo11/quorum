@@ -2,7 +2,6 @@
 import os
 import tempfile
 
-from quorum.agents import LENSES
 from quorum.memory import NoMemory, SwarmMemory, signature
 from quorum.swarm import run_swarm
 

@@ -38,26 +38,25 @@ def cmd_fetch(args) -> int:
 
 def cmd_run(args) -> int:
     memory = _memory(args)
+    as_json = getattr(args, "json", False)
     targets = load_targets(args.targets)
     if not targets:
         print(f"{RED}no targets{RESET}. Run: quorum fetch 0x<address>")
         return 1
 
-    if getattr(args, "json", False):
-        pass
-    banner = "MEMORY ON" if memory.enabled else "MEMORY REMOVED (ablation)"
-    colour = GREEN if memory.enabled else RED
-    if not getattr(args, "json", False):
+    if not as_json:
+        banner = "MEMORY ON" if memory.enabled else "MEMORY REMOVED (ablation)"
+        colour = GREEN if memory.enabled else RED
         print(f"\n{BOLD}quorum{RESET} {colour}[{banner}]{RESET}  quorum threshold: {args.threshold}")
 
-    if memory.enabled and not getattr(args, "json", False):
+    if memory.enabled and not as_json:
         patterns = memory.confirmed_patterns()
         print(f"{DIM}recalled before reading any code: {len(patterns)} confirmed pattern(s){RESET}")
 
     report = run_swarm(memory, targets, threshold=args.threshold, fresh_claims=args.reclaim,
                        agent_id=getattr(args, "agent_id", None))
 
-    if getattr(args, "json", False):
+    if as_json:
         print(json.dumps({"agent": getattr(args, "agent_id", None), "scanned": report.scanned,
                           "skipped": report.duplicate_work, "confirmed": len(report.promoted),
                           "recalled": len(report.recalled), "candidates": len(report.candidates)}))

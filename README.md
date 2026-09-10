@@ -1,8 +1,10 @@
 # Quorum
 
+[quorum site](https://yonkoo11.github.io/quorum/) · [demo video](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4) · [the claim on Base](https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713)
+
 **A swarm of security lenses that never talk to each other. Sibyl Memory is the only channel between them, and it is the only reason the swarm can agree on anything, recognise anything, or forget anything.**
 
-Six independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion — and the count of who agreed lives in memory, not in any agent's head. Once a pattern is confirmed, the swarm recognises that idiom on sight in a completely different contract, in a completely different session, from a single sighting.
+Six independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion, and the count of who agreed lives in memory, not in any agent's head. Once a pattern is confirmed, the swarm recognises that idiom on sight in a completely different contract, in a completely different session, from a single sighting.
 
 Delete the memory layer and there is no swarm left. Just six programs that each shout once and forget.
 
@@ -16,7 +18,7 @@ $ quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
   QUORUM    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
 scanned 12 lens-units | confirmed 2 | recalled 1 | candidates 5
 
-# new process, new day, contracts it has never seen — real verified Base mainnet source
+# new process, new day, contracts it has never seen. Real verified Base mainnet source
 $ quorum run
 recalled before reading any code: 2 confirmed pattern(s)
   RECALLED  FriendtechSharesV1.sol:buyShares   reentrancy
@@ -39,7 +41,7 @@ confirmed patterns (REFERENCE tier)
     recognised since on FriendtechSharesV1.sol  (1 sighting each, no quorum needed)
 ```
 
-The pattern was learned on a teaching fixture and recognised in production code deployed on Base — `msg.sender.call{value: amount}("")` and `protocolFeeDestination.call{value: protocolFee}("")` are the same idiom, so they hash to the same signature. `weth.deposit{value: amountETH}()` is a different idiom and does not.
+The pattern was learned on a teaching fixture and recognised in production code deployed on Base. `msg.sender.call{value: amount}("")` and `protocolFeeDestination.call{value: protocolFee}("")` are the same idiom, so they hash to the same signature. `weth.deposit{value: amountETH}()` is a different idiom and does not.
 
 ---
 
@@ -71,7 +73,7 @@ Every claim succeeds, so agents duplicate work. Every sighting looks like the fi
 ## Coordination without a message bus
 
 Quorum's agents are separate operating-system processes. They share one memory
-file and nothing else — no queue, no broker, no RPC between them.
+file and nothing else: no queue, no broker, no RPC between them.
 
 ```console
 $ quorum swarm --workers 3
@@ -100,11 +102,11 @@ Quorum pairs its lenses two per risk, and each pair reasons from different evide
 
 | Risk | Lens A | Lens B |
 |---|---|---|
-| `reentrancy` | `callorder-lens` — an external call precedes a state write in the same function | `guard-lens` — the function moves value out and carries no reentrancy guard |
-| `unguarded-state-write` | `modifier-lens` — externally callable, writes storage, carries no modifier at all | `sender-lens` — writes a privileged-looking variable with no `msg.sender` check anywhere on the path |
-| `unsafe-math` | `unchecked-lens` — arithmetic inside an `unchecked` block | `precision-lens` — a division evaluated before a multiplication |
+| `reentrancy` | `callorder-lens`: an external call precedes a state write in the same function | `guard-lens`: the function moves value out and carries no reentrancy guard |
+| `unguarded-state-write` | `modifier-lens`: externally callable, writes storage, carries no modifier at all | `sender-lens`: writes a privileged-looking variable with no `msg.sender` check anywhere on the path |
+| `unsafe-math` | `unchecked-lens`: arithmetic inside an `unchecked` block | `precision-lens`: a division evaluated before a multiplication |
 
-Agreement is signal. Disagreement is kept as a candidate and never published. Run Quorum against audited production contracts and it mostly holds its tongue — on Aerodrome's Router, WETH9 and a Compound proxy it confirms nothing and files eleven candidates. That is the intended behaviour, not a failure to find bugs.
+Agreement is signal. Disagreement is kept as a candidate and never published. Run Quorum against audited production contracts and it mostly holds its tongue. On Aerodrome's Router, WETH9 and a Compound proxy it confirms nothing and files eleven candidates. That is the intended behaviour, not a failure to find bugs.
 
 ---
 
@@ -134,7 +136,7 @@ claim on Base  block 51138878  2026-09-10T19:05:03+00:00
   digest recomputed from memory matches the chain
 ```
 
-The digest commits to the risk, the idiom signature, the contract, the function and the exact set of lenses that corroborated it ([`chain.py`](quorum/chain.py)). The finding itself never leaves the machine — Sibyl Memory is local-first and so is this. What goes on chain is a timestamped, verifiable claim that *this swarm knew this shape at this block*, which is what a disclosure timeline actually needs. The transaction hash is written back onto the finding entity in memory, so the claim and its evidence stay joined.
+The digest commits to the risk, the idiom signature, the contract, the function and the exact set of lenses that corroborated it ([`chain.py`](quorum/chain.py)). The finding itself never leaves the machine. Sibyl Memory is local-first and so is this. What goes on chain is a timestamped, verifiable claim that *this swarm knew this shape at this block*, which is what a disclosure timeline actually needs. The transaction hash is written back onto the finding entity in memory, so the claim and its evidence stay joined.
 
 The signing key is read from the process environment at call time. It is never logged, printed or written to disk.
 
