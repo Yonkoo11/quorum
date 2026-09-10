@@ -34,6 +34,16 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def _elapsed(since: str | None) -> float | None:
+    """Seconds a finding waited for a second lens to agree with it."""
+    if not since:
+        return None
+    try:
+        return round((datetime.now(timezone.utc) - datetime.fromisoformat(since)).total_seconds(), 3)
+    except ValueError:
+        return None
+
+
 PRIVILEGED_WORDS = re.compile(r"(owner|admin|treasury|fee|rate|price|oracle|paused|beneficiary|supply)", re.I)
 CHAIN = re.compile(r"\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+\b")
 IDENT = re.compile(r"\b[A-Za-z_]\w*\b")
@@ -144,14 +154,24 @@ class SwarmMemory:
     def log(self, evaluated: Any, acted: Any, forward: Any = None) -> str:
         return self.client.write_event(evaluated=evaluated, acted=acted, forward=forward)
 
-    def events(self, limit: int = 50) -> list[dict[str, Any]]:
-        return self.client.read_events(limit=limit)
+    def events(self, limit: int = 50, since: str | None = None, until: str | None = None) -> list[dict[str, Any]]:
+        """Read the journal, optionally only the slice inside a time window."""
+        return self.client.read_events(limit=limit, since=since, until=until)
+
+    def learned_since(self, since: str) -> list[dict[str, Any]]:
+        """Patterns the swarm confirmed after a point in time.
+
+        Time-travel over the REFERENCE tier: what does the swarm know now that it
+        did not know when you last looked?
+        """
+        return [p for p in self.confirmed_patterns() if (p.get("confirmed_at") or "") >= since]
 
     # ---------- REFERENCE: patterns that reached quorum ----------
 
     def promote(self, key: str, body: dict[str, Any]) -> None:
         """Quorum reached. The pattern becomes permanent swarm knowledge."""
         sig = body["signature"]
+        held = _elapsed(body.get("first_seen"))
         self.client.set_reference(
             f"pattern:{sig}",
             {
@@ -161,6 +181,7 @@ class SwarmMemory:
                 "first_confirmed_on": body.get("contract"),
                 "evidence": body.get("evidence", ""),
                 "confirmed_at": _now(),
+                "held_as_candidate_seconds": held,
             },
         )
         self.client.set_entity("finding", key, {**body, "status": "confirmed"})
@@ -256,7 +277,10 @@ class NoMemory(SwarmMemory):
     def log(self, evaluated: Any, acted: Any, forward: Any = None) -> str:
         return ""
 
-    def events(self, limit: int = 50) -> list[dict[str, Any]]:
+    def events(self, limit: int = 50, since: str | None = None, until: str | None = None) -> list[dict[str, Any]]:
+        return []
+
+    def learned_since(self, since: str) -> list[dict[str, Any]]:
         return []
 
     def promote(self, key: str, body: dict[str, Any]) -> None:

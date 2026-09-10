@@ -70,12 +70,25 @@ def cmd_run(args) -> int:
 
 def cmd_recall(args) -> int:
     memory = SwarmMemory(args.db)
+    if args.since:
+        fresh = memory.learned_since(args.since)
+        print(f"\n{BOLD}learned since {args.since}{RESET}")
+        for p in fresh:
+            print(f"  {p['risk']:22} {p['signature']}  {DIM}confirmed {p.get('confirmed_at')}{RESET}")
+        if not fresh:
+            print(f"  {DIM}nothing new{RESET}")
+        print(f"\n{BOLD}journal entries in that window{RESET}")
+        for e in memory.events(limit=20, since=args.since):
+            print(f"  {DIM}{e.get('ts','')}  {str(e.get('acted'))[:80]}{RESET}")
+        return 0
     patterns = memory.confirmed_patterns()
     print(f"\n{BOLD}what the swarm knows{RESET}  {DIM}{args.db}{RESET}")
     print(f"\n{BOLD}confirmed patterns (REFERENCE tier){RESET}")
     for p in patterns:
+        held = p.get("held_as_candidate_seconds")
+        waited = f"  {DIM}held {held}s before a second lens agreed{RESET}" if held is not None else ""
         print(f"  {p['signature']}  {p['risk']:22} first confirmed on {p.get('first_confirmed_on')}"
-              f"  by {', '.join(p.get('confirmed_by', []))}")
+              f"  by {', '.join(p.get('confirmed_by', []))}{waited}")
     if not patterns:
         print(f"  {DIM}none yet{RESET}")
 
@@ -151,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("recall", help="show what memory holds")
+    p.add_argument("--since", help="ISO timestamp: only what the swarm learned after this point")
     p.set_defaults(func=cmd_recall, no_memory=False)
 
     p = sub.add_parser("retire", help="permanently retire a finding")
