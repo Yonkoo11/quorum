@@ -7,3 +7,7 @@ ai/
 targets/*.sol
 .env*
 quorum_swarm.egg-info/
+video/node_modules/
+video/out/
+video/public/video/
+video/render.log
