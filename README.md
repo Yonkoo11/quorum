@@ -30,6 +30,15 @@ nothing was confirmed, recalled or suppressed: without memory the swarm
 cannot corroborate, recognise or forget.
 ```
 
+```console
+$ quorum recall
+
+confirmed patterns (REFERENCE tier)
+  reentrancy             reentrancy:97d18d17cfa4494a
+    first confirmed on VulnerableVault.sol by callorder-lens, guard-lens
+    recognised since on FriendtechSharesV1.sol  (1 sighting each, no quorum needed)
+```
+
 The pattern was learned on a teaching fixture and recognised in production code deployed on Base — `msg.sender.call{value: amount}("")` and `protocolFeeDestination.call{value: protocolFee}("")` are the same idiom, so they hash to the same signature. `weth.deposit{value: amountETH}()` is a different idiom and does not.
 
 ---
