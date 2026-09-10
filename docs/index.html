@@ -47,11 +47,11 @@
   .masthead .tag{margin-left:auto;font-family:var(--mono);font-size:var(--t-1);color:var(--mute)}
 
   /* ---- hero ---- */
-  h1{font-size:clamp(38px,5.6vw,62px);line-height:1.06;letter-spacing:-1px;margin:var(--s5) 0 var(--s3);font-weight:800}
-  .lede{font-size:var(--t1);color:var(--soft);max-width:62ch;margin:0 0 var(--s4)}
+  h1{font-size:clamp(34px,4.3vw,52px);line-height:1.08;letter-spacing:-.8px;margin:var(--s5) 0 var(--s3);font-weight:800;text-wrap:balance}
+  .lede{font-size:var(--t0);color:var(--soft);max-width:56ch;margin:0 0 var(--s4);line-height:1.65}
   .cta{display:flex;gap:var(--s1);flex-wrap:wrap;margin-bottom:var(--s6)}
   .btn{
-    display:inline-flex;align-items:center;min-height:46px;padding:0 var(--s3);
+    display:inline-flex;align-items:center;min-height:46px;padding:0 var(--s2);white-space:nowrap;
     border-radius:var(--r);text-decoration:none;font-weight:650;font-size:var(--t0);
     border:1px solid transparent;
     transition:background var(--fast) var(--ease),border-color var(--fast) var(--ease),
@@ -103,13 +103,65 @@
     *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
     .btn:hover,.btn:active{transform:none}
   }
+
+  /* ---- the backdrop is the mechanic: paired lenses, only overlaps lit ---- */
+  .backdrop{position:fixed;inset:0;z-index:-2;pointer-events:none;
+    mask-image:radial-gradient(120% 90% at 50% 0%,#000 35%,transparent 78%);
+    -webkit-mask-image:radial-gradient(120% 90% at 50% 0%,#000 35%,transparent 78%)}
+  .grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.035;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>")}
+
+  /* ---- hero split ---- */
+  .hero{display:grid;gap:var(--s5);align-items:center}
+  @media(min-width:940px){.hero{grid-template-columns:1.3fr .7fr}}
+  .mechanic{margin:0}
+  .mechanic svg{width:100%;height:auto;overflow:visible}
+  .mechanic .ring{stroke-dasharray:580;stroke-dashoffset:580;animation:draw 1100ms var(--ease) forwards}
+  .mechanic .r2{animation-delay:180ms}
+  .mechanic .overlap{opacity:0;animation:lite 700ms var(--ease) 900ms forwards}
+  .mechanic .lbl{font-family:var(--mono);font-size:13px;fill:var(--mute);opacity:0;animation:lite 500ms var(--ease) 1200ms forwards}
+  .mechanic .cap{font-family:var(--mono);font-size:12.5px;fill:var(--green);opacity:0;animation:lite 500ms var(--ease) 1450ms forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  @keyframes lite{to{opacity:1}}
+
+  /* ---- surfaces get a lit top edge instead of sitting flat ---- */
+  pre,.card{position:relative;box-shadow:inset 0 1px 0 rgba(93,219,112,.09),0 1px 2px rgba(0,0,0,.5)}
+  .card:hover{box-shadow:inset 0 1px 0 rgba(93,219,112,.2),0 6px 22px rgba(0,0,0,.45)}
+  h1{background:linear-gradient(180deg,#ffffff 8%,#bcd3c1 96%);-webkit-background-clip:text;
+     background-clip:text;color:transparent}
+  @media (prefers-reduced-motion:reduce){
+    .mechanic .ring{animation:none;stroke-dashoffset:0}
+    .mechanic .overlap,.mechanic .lbl,.mechanic .cap{animation:none;opacity:1}
+  }
 </style>
 </head>
 <body>
+<div class="backdrop" aria-hidden="true">
+<svg width="100%" height="100%" viewBox="0 0 1440 2600" preserveAspectRatio="xMidYMin slice">
+  <g opacity="0.102"><circle cx="529" cy="577" r="120" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="677" cy="577" r="120" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 603 482.5 A 120 120 0 0 1 603 671.5 A 120 120 0 0 1 603 482.5 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.079"><circle cx="38" cy="2154" r="82" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="138" cy="2154" r="82" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 88 2089.0 A 82 82 0 0 1 88 2219.0 A 82 82 0 0 1 88 2089.0 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.053"><circle cx="-2" cy="2038" r="97" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="118" cy="2038" r="97" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 58 1961.8 A 97 97 0 0 1 58 2114.2 A 97 97 0 0 1 58 1961.8 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.069"><circle cx="780" cy="1672" r="78" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="876" cy="1672" r="78" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 828 1610.5 A 78 78 0 0 1 828 1733.5 A 78 78 0 0 1 828 1610.5 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.116"><circle cx="1021" cy="1698" r="77" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="1115" cy="1698" r="77" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 1068 1637.0 A 77 77 0 0 1 1068 1759.0 A 77 77 0 0 1 1068 1637.0 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.1"><circle cx="100" cy="874" r="150" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="286" cy="874" r="150" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 193 756.3 A 150 150 0 0 1 193 991.7 A 150 150 0 0 1 193 756.3 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.082"><circle cx="-23" cy="2323" r="144" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="155" cy="2323" r="144" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 66 2209.8 A 144 144 0 0 1 66 2436.2 A 144 144 0 0 1 66 2209.8 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.119"><circle cx="305" cy="150" r="141" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="479" cy="150" r="141" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 392 39.0 A 141 141 0 0 1 392 261.0 A 141 141 0 0 1 392 39.0 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.093"><circle cx="479" cy="1676" r="88" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="587" cy="1676" r="88" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 533 1606.5 A 88 88 0 0 1 533 1745.5 A 88 88 0 0 1 533 1606.5 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.115"><circle cx="1022" cy="1223" r="141" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="1196" cy="1223" r="141" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 1109 1112.0 A 141 141 0 0 1 1109 1334.0 A 141 141 0 0 1 1109 1112.0 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.096"><circle cx="221" cy="382" r="144" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="399" cy="382" r="144" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 310 268.8 A 144 144 0 0 1 310 495.2 A 144 144 0 0 1 310 268.8 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.094"><circle cx="274" cy="1485" r="82" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="374" cy="1485" r="82" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 324 1420.0 A 82 82 0 0 1 324 1550.0 A 82 82 0 0 1 324 1420.0 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.1"><circle cx="21" cy="2271" r="77" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="115" cy="2271" r="77" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 68 2210.0 A 77 77 0 0 1 68 2332.0 A 77 77 0 0 1 68 2210.0 Z" fill="#3fb950" opacity="0.5"/></g>
+  <g opacity="0.112"><circle cx="880" cy="2137" r="124" fill="none" stroke="#3fb950" stroke-width="1.25"/><circle cx="1032" cy="2137" r="124" fill="none" stroke="#3fb950" stroke-width="1.25"/><path d="M 956 2039.0 A 124 124 0 0 1 956 2235.0 A 124 124 0 0 1 956 2039.0 Z" fill="#3fb950" opacity="0.5"/></g>
+</svg>
+</div>
+<div class="grain" aria-hidden="true"></div>
+
 <main class="wrap">
   <header class="masthead"><img src="logo.png" alt=""><span class="name">quorum</span><span class="tag">Sibyl Labs Hackathon · Sep 2026</span></header>
 
-  <h1>Six agents. One memory.<br>No messages between them.</h1>
+  <div class="hero">
+<div>
+<h1>Six agents. One memory.<br>No messages between them.</h1>
   <p class="lede">Quorum runs six security lenses over Solidity. They have no queue, no broker and no way to
   call each other. Everything they know about each other, they read out of Sibyl Memory, and a finding is
   only ever published when two lenses reach it from different evidence.</p>
@@ -118,6 +170,21 @@
     <a class="btn ghost" href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Watch the demo</a>
     <a class="btn ghost" href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">The claim on Base</a>
   </div>
+</div>
+<figure class="mechanic" aria-label="Two lenses reading different evidence; only their overlap is published">
+<svg viewBox="0 0 440 300" role="img">
+  <defs>
+    <clipPath id="lensL"><circle cx="176" cy="140" r="92"/></clipPath>
+  </defs>
+  <circle class="ring r1" cx="176" cy="140" r="92" fill="none" stroke="#3fb950" stroke-opacity=".45" stroke-width="1.75"/>
+  <circle class="ring r2" cx="264" cy="140" r="92" fill="none" stroke="#3fb950" stroke-opacity=".45" stroke-width="1.75"/>
+  <g clip-path="url(#lensL)"><circle class="overlap" cx="264" cy="140" r="92" fill="#3fb950" fill-opacity=".9"/></g>
+  <text class="lbl" x="104" y="42" text-anchor="middle">callorder-lens</text>
+  <text class="lbl" x="336" y="42" text-anchor="middle">guard-lens</text>
+  <text class="cap" x="220" y="272" text-anchor="middle">only the overlap is published</text>
+</svg>
+</figure>
+</div>
 
   <h2>It learns an idiom once</h2>
   <pre tabindex="0" role="group" aria-label="terminal output"><span class="d">$</span> quorum run --targets fixtures/*.sol
