@@ -144,9 +144,13 @@ The signing key is read from the process environment at call time. It is never l
 
 ## Run it
 
+Python 3.10 to 3.13. If `python3 -m venv` fails on your machine, the `uv` path below avoids it entirely.
+
 ```bash
 git clone https://github.com/Yonkoo11/quorum && cd quorum
-python3 -m venv .venv && .venv/bin/pip install -e .
+
+python3 -m venv .venv && .venv/bin/pip install -e .   # or:
+uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 
 # pull real verified source from Base mainnet (no API key needed)
 .venv/bin/quorum fetch 0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4 \
