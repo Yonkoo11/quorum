@@ -105,9 +105,13 @@ def cmd_attest(args) -> int:
     from . import chain
 
     memory = SwarmMemory(args.db)
-    pending = [f for f in memory.findings(status="confirmed") if not f.get("attested_tx")]
+    confirmed = memory.findings(status="confirmed")
+    pending = [f for f in confirmed if not f.get("attested_tx")]
+    if not confirmed:
+        print("nothing to attest: the swarm has not confirmed anything yet")
+        return 0
     if not pending:
-        print("nothing to attest: every confirmed finding already has an on-chain claim")
+        print(f"nothing to attest: all {len(confirmed)} confirmed finding(s) already have an on-chain claim")
         return 0
 
     print(f"signer {chain.address()}  balance {chain.balance_wei()/1e18:.6f} ETH")
