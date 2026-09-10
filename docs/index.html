@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quorum — a swarm that coordinates through memory</title>
+<meta name="description" content="Six security lenses that never talk to each other. Sibyl Memory is the only channel between them.">
+<link rel="icon" href="icon-256.png">
+<meta property="og:title" content="Quorum">
+<meta property="og:description" content="Six agents. One memory. No messages between them.">
+<meta property="og:image" content="post-2.png">
+<style>
+  :root{
+    --bg:#080c09; --card:rgba(15,30,18,.55); --line:rgba(63,185,80,.22);
+    --green:#3fb950; --bright:#5ddb70; --white:#eef5ef; --soft:#a8b8ac; --dim:#5a6e5e;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--white);font-family:var(--sans);line-height:1.55;
+       background-image:radial-gradient(680px 480px at 12% -8%,rgba(63,185,80,.10),transparent 60%),
+                        radial-gradient(620px 520px at 96% 108%,rgba(34,211,238,.07),transparent 60%);}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px}
+  header{padding:56px 0 12px;display:flex;align-items:center;gap:16px}
+  header img{width:52px;height:52px}
+  header .name{font-family:var(--mono);font-size:30px;color:var(--green);font-weight:600}
+  h1{font-size:clamp(34px,5.4vw,60px);line-height:1.1;margin:36px 0 14px;letter-spacing:-.5px}
+  .lede{font-size:21px;color:var(--soft);max-width:70ch;margin:0 0 30px}
+  .cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:56px}
+  .btn{display:inline-block;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:600;font-size:16px}
+  .btn.primary{background:var(--green);color:#04170a}
+  .btn.ghost{border:1px solid var(--line);color:var(--white)}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:2.4px;color:var(--dim);margin:56px 0 18px;font-weight:700}
+  pre{background:#121314;border:1px solid var(--line);border-radius:12px;padding:20px 22px;overflow-x:auto;
+      font-family:var(--mono);font-size:14px;line-height:1.7;color:#c9d9cd;margin:0}
+  .g{color:var(--green)} .y{color:#d29922} .r{color:#f85149} .d{color:var(--dim)}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+  .card h3{margin:0 0 8px;font-size:16px;color:var(--bright)}
+  .card p{margin:0;color:var(--soft);font-size:15px}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  td{padding:11px 0;border-bottom:1px solid rgba(63,185,80,.12);vertical-align:top;color:var(--soft)}
+  td:first-child{font-family:var(--mono);color:var(--bright);white-space:nowrap;padding-right:22px;width:1%}
+  a{color:var(--bright)}
+  footer{margin:72px 0 56px;padding-top:22px;border-top:1px solid var(--line);color:var(--dim);font-size:14px}
+  .note{color:var(--dim);font-size:14px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><img src="logo.png" alt=""><span class="name">quorum</span></header>
+
+  <h1>Six agents. One memory.<br>No messages between them.</h1>
+  <p class="lede">Quorum runs six security lenses over Solidity. They have no queue, no broker and no way to
+  call each other. Everything they know about each other, they read out of Sibyl Memory, and a finding is
+  only ever published when two lenses reach it from different evidence.</p>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/Yonkoo11/quorum">Read the code</a>
+    <a class="btn ghost" href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Watch the demo</a>
+    <a class="btn ghost" href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">The claim on Base</a>
+  </div>
+
+  <h2>It learns an idiom once</h2>
+  <pre><span class="d">$</span> quorum run --targets fixtures/*.sol
+  <span class="g">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
+  <span class="y">candidate</span> VulnerableVault.sol:deposit  unguarded-state-write   only modifier-lens, held back</pre>
+
+  <h2>Then it knows it everywhere</h2>
+  <pre><span class="d"># new process, contracts it has never read, verified source from Base mainnet</span>
+<span class="d">$</span> quorum run
+recalled before reading any code: 2 confirmed pattern(s)
+  <span class="g">RECALLED</span>  FriendtechSharesV1.sol:buyShares   reentrancy
+            first confirmed on VulnerableVault.sol   <span class="d">(1 sighting was enough)</span></pre>
+  <p class="note">The signature hashes the idiom, not the identifiers, so
+  <span style="font-family:var(--mono)">msg.sender.call{value: amount}("")</span> and
+  <span style="font-family:var(--mono)">protocolFeeDestination.call{value: protocolFee}("")</span> match.
+  <span style="font-family:var(--mono)">weth.deposit{value: amountETH}()</span> does not.</p>
+
+  <h2>Take the memory away and there is no swarm</h2>
+  <pre><span class="d">$</span> quorum run --no-memory
+scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 12
+<span class="r">nothing was confirmed, recalled or suppressed: without memory the swarm
+cannot corroborate, recognise or forget.</span></pre>
+
+  <h2>Where memory carries the weight</h2>
+  <div class="grid">
+    <div class="card"><h3>HOT · state</h3><p>Work claims. Three processes split 24 units of work exactly once between them, with nothing passed between the agents.</p></div>
+    <div class="card"><h3>WARM · entities</h3><p>One finding, and the exact set of lenses that corroborated it. Quorum is counted here, not in any agent.</p></div>
+    <div class="card"><h3>COLD · journal</h3><p>Every sighting, promotion, suppression and on-chain claim, appended and timestamped.</p></div>
+    <div class="card"><h3>REFERENCE</h3><p>Idioms confirmed for good. This is what a fresh session reads before it reads any code.</p></div>
+    <div class="card"><h3>ARCHIVE</h3><p>What a human retired. Say it once and no later session reports that shape again.</p></div>
+    <div class="card"><h3>Base mainnet</h3><p>A confirmed finding is claimed on chain as a timestamped digest, and <span style="font-family:var(--mono)">quorum verify</span> recomputes it from memory.</p></div>
+  </div>
+
+  <h2>Try it</h2>
+  <pre>git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
+python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .
+
+.venv/bin/quorum fetch 0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4
+.venv/bin/quorum run --targets fixtures/*.sol   <span class="d"># the swarm learns</span>
+.venv/bin/quorum run                            <span class="d"># a fresh session recognises</span>
+.venv/bin/quorum swarm --workers 3              <span class="d"># three processes, one memory</span>
+.venv/bin/quorum run --no-memory                <span class="d"># the deletion test</span></pre>
+
+  <h2>Facts</h2>
+  <table>
+    <tr><td>Base claim</td><td><a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">0xa648821d…</a>, block 51138878, calldata <span style="font-family:var(--mono)">QUORUM1</span> plus the digest</td></tr>
+    <tr><td>Memory</td><td>Sibyl Memory, all five tiers, local first. Findings never leave the machine.</td></tr>
+    <tr><td>Lenses</td><td>Six, paired two per risk: reentrancy, unguarded state write, unsafe math</td></tr>
+    <tr><td>Tests</td><td>10, including the deletion test and the claim protocol</td></tr>
+    <tr><td>Session</td><td><a href="https://github.com/Yonkoo11/quorum/blob/main/demo/demo.cast">demo.cast</a>, the real recording behind the video</td></tr>
+  </table>
+
+  <footer>Built for the Sibyl Labs Hackathon, September 2026. MIT licensed.
+  <a href="https://github.com/Yonkoo11/quorum">github.com/Yonkoo11/quorum</a></footer>
+</div>
+</body>
+</html>

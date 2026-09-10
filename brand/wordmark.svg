@@ -1,0 +1,11 @@
+<svg viewBox="0 0 1200 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Quorum">
+  <title>Quorum</title>
+  <defs>
+    <clipPath id="w-left"><circle cx="118" cy="150" r="78"/></clipPath>
+  </defs>
+  <circle cx="118" cy="150" r="78" fill="none" stroke="#3fb950" stroke-opacity="0.55" stroke-width="9"/>
+  <circle cx="189" cy="150" r="78" fill="none" stroke="#3fb950" stroke-opacity="0.55" stroke-width="9"/>
+  <g clip-path="url(#w-left)"><circle cx="189" cy="150" r="78" fill="#3fb950"/></g>
+  <text x="310" y="192" font-family="ui-monospace, SFMono-Regular, Menlo, monospace"
+        font-size="120" font-weight="600" fill="#3fb950" letter-spacing="4">quorum</text>
+</svg>
