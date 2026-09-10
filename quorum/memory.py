@@ -203,23 +203,37 @@ class SwarmMemory:
     # ---------- REFERENCE: patterns that reached quorum ----------
 
     def promote(self, key: str, body: dict[str, Any]) -> None:
-        """Quorum reached. The pattern becomes permanent swarm knowledge."""
+        """Quorum reached, or an already-confirmed idiom recognised again.
+
+        A pattern is confirmed once. Recognising it in a later contract adds to
+        its provenance rather than rewriting it: the swarm must never lose the
+        record of where it originally paid for this knowledge.
+        """
         sig = body["signature"]
-        held = _elapsed(body.get("first_seen"))
-        _retry(
-            self.client.set_reference,
-            f"pattern:{sig}",
-            {
+        contract = body.get("contract")
+        existing = self.known_pattern(sig)
+
+        if existing:
+            seen_again = list(dict.fromkeys(existing.get("recognised_on", []) + [contract]))
+            reference = {
+                **existing,
+                "recognised_on": [c for c in seen_again if c and c != existing.get("first_confirmed_on")],
+            }
+        else:
+            reference = {
                 "risk": body["risk"],
                 "signature": sig,
                 "confirmed_by": body["seen_by"],
-                "first_confirmed_on": body.get("contract"),
+                "first_confirmed_on": contract,
                 "evidence": body.get("evidence", ""),
                 "confirmed_at": _now(),
-                "held_as_candidate_seconds": held,
-            },
-        )
-        _retry(self.client.set_entity, "finding", key, {**body, "status": "confirmed"})
+                "held_as_candidate_seconds": _elapsed(body.get("first_seen")),
+                "recognised_on": [],
+            }
+
+        _retry(self.client.set_reference, f"pattern:{sig}", reference)
+        _retry(self.client.set_entity, "finding", key,
+               {**body, "status": "confirmed", "confirmed_via": body.get("via", "quorum")})
 
     @staticmethod
     def _body(row: Any) -> dict[str, Any] | None:

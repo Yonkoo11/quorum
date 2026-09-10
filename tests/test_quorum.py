@@ -78,3 +78,14 @@ def test_a_claim_does_not_block_a_different_unit():
     a, b = SwarmMemory(db), SwarmMemory(db)
     assert a.claim_work("Target.sol", "guard-lens", "agent-a") is True
     assert b.claim_work("Target.sol", "sender-lens", "agent-b") is True
+
+
+def test_recall_adds_provenance_without_rewriting_it():
+    db = _db()
+    run_swarm(SwarmMemory(db), {"V.sol": VULN})
+    m = SwarmMemory(db)
+    run_swarm(m, {"Shares.sol": PROD})
+    pattern = next(p for p in m.confirmed_patterns() if p["risk"] == "reentrancy")
+    assert pattern["first_confirmed_on"] == "V.sol"
+    assert pattern["recognised_on"] == ["Shares.sol"]
+    assert sorted(pattern["confirmed_by"]) == ["callorder-lens", "guard-lens"]

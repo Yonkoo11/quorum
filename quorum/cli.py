@@ -106,11 +106,16 @@ def cmd_swarm(args) -> int:
 
     total_scanned = sum(r["scanned"] for r in rows)
     total_skipped = sum(r["skipped"] for r in rows)
+    total_recalled = sum(r["recalled"] for r in rows)
+    total_confirmed = sum(r["confirmed"] for r in rows)
     for r in sorted(rows, key=lambda x: x["agent"] or ""):
         print(f"  {r['agent']:9} scanned {r['scanned']:3}  stood down on {r['skipped']:3} "
               f"units a peer had already claimed")
     print(f"\n  {BOLD}{total_scanned} units scanned in total, {total_skipped} skipped, "
           f"in {time.time() - started:.1f}s{RESET}")
+    if total_recalled or total_confirmed:
+        print(f"  {GREEN}{total_confirmed} confirmed by quorum, {total_recalled} recognised "
+              f"from an earlier session{RESET}")
     print(f"  {DIM}no agent sent a message to any other agent. The HOT tier decided "
           f"who did what.{RESET}")
     return 0
@@ -133,10 +138,13 @@ def cmd_recall(args) -> int:
     print(f"\n{BOLD}what the swarm knows{RESET}  {DIM}{args.db}{RESET}")
     print(f"\n{BOLD}confirmed patterns (REFERENCE tier){RESET}")
     for p in patterns:
-        held = p.get("held_as_candidate_seconds")
-        waited = f"  {DIM}held {held}s before a second lens agreed{RESET}" if held is not None else ""
-        print(f"  {p['signature']}  {p['risk']:22} first confirmed on {p.get('first_confirmed_on')}"
-              f"  by {', '.join(p.get('confirmed_by', []))}{waited}")
+        print(f"  {p['risk']:22} {DIM}{p['signature']}{RESET}")
+        print(f"    first confirmed on {BOLD}{p.get('first_confirmed_on')}{RESET}"
+              f" by {', '.join(p.get('confirmed_by', []))}")
+        again = p.get("recognised_on") or []
+        if again:
+            print(f"    {GREEN}recognised since on{RESET} {', '.join(again)}"
+                  f"  {DIM}(1 sighting each, no quorum needed){RESET}")
     if not patterns:
         print(f"  {DIM}none yet{RESET}")
 
