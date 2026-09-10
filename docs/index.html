@@ -6,6 +6,9 @@
 <title>Quorum — a swarm that coordinates through memory</title>
 <meta name="description" content="Six security lenses that never talk to each other. Sibyl Memory is the only channel between them.">
 <link rel="icon" href="icon-256.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <meta property="og:title" content="Quorum">
 <meta property="og:description" content="Six agents. One memory. No messages between them.">
 <meta property="og:image" content="post-2.png">
@@ -15,8 +18,8 @@
     --bg:#080c09; --panel:#0e1410; --card:rgba(15,30,18,.5);
     --line:rgba(63,185,80,.18); --line-strong:rgba(63,185,80,.42);
     --green:#3fb950; --bright:#5ddb70; --ink:#eef5ef; --soft:#a8b8ac; --mute:#7d9384;
-    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
-    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:"Inter Tight",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 
     --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:72px; --s7:112px;
     --t-1:14px; --t0:16px; --t1:19px; --t2:22px; --t3:28px;
@@ -42,7 +45,7 @@
 
   /* ---- masthead ---- */
   .masthead{display:flex;align-items:center;gap:var(--s2);padding:var(--s6) 0 0}
-  .masthead img{width:44px;height:44px;border-radius:var(--r)}
+  .masthead img{width:40px;height:40px}
   .masthead .name{font-family:var(--mono);font-size:var(--t2);color:var(--green);font-weight:600;letter-spacing:.5px}
   .masthead .tag{margin-left:auto;font-family:var(--mono);font-size:var(--t-1);color:var(--mute)}
 
@@ -105,14 +108,15 @@
   }
 
   /* ---- the backdrop is the mechanic: paired lenses, only overlaps lit ---- */
-  .backdrop{position:fixed;inset:0;z-index:-2;pointer-events:none;
-    mask-image:radial-gradient(120% 90% at 50% 0%,#000 35%,transparent 78%);
-    -webkit-mask-image:radial-gradient(120% 90% at 50% 0%,#000 35%,transparent 78%)}
+  .backdrop{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.9;
+    mask-image:radial-gradient(130% 100% at 78% 12%,#000 18%,transparent 72%);
+    -webkit-mask-image:radial-gradient(130% 100% at 78% 12%,#000 18%,transparent 72%)}
   .grain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.035;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>")}
 
   /* ---- hero split ---- */
-  .hero{display:grid;gap:var(--s5);align-items:center}
+  .hero{display:grid;gap:var(--s5);align-items:center;padding-bottom:var(--s5)}
+  .hero>div:first-child{position:relative;z-index:1}
   @media(min-width:940px){.hero{grid-template-columns:1.3fr .7fr}}
   .mechanic{margin:0}
   .mechanic svg{width:100%;height:auto;overflow:visible}
@@ -133,6 +137,16 @@
     .mechanic .ring{animation:none;stroke-dashoffset:0}
     .mechanic .overlap,.mechanic .lbl,.mechanic .cap{animation:none;opacity:1}
   }
+
+  .stats{list-style:none;display:grid;gap:var(--s2);padding:var(--s3) 0 0;margin:0;
+    grid-template-columns:repeat(2,1fr);border-top:1px solid var(--line)}
+  @media(min-width:760px){.stats{grid-template-columns:repeat(4,1fr)}}
+  .stats li{display:flex;flex-direction:column;gap:2px}
+  .stats b{font-family:var(--mono);font-size:34px;font-weight:600;color:var(--bright);line-height:1}
+  .stats span{font-size:var(--t-1);color:var(--mute);line-height:1.4}
+  .masthead .tag{letter-spacing:.2px}
+  h2{display:flex;align-items:center;gap:var(--s2)}
+  h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
 </style>
 </head>
 <body>
@@ -157,7 +171,7 @@
 <div class="grain" aria-hidden="true"></div>
 
 <main class="wrap">
-  <header class="masthead"><img src="logo.png" alt=""><span class="name">quorum</span><span class="tag">Sibyl Labs Hackathon · Sep 2026</span></header>
+  <header class="masthead"><img src="logo.svg" alt="" width="40" height="40"><span class="name">quorum</span><span class="tag">Sibyl Labs Hackathon · Sep 2026</span></header>
 
   <div class="hero">
 <div>
@@ -185,6 +199,14 @@
 </svg>
 </figure>
 </div>
+
+
+  <ul class="stats" aria-label="Quorum at a glance">
+    <li><b>6</b><span>lenses, paired two per risk</span></li>
+    <li><b>5</b><span>memory tiers, all load bearing</span></li>
+    <li><b>24</b><span>units split across 3 processes, once each</span></li>
+    <li><b>1</b><span>claim published on Base</span></li>
+  </ul>
 
   <h2>It learns an idiom once</h2>
   <pre tabindex="0" role="group" aria-label="terminal output"><span class="d">$</span> quorum run --targets fixtures/*.sol
