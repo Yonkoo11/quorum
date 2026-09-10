@@ -114,9 +114,24 @@ When a finding reaches quorum it stops being a private opinion. `quorum attest` 
 
 ```console
 $ quorum attest
-signer 0xf9946775891a24462cD4ec885d0D4E2675C84355  balance 0.000412 ETH
-  claimed on Base VulnerableVault.sol:withdraw:reentrancy
-    https://basescan.org/tx/0x...
+signer 0xf9946775891a24462cD4ec885d0D4E2675C84355  balance 0.000500 ETH
+  claimed on Base FriendtechSharesV1.sol:buyShares:reentrancy
+    https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713
+```
+
+A live claim, block 51138878. It can be read back and checked against the evidence that produced it:
+
+```console
+$ quorum verify 0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713
+
+claim on Base  block 51138878  2026-09-10T19:05:03+00:00
+  published by 0xf9946775891a24462cD4ec885d0D4E2675C84355
+  digest       0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721
+
+  the evidence for this claim is still in memory
+    FriendtechSharesV1.sol:buyShares:reentrancy
+    corroborated by guard-lens  (recall)
+  digest recomputed from memory matches the chain
 ```
 
 The digest commits to the risk, the idiom signature, the contract, the function and the exact set of lenses that corroborated it ([`chain.py`](quorum/chain.py)). The finding itself never leaves the machine — Sibyl Memory is local-first and so is this. What goes on chain is a timestamped, verifiable claim that *this swarm knew this shape at this block*, which is what a disclosure timeline actually needs. The transaction hash is written back onto the finding entity in memory, so the claim and its evidence stay joined.
@@ -140,6 +155,7 @@ python3 -m venv .venv && .venv/bin/pip install -e .
 .venv/bin/quorum run                            # a fresh session recognises
 .venv/bin/quorum recall                         # what it knows, and how it knows it
 .venv/bin/quorum swarm --workers 3              # three processes, one memory
+.venv/bin/quorum verify <tx>                    # check a Base claim against memory
 .venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   # what it learned since
 .venv/bin/quorum run --no-memory                # the deletion test
 .venv/bin/python -m pytest tests -q             # 7 tests
