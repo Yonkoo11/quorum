@@ -1,0 +1,159 @@
+{
+  "hook": {
+    "items": [
+      {
+        "text": "Six agents. One memory. No messages between them.",
+        "file": "audio/hook_0.mp3",
+        "dur": 3.792,
+        "start": 0.6
+      }
+    ],
+    "seconds": 7.212
+  },
+  "problem": {
+    "items": [
+      {
+        "text": "Run six code review agents and you get six opinions and no agreement.",
+        "file": "audio/problem_0.mp3",
+        "dur": 4.704,
+        "start": 0.6
+      },
+      {
+        "text": "Each one re-finds what it found last week.",
+        "file": "audio/problem_1.mp3",
+        "dur": 2.568,
+        "start": 5.524
+      },
+      {
+        "text": "Each one re-reports the thing you already threw away.",
+        "file": "audio/problem_2.mp3",
+        "dur": 3.288,
+        "start": 8.312
+      },
+      {
+        "text": "And they all scan the same file, because none of them knows what the others are doing.",
+        "file": "audio/problem_3.mp3",
+        "dur": 4.176,
+        "start": 11.82
+      }
+    ],
+    "seconds": 17.216
+  },
+  "mechanic": {
+    "items": [
+      {
+        "text": "Quorum gives them one shared memory and takes away everything else.",
+        "file": "audio/mechanic_0.mp3",
+        "dur": 4.656,
+        "start": 0.6
+      },
+      {
+        "text": "A finding is only published when two lenses reach it from different evidence.",
+        "file": "audio/mechanic_1.mp3",
+        "dur": 4.992,
+        "start": 5.476
+      },
+      {
+        "text": "Whoever agreed is counted in memory, not in any agent's head.",
+        "file": "audio/mechanic_2.mp3",
+        "dur": 4.272,
+        "start": 10.688
+      }
+    ],
+    "seconds": 16.38
+  },
+  "close": {
+    "items": [
+      {
+        "text": "Memory is the coordination layer.",
+        "file": "audio/close_0.mp3",
+        "dur": 2.424,
+        "start": 0.6
+      },
+      {
+        "text": "Take it away and there is no swarm left.",
+        "file": "audio/close_1.mp3",
+        "dur": 2.832,
+        "start": 3.244
+      }
+    ],
+    "seconds": 8.696
+  },
+  "terminal": {
+    "items": [
+      {
+        "text": "Timestamp and commit hash, so you know none of this is pre-baked.",
+        "file": "audio/t0.mp3",
+        "dur": 3.648,
+        "start": 1.0
+      },
+      {
+        "text": "Empty memory. The swarm knows nothing.",
+        "file": "audio/t1.mp3",
+        "dur": 3.24,
+        "start": 5.0
+      },
+      {
+        "text": "Six lenses read two known-vulnerable contracts.",
+        "file": "audio/t2.mp3",
+        "dur": 3.912,
+        "start": 8.6
+      },
+      {
+        "text": "Two findings published, five held back because only one lens believed them.",
+        "file": "audio/t3.mp3",
+        "dur": 4.896,
+        "start": 13.0
+      },
+      {
+        "text": "Now three separate processes, sharing that memory and nothing else.",
+        "file": "audio/t4.mp3",
+        "dur": 5.136,
+        "start": 23.4
+      },
+      {
+        "text": "Twenty-four units of work, each done exactly once, because every agent claimed its work in memory first.",
+        "file": "audio/t5.mp3",
+        "dur": 7.128,
+        "start": 29.0
+      },
+      {
+        "text": "These are real contracts pulled from Base mainnet, which this swarm has never read.",
+        "file": "audio/t6.mp3",
+        "dur": 5.016,
+        "start": 40.3
+      },
+      {
+        "text": "The reentrancy idiom was confirmed on a fixture by two lenses.",
+        "file": "audio/t7.mp3",
+        "dur": 4.2,
+        "start": 46.0
+      },
+      {
+        "text": "It is now recognised inside Friend Tech's live contract from a single sighting, because the swarm already paid for that knowledge.",
+        "file": "audio/t8.mp3",
+        "dur": 8.016,
+        "start": 51.0
+      },
+      {
+        "text": "Same swarm, same contracts, memory removed.",
+        "file": "audio/t9.mp3",
+        "dur": 3.456,
+        "start": 59.4
+      },
+      {
+        "text": "Nothing is confirmed. Nothing is recalled. It falls apart.",
+        "file": "audio/t10.mp3",
+        "dur": 3.72,
+        "start": 63.4
+      },
+      {
+        "text": "And the claim published on Base: the digest recomputed from memory matches the chain.",
+        "file": "audio/t11.mp3",
+        "dur": 5.76,
+        "start": 70.6
+      }
+    ],
+    "seconds": 78.4
+  }
+}
