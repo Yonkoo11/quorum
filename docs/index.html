@@ -46,6 +46,7 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     padding: 0 40px 48px;
+    overflow-x: hidden;
   }
   body::before {
     content: "";
@@ -65,12 +66,12 @@
   header {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 24px 40px;
-    align-items: end;
-    padding: 28px 0 22px;
+    gap: 8px 40px;
+    align-items: start;
+    padding: 28px 0 20px;
     border-bottom: var(--rule);
   }
-  .brand { max-width: 36em; }
+  .brand { max-width: 38em; }
   .brand h1 {
     font-family: var(--display);
     font-weight: 400;
@@ -82,15 +83,14 @@
     width: 28px; height: 3px; background: var(--green); margin-bottom: 14px;
   }
   .brand p { margin-top: 12px; color: var(--muted); max-width: 34em; }
-  .mark { width: min(220px, 28vw); }
+  .mark { width: min(200px, 26vw); padding-top: 8px; }
   .mark svg { width: 100%; height: auto; display: block; }
   nav {
-    grid-column: 1 / -1;
-    display: flex; flex-wrap: wrap; gap: 8px 22px;
-    padding-top: 14px;
-    font-size: 13px;
+    display: flex; flex-wrap: wrap; gap: 4px 20px;
+    margin-top: 16px;
+    font-size: 14px;
   }
-  nav a { text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
+  nav a { text-decoration: none; min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; }
   @media (hover: hover) {
     nav a:hover { text-decoration: underline; }
   }
@@ -115,6 +115,14 @@
   .side h3 { font-size: 16px; font-weight: 500; margin-bottom: 10px; }
   .side p, .side dd { font-size: 14px; }
   .side p + p { margin-top: 0.8em; }
+  .side pre {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin: 8px 0 12px;
+  }
   .side dt {
     margin-top: 12px;
     font-size: 12px;
@@ -127,16 +135,19 @@
   .termhead {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
     background: var(--black); color: var(--paper);
-    padding: 8px 16px 0;
+    padding: 6px 12px 0 16px;
     font-size: 13px;
   }
-  .switch { display: flex; border: 1px solid var(--paper); }
+  .termhead .live { color: var(--green); font-variant-numeric: tabular-nums; }
+  .termhead[data-on="false"] .live { color: inherit; }
+  .switch { display: flex; border: 1px solid var(--paper); flex: none; }
   .switch button {
     appearance: none; border: 0; background: transparent; color: var(--paper);
-    font-family: var(--sans); font-size: 12px; font-weight: 500;
-    min-height: 40px; padding: 0 12px; cursor: pointer;
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    min-height: 44px; min-width: 44px; padding: 0 14px; cursor: pointer;
   }
   .switch button[aria-pressed="true"] { background: var(--paper); color: var(--black); }
+  .switch button:active { opacity: 0.7; }
   pre.terminal {
     background: var(--black);
     color: var(--paper);
@@ -146,6 +157,7 @@
     line-height: 1.55;
     overflow-x: auto;
     white-space: pre;
+    max-width: 100%;
   }
   pre.terminal[hidden] { display: none; }
   pre.terminal .dim { color: rgba(243,238,228,.5); }
@@ -165,18 +177,26 @@
 
   .jump {
     display: grid;
-    grid-template-columns: 1.35fr 0.75fr 0.75fr;
-    gap: 28px;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 32px 40px;
     padding: 32px 0;
     border-top: var(--rule);
     margin-top: 20px;
   }
+  .jump > * { min-width: 0; }
   .jump h3 { font-size: 16px; font-weight: 500; margin-bottom: 12px; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-top: var(--hair); }
-  th { font-size: 12px; color: var(--muted); font-weight: 500; border-top: var(--rule); border-bottom: var(--rule); }
-  td:first-child { padding-right: 16px; }
+  .memlist { list-style: none; }
+  .memlist li {
+    display: flex; justify-content: space-between; gap: 16px; align-items: baseline;
+    padding: 10px 0;
+    border-top: var(--hair);
+    font-size: 14px;
+  }
+  .memlist li:first-child { border-top: var(--rule); }
+  .memlist li:last-child { border-bottom: var(--rule); }
+  .memlist code { flex: none; }
   .tablefoot { margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
 
   .notice { border: var(--rule); padding: 16px 16px 18px; font-size: 14px; }
   .notice p + p { margin-top: 0.8em; }
@@ -202,6 +222,7 @@
     padding: 28px 0 8px;
     border-top: var(--rule);
   }
+  .run > * { min-width: 0; }
   .run h3 { font-size: 16px; font-weight: 500; margin-bottom: 8px; }
   .run p { font-size: 14px; color: var(--muted); }
   .run pre {
@@ -210,19 +231,21 @@
     line-height: 1.65;
     overflow-x: auto;
     white-space: pre;
+    max-width: 100%;
   }
   .run .cmt { color: var(--muted); }
   .run .after { margin-top: 12px; font-size: 13px; color: var(--muted); }
 
   footer {
     display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px;
+    align-items: center;
     padding-top: 18px;
     margin-top: 28px;
     border-top: var(--rule);
     font-size: 13px;
     color: var(--muted);
   }
-  footer a { color: var(--ink); text-decoration: none; }
+  footer a { color: var(--ink); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
   @media (hover: hover) { footer a:hover { text-decoration: underline; } }
 
   code { font-family: var(--mono); font-size: 0.92em; }
@@ -230,13 +253,13 @@
   @media (max-width: 860px) {
     body { padding: 0 16px 40px; }
     header, .lead, .jump, .run { grid-template-columns: 1fr; }
-    .mark { width: 160px; }
+    .mark { width: 96px; padding-top: 0; justify-self: start; }
     .side { border-left: 0; padding-left: 0; border-top: var(--hair); padding-top: 20px; }
     .facts div { grid-template-columns: 1fr; }
-    th { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-    tr, td { display: block; }
-    tr { border-top: var(--hair); padding: 10px 0; }
-    td[data-label]::before { content: attr(data-label) " · "; color: var(--muted); font-size: 12px; }
+    .termhead { flex-wrap: wrap; padding-bottom: 6px; }
+    pre.terminal { white-space: pre-wrap; word-break: break-word; font-size: 12px; }
+    .run pre { white-space: pre-wrap; word-break: break-word; }
+    .memlist li { flex-direction: column; gap: 4px; }
   }
 </style>
 </head>
@@ -248,6 +271,12 @@
       <div class="rule" aria-hidden="true"></div>
       <h1>Quorum</h1>
       <p>A local Solidity scanner. Six lenses, no messages between them. A finding publishes only when two of them reach it from different evidence.</p>
+      <nav>
+        <a href="https://github.com/Yonkoo11/quorum">Source</a>
+        <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+        <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim on Base</a>
+        <a href="https://github.com/Sibyl-Labs/Sibyl-Memory">Sibyl Memory</a>
+      </nav>
     </div>
     <div class="mark" aria-hidden="true">
       <svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg">
@@ -259,12 +288,6 @@
         <circle cx="364" cy="190" r="176" fill="none" stroke="#161310" stroke-width="22"/>
       </svg>
     </div>
-    <nav>
-      <a href="https://github.com/Yonkoo11/quorum">Source</a>
-      <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
-      <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim on Base</a>
-      <a href="https://github.com/Sibyl-Labs/Sibyl-Memory">Sibyl Memory</a>
-    </nav>
   </header>
 
   <main>
@@ -279,22 +302,26 @@
       </article>
       <aside class="side">
         <h3>One idiom, two contracts</h3>
-        <p><code>msg.sender.call{value: amount}("")</code> and <code>protocolFeeDestination.call{value: protocolFee}("")</code> hash to the same signature. <code>weth.deposit{value: amountETH}()</code> does not.</p>
+        <p>These hash the same:</p>
+        <pre>msg.sender.call{value: amount}("")
+protocolFeeDestination.call{value: protocolFee}("")</pre>
+        <p>This does not:</p>
+        <pre>weth.deposit{value: amountETH}()</pre>
         <dl>
           <dt>Pattern</dt>
           <dd><code>reentrancy:97d18d17cfa4494a</code></dd>
           <dt>First confirmed</dt>
-          <dd><code>VulnerableVault.sol</code> · callorder-lens, guard-lens</dd>
+          <dd><code>VulnerableVault.sol</code></dd>
           <dt>Recognised later</dt>
-          <dd><code>FriendtechSharesV1.sol</code> · one sighting, no second quorum</dd>
+          <dd><code>FriendtechSharesV1.sol</code></dd>
         </dl>
-        <p class="note">That recall is a pattern match, not an allegation about Friend.tech.</p>
+        <p class="note">A pattern match, not an allegation about Friend.tech.</p>
       </aside>
     </section>
 
     <section class="photo">
-      <div class="termhead">
-        <span>Same two files</span>
+      <div class="termhead" id="termhead" data-on="true">
+        <span>Same two files · <span class="live" id="live-count">confirmed 2</span></span>
         <div class="switch" role="group" aria-label="Memory">
           <button type="button" id="btn-on" aria-pressed="true">memory on</button>
           <button type="button" id="btn-off" aria-pressed="false">--no-memory</button>
@@ -323,63 +350,40 @@ cannot corroborate, recognise or forget.</pre>
             <circle cx="364" cy="190" r="176" fill="none" stroke="#161310" stroke-width="22"/>
           </svg>
         </div>
-        <p>Fresh database, 11 September 2026. The same behaviour is in <code>tests/test_quorum.py</code>.</p>
+        <p>Flip the switch. Confirmed goes from 2 to 0. The lenses still see the bugs; they just never meet. 11 September 2026, fresh database.</p>
       </div>
     </section>
 
     <section class="jump">
       <article>
         <h3>What memory is for</h3>
-        <table>
-          <thead><tr><th>If you delete it</th><th>Write</th><th>Read</th><th>Tier</th></tr></thead>
-          <tbody>
-            <tr>
-              <td>Agents scan the same unit twice</td>
-              <td data-label="Write"><code>claim_work</code></td>
-              <td data-label="Read">same call</td>
-              <td data-label="Tier">HOT</td>
-            </tr>
-            <tr>
-              <td>Two lenses can never agree</td>
-              <td data-label="Write"><code>record_sighting</code></td>
-              <td data-label="Read"><code>swarm.py</code></td>
-              <td data-label="Tier">WARM</td>
-            </tr>
-            <tr>
-              <td>A confirmed idiom is forgotten</td>
-              <td data-label="Write"><code>promote</code></td>
-              <td data-label="Read"><code>known_pattern</code></td>
-              <td data-label="Tier">REFERENCE</td>
-            </tr>
-            <tr>
-              <td>A human retirement does not stick</td>
-              <td data-label="Write"><code>retire</code></td>
-              <td data-label="Read"><code>is_retired</code></td>
-              <td data-label="Tier">ARCHIVE</td>
-            </tr>
-          </tbody>
-        </table>
-        <p class="tablefoot">All of that is <code>quorum/memory.py</code>. The COLD journal is the audit trail.</p>
+        <ul class="memlist">
+          <li><span>Agents scan the same unit twice</span> <code>claim_work</code></li>
+          <li><span>Two lenses can never agree</span> <code>record_sighting</code></li>
+          <li><span>A confirmed idiom is forgotten</span> <code>promote</code></li>
+          <li><span>A human retirement does not stick</span> <code>retire</code></li>
+        </ul>
+        <p class="tablefoot">All of that is <code>quorum/memory.py</code>.</p>
       </article>
-
-      <article class="notice">
-        <h3>Claim on Base</h3>
-        <p>Block 51138878. <code>FriendtechSharesV1.sol:buyShares:reentrancy</code>. This one predates the fee; <code>quorum verify</code> still reads it as v1.</p>
-        <dl class="facts">
-          <div><dt>Signer</dt><dd>0xf994…4355</dd></div>
-          <div><dt>When</dt><dd>2026-09-10T19:05:03Z</dd></div>
-          <div><dt>Tx</dt><dd><a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">basescan</a></dd></div>
-        </dl>
-        <p>The finding never leaves the machine. The chain only gets a digest.</p>
-      </article>
-
-      <aside class="fee">
-        <p><strong>1,000 QUORUM to publish.</strong> Scanning is free.</p>
-        <p>Each claim burns the fee through the token’s own <code>burn(uint256)</code> on Robinhood Chain, then writes the digest to Base with that burn’s hash. No burn, or a burn from a different wallet, and <code>verify</code> fails.</p>
-        <p>A paid claim can be revealed. Another swarm can import it. Unpaid patterns never enter anyone's memory.</p>
-        <p><code>run</code>, <code>recall</code> and <code>--no-memory</code> never touch the token.</p>
-        <p><a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token on chain 4663</a></p>
-      </aside>
+      <div class="stack">
+        <article class="notice">
+          <h3>Claim on Base</h3>
+          <p>Block 51138878. <code>FriendtechSharesV1.sol:buyShares:reentrancy</code>. This one predates the fee; <code>quorum verify</code> still reads it as v1.</p>
+          <dl class="facts">
+            <div><dt>Signer</dt><dd>0xf994…4355</dd></div>
+            <div><dt>When</dt><dd>2026-09-10T19:05:03Z</dd></div>
+            <div><dt>Tx</dt><dd><a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">basescan</a></dd></div>
+          </dl>
+          <p>The finding never leaves the machine. The chain only gets a digest.</p>
+        </article>
+        <aside class="fee">
+          <p><strong>1,000 QUORUM to publish.</strong> Scanning is free.</p>
+          <p>Each claim burns the fee on Robinhood Chain, then writes the digest to Base with that burn’s hash. No burn, or a burn from a different wallet, and <code>verify</code> fails.</p>
+          <p>A paid claim can be revealed. Another swarm can import it. Unpaid patterns never enter anyone's memory.</p>
+          <p><code>run</code>, <code>recall</code> and <code>--no-memory</code> never touch the token.</p>
+          <p><a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token on chain 4663</a></p>
+        </aside>
+      </div>
     </section>
 
     <section class="run">
@@ -411,12 +415,16 @@ python3 -m venv .venv && .venv/bin/pip install -e .
   var termOn = document.getElementById("term-on");
   var termOff = document.getElementById("term-off");
   var mark = document.getElementById("cap-mark");
+  var count = document.getElementById("live-count");
+  var head = document.getElementById("termhead");
   function setLive(live) {
     onBtn.setAttribute("aria-pressed", live ? "true" : "false");
     offBtn.setAttribute("aria-pressed", live ? "false" : "true");
     termOn.hidden = !live;
     termOff.hidden = live;
     if (mark) mark.setAttribute("data-state", live ? "on" : "off");
+    if (count) count.textContent = live ? "confirmed 2" : "confirmed 0";
+    if (head) head.setAttribute("data-on", live ? "true" : "false");
   }
   onBtn.addEventListener("click", function () { setLive(true); });
   offBtn.addEventListener("click", function () { setLive(false); });
