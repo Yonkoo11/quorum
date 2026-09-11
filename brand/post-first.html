@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Quorum — first post card</title>
+<style>
+  @font-face {
+    font-family: "Archivo Black";
+    src: url("fonts/ArchivoBlack-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "IBM Plex Sans";
+    src: url("fonts/IBMPlexSans-Medium.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: block;
+  }
+
+  :root {
+    --paper: #f3eee4;
+    --ink: #121212;
+    --green: #3fb950;
+    --green-ink: #2a8a38;
+    --muted: #8b8578;
+    --black: #111111;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 1280px;
+    height: 720px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .frame {
+    width: 1280px;
+    height: 720px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+  }
+
+  .card {
+    position: relative;
+    width: 1224px;
+    height: 664px;
+    background: var(--paper);
+    border-radius: 36px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px rgba(18, 18, 18, 0.10), 0 2px 0 rgba(18, 18, 18, 0.04);
+  }
+
+  .copy {
+    position: absolute;
+    left: 72px;
+    top: 96px;
+    width: 520px;
+    z-index: 3;
+  }
+
+  .rule {
+    width: 32px;
+    height: 3px;
+    background: var(--green-ink);
+    margin-bottom: 20px;
+  }
+
+  .kicker {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.28em;
+    color: var(--green-ink);
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .status {
+    margin-top: 11px;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.34em;
+    color: var(--muted);
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  h1 {
+    margin-top: 64px;
+    font-family: "Archivo Black", sans-serif;
+    font-weight: 400;
+    font-size: 68px;
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  h1 span { display: block; }
+
+  .anchor {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 68px;
+    height: 68px;
+    background: var(--black);
+    z-index: 4;
+  }
+
+  .art {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 560px;
+    height: 664px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .art svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <article class="card" id="card">
+      <div class="copy">
+        <div class="rule"></div>
+        <div class="kicker">runquorum.site</div>
+        <div class="status">live</div>
+        <h1>
+          <span>Two lenses.</span>
+          <span>One finding.</span>
+        </h1>
+      </div>
+
+      <div class="anchor" aria-hidden="true"></div>
+
+      <div class="art" aria-hidden="true">
+        <svg viewBox="0 0 560 664" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="left-lens">
+              <circle cx="196" cy="176" r="186"/>
+            </clipPath>
+          </defs>
+
+          <!-- black L-frame -->
+          <rect x="492" y="0" width="68" height="664" fill="#111111"/>
+          <rect x="280" y="0" width="280" height="40" fill="#111111"/>
+          <polygon points="400,664 560,470 560,664" fill="#111111"/>
+
+          <!-- green slab, hard rectangle, cropped by the frame -->
+          <rect x="292" y="40" width="200" height="624" fill="#3fb950"/>
+
+          <!-- cream lens-echo biting the slab -->
+          <circle cx="236" cy="664" r="156" fill="#f3eee4"/>
+
+          <!-- cream disks punch the slab so only the vesica stays green inside the mark -->
+          <circle cx="196" cy="176" r="186" fill="#f3eee4"/>
+          <circle cx="364" cy="176" r="186" fill="#f3eee4"/>
+
+          <g clip-path="url(#left-lens)">
+            <circle cx="364" cy="176" r="186" fill="#3fb950"/>
+          </g>
+
+          <circle cx="196" cy="176" r="186" fill="none" stroke="#111111" stroke-width="22"/>
+          <circle cx="364" cy="176" r="186" fill="none" stroke="#111111" stroke-width="22"/>
+        </svg>
+      </div>
+    </article>
+  </div>
+</body>
+</html>
