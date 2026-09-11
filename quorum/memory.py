@@ -252,6 +252,31 @@ class SwarmMemory:
         """Has the swarm confirmed this shape before, in any earlier session?"""
         return self._body(self.client.get_reference(f"pattern:{sig}"))
 
+    def import_pattern(self, revealed: dict[str, Any], claim_tx: str, burn_tx: str) -> bool:
+        """Learn a pattern another swarm confirmed, revealed and paid to publish.
+
+        This is the only way knowledge enters the REFERENCE tier without this
+        swarm reaching quorum itself, so the bar is the on-chain one: the caller
+        has already checked the reveal matches the claim digest and the claim's
+        fee was really burned. Returns False if the shape is already known.
+        """
+        sig = revealed["signature"]
+        if self.known_pattern(sig):
+            return False
+        reference = {
+            "risk": revealed["risk"],
+            "signature": sig,
+            "confirmed_by": revealed.get("corroborated_by", []),
+            "first_confirmed_on": revealed.get("contract"),
+            "evidence": "",
+            "confirmed_at": _now(),
+            "recognised_on": [],
+            "imported_from": {"claim_tx": claim_tx, "fee_burn_tx": burn_tx},
+        }
+        _retry(self.client.set_reference, f"pattern:{sig}", reference)
+        self.log(evaluated={"claim_tx": claim_tx}, acted={"imported": sig}, forward={"fee_burn_tx": burn_tx})
+        return True
+
     def confirmed_patterns(self) -> list[dict[str, Any]]:
         hits = self.client.search("signature", limit=200, tiers=("reference",))
         out = []
@@ -338,6 +363,9 @@ class NoMemory(SwarmMemory):
 
     def known_pattern(self, sig: str) -> dict[str, Any] | None:
         return None
+
+    def import_pattern(self, revealed: dict[str, Any], claim_tx: str, burn_tx: str) -> bool:
+        return False
 
     def confirmed_patterns(self) -> list[dict[str, Any]]:
         return []

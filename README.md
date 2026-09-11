@@ -140,6 +140,32 @@ The digest commits to the risk, the idiom signature, the contract, the function 
 
 The signing key is read from the process environment at call time. It is never logged, printed or written to disk.
 
+### Publishing costs. Scanning does not.
+
+The claims above form a public registry of "this swarm knew this bug shape at this block". A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone: each claim burns **1,000 QUORUM** through the token contract's own `burn(uint256)` on Robinhood Chain before the Base claim is written, and the claim's calldata (`QUORUM2` shape) carries the burn's transaction hash. `quorum verify` checks both halves: the digest on Base, and that the burn it points at is a real burn of at least the fee by the same signer. A claim whose fee was never burned does not verify.
+
+```console
+$ quorum attest
+signer 0xf994...4355  0.000499 ETH on Base  0 QUORUM on Robinhood Chain
+each claim burns 1,000 QUORUM before it is written. Scanning is free; publishing is not.
+  not published VulnerableVault.sol:withdraw:reentrancy: publishing a claim burns 1,000 QUORUM; signer holds 0 on Robinhood Chain
+```
+
+Once a claim is paid, its owner can **reveal** the pattern behind it, and any other swarm can **import** it:
+
+```console
+$ quorum reveal VulnerableVault.sol:withdraw:reentrancy      # discloses the claimed fields on Base (QUORUM3)
+$ quorum import 0x<reveal tx>                                 # on someone else's machine
+  ok  digest matches the claim
+  ok  revealed by the claim's signer
+  ok  claim fee of 1,000 QUORUM burned
+  imported into REFERENCE: the swarm will recognise this idiom on sight
+```
+
+An import checks three things and refuses if any fails: the revealed fields hash to the claim's digest, the reveal came from the claim's signer, and the claim's fee was burned. So a pattern nobody paid to publish never enters anyone's memory. That is the whole job of the token: it is the cost of being listened to by other people's swarms. Everything else, `run`, `swarm`, `recall`, `retire`, the memory tiers, the `--no-memory` test, has no token in it, and [`tests/test_token.py`](tests/test_token.py) asserts that the scanner modules never touch it.
+
+Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f62056a304eaf501F8714A26b9`](https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9). The first claim (block 51138878) predates the fee and reads back as a v1 claim with no burn to check.
+
 ---
 
 ## Run it

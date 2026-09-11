@@ -5,7 +5,10 @@
     quorum run --no-memory      the deletion test: same swarm, memory removed
     quorum recall               what the swarm knows before it reads any code
     quorum retire <key>         a human overrules a finding, permanently
-    quorum attest               publish confirmed findings to Base
+    quorum attest               burn the fee, publish confirmed findings to Base
+    quorum verify <tx>          check a claim, its evidence in memory, and its fee burn
+    quorum reveal <key>         disclose the pattern behind a paid claim
+    quorum import <tx>          learn a revealed pattern, only if its claim fee was burned
     quorum status               memory tier report
 """
 
@@ -183,14 +186,24 @@ def cmd_attest(args) -> int:
         print(f"nothing to attest: all {len(confirmed)} confirmed finding(s) already have an on-chain claim")
         return 0
 
-    print(f"signer {chain.address()}  balance {chain.balance_wei()/1e18:.6f} ETH")
+    fee = chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS
+    held = chain.token_balance() / 10**chain.TOKEN_DECIMALS
+    print(f"signer {chain.address()}  {chain.balance_wei()/1e18:.6f} ETH on Base  {held:,.0f} QUORUM on Robinhood Chain")
+    print(f"each claim burns {fee:,} QUORUM before it is written. Scanning is free; publishing is not.")
     for f in pending[: args.limit]:
-        result = chain.attest(f, dry_run=args.dry_run)
+        try:
+            result = chain.attest(f, dry_run=args.dry_run)
+        except RuntimeError as exc:
+            print(f"  {RED}not published{RESET} {f['key']}: {exc}")
+            return 1
         if args.dry_run:
-            print(f"  {YELLOW}dry run{RESET} {f['key']}  digest {result['digest'][:18]}...")
+            print(f"  {YELLOW}dry run{RESET} {f['key']}  digest {result['digest'][:18]}...  would burn {fee:,} QUORUM")
             continue
-        memory.client.set_entity("finding", f["key"], {**f, "attested_tx": result["tx"]})
-        memory.log(evaluated={"key": f["key"]}, acted={"attested": result["tx"]}, forward={"block": result["block"]})
+        burn = result["burn"]
+        memory.client.set_entity("finding", f["key"], {**f, "attested_tx": result["tx"], "fee_burn_tx": burn["tx"]})
+        memory.log(evaluated={"key": f["key"]}, acted={"attested": result["tx"], "burned": burn["tx"]},
+                   forward={"block": result["block"], "fee": fee})
+        print(f"  {GREEN}burned {fee:,} QUORUM{RESET}\n    {burn['url']}")
         print(f"  {GREEN}claimed on Base{RESET} {f['key']}\n    {result['url']}")
     return 0
 
@@ -212,6 +225,18 @@ def cmd_verify(args) -> int:
     print(f"  published by {claim['from']}")
     print(f"  digest       {claim['digest']}")
 
+    if claim.get("burn_tx"):
+        burn = chain.read_burn(claim["burn_tx"])
+        amount = burn["amount"] / 10**chain.TOKEN_DECIMALS
+        same_signer = burn["from"].lower() == claim["from"].lower()
+        if burn["valid"] and same_signer:
+            print(f"  {GREEN}fee burned{RESET}   {amount:,.0f} QUORUM on Robinhood Chain, block {burn['block']}, by the same signer")
+        else:
+            print(f"  {RED}fee check failed{RESET}  burn tx is not a valid {chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS:,} QUORUM burn by the claim's signer")
+            return 1
+    else:
+        print(f"  {DIM}v1 claim: published before the fee existed, no burn to check{RESET}")
+
     for finding in memory.findings():
         if chain.claim_digest(finding).hex().lstrip("0x") == claim["digest"].lstrip("0x"):
             print(f"\n  {GREEN}the evidence for this claim is still in memory{RESET}")
@@ -224,6 +249,44 @@ def cmd_verify(args) -> int:
 
     print(f"\n  {RED}no finding in this memory reproduces that digest{RESET}")
     return 1
+
+
+def cmd_reveal(args) -> int:
+    """Disclose the pattern behind a paid claim so other swarms can import it."""
+    from . import chain
+
+    memory = SwarmMemory(args.db)
+    f = memory.get_finding(args.key)
+    if not f or not f.get("attested_tx"):
+        print(f"{RED}no claimed finding{RESET} {args.key}: attest it first")
+        return 1
+    result = chain.reveal({**f, "key": args.key})
+    memory.client.set_entity("finding", args.key, {**f, "revealed_tx": result["tx"]})
+    memory.log(evaluated={"key": args.key}, acted={"revealed": result["tx"]}, forward={"claim_tx": f["attested_tx"]})
+    print(f"  {GREEN}revealed on Base{RESET} {args.key}\n    {result['url']}")
+    return 0
+
+
+def cmd_import(args) -> int:
+    """Learn a pattern from someone else's reveal. Only paid, matching claims are learned."""
+    from . import chain
+
+    r = chain.read_reveal(args.tx)
+    fields = r["fields"]
+    print(f"\n{BOLD}reveal{RESET} {fields['risk']}  {fields['signature']}  by {r['revealed_by']}")
+    checks = [("digest matches the claim", r["digest_matches"]), ("revealed by the claim's signer", r["same_signer"]),
+              (f"claim fee of {chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS:,} QUORUM burned", r["fee_paid"])]
+    for label, ok in checks:
+        print(f"  {GREEN if ok else RED}{'ok ' if ok else 'no '}{RESET} {label}")
+    if not all(ok for _, ok in checks):
+        print(f"\n  {RED}not imported{RESET}: a pattern nobody paid to publish is not evidence")
+        return 1
+    memory = SwarmMemory(args.db)
+    if memory.import_pattern(fields, r["claim_tx"], r["claim"]["burn_tx"]):
+        print(f"\n  {GREEN}imported into REFERENCE{RESET}: the swarm will recognise this idiom on sight")
+    else:
+        print(f"\n  {DIM}already known{RESET}")
+    return 0
 
 
 def cmd_status(args) -> int:
@@ -274,6 +337,14 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("verify", help="check a published Base claim against memory")
     p.add_argument("tx")
     p.set_defaults(func=cmd_verify, no_memory=False)
+
+    p = sub.add_parser("reveal", help="disclose the pattern behind a paid claim")
+    p.add_argument("key", help="finding key, e.g. VulnerableVault.sol:withdraw:reentrancy")
+    p.set_defaults(func=cmd_reveal, no_memory=False)
+
+    p = sub.add_parser("import", help="learn a revealed pattern whose claim fee was burned")
+    p.add_argument("tx", help="reveal transaction hash on Base")
+    p.set_defaults(func=cmd_import, no_memory=False)
 
     p = sub.add_parser("status", help="memory tier report")
     p.set_defaults(func=cmd_status, no_memory=False)
