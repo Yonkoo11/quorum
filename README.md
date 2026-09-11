@@ -190,7 +190,7 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/quorum verify <tx>                    # check a Base claim against memory
 .venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   # what it learned since
 .venv/bin/quorum run --no-memory                # the deletion test
-.venv/bin/python -m pytest tests -q             # 7 tests
+.venv/bin/python -m pytest tests -q             # 16 tests
 ```
 
 `quorum attest` additionally needs `BASE_RPC` and `DEPLOYER_PRIVATE_KEY` in the environment.

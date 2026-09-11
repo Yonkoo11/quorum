@@ -68,7 +68,7 @@ nav ul a{text-decoration:none;padding:6px 0;border-bottom:2px solid transparent;
 .btn{display:inline-block;background:var(--black);color:var(--paper);text-decoration:none;padding:0 26px;height:50px;line-height:50px;font-size:12px;letter-spacing:.28em;text-transform:uppercase;transition:background 150ms ease-out;border:0;cursor:pointer;font-family:var(--ui);font-weight:500}
 .link{font-size:12px;letter-spacing:.28em;text-transform:uppercase;text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:4px;transition:color 150ms ease-out,border-color 150ms ease-out}
 /* terminal */
-.term{font-family:var(--mono);font-size:13.5px;line-height:1.7;white-space:pre;overflow-x:auto;background:var(--black);color:var(--paper);padding:24px 28px;margin-top:24px;tab-size:4}
+.term{font-family:var(--mono);font-size:13.5px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--black);color:var(--paper);padding:24px 28px;margin-top:24px;tab-size:4}
 .term .g{color:var(--green)}.term .d,.term .p{color:#9a9488}
 .term[hidden]{display:none}
 figure{margin:0}
@@ -365,14 +365,14 @@ uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python 
 .venv/bin/quorum verify &lt;tx&gt;                    <span class="p"># check a Base claim against memory</span>
 .venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   <span class="p"># what it learned since</span>
 .venv/bin/quorum run --no-memory                <span class="p"># the deletion test</span>
-.venv/bin/python -m pytest tests -q             <span class="p"># 7 tests</span></div>
+.venv/bin/python -m pytest tests -q             <span class="p"># 16 tests</span></div>
     <p class="lede" style="margin-top:24px"><code>quorum attest</code> additionally needs <code>BASE_RPC</code> and <code>DEPLOYER_PRIVATE_KEY</code> in the environment. Commands: <code>fetch</code>, <code>run</code>, <code>swarm</code>, <code>recall [--since]</code>, <code>retire &lt;key&gt; --reason</code>, <code>attest</code>, <code>status</code>.</p>
     <div class="proof">
       <div><b>6</b> lenses, two per risk</div>
       <div><b>2</b> confirmed with memory</div>
       <div><b>0</b> confirmed without</div>
       <div><b>1</b> claim on Base</div>
-      <div><b>7</b> tests</div>
+      <div><b>16</b> tests</div>
     </div>
   </section>
 </div>
