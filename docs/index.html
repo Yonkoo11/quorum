@@ -1,8 +1,8 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Quorum: two lenses, one finding</title>
 <meta name="description" content="Six security lenses that never talk to each other. Sibyl Memory is the only channel between them, and a finding is published only when two lenses agree from different evidence.">
 <link rel="icon" href="icon-256.png">
@@ -10,407 +10,681 @@
 <meta property="og:description" content="Six lenses. One memory. No lens publishes alone.">
 <meta property="og:image" content="post-2.png">
 <meta name="theme-color" content="#f3eee4">
+<!--
+SITE ARCHITECTURE: "The deck"
+
+ENTRY
+  A single URL. The page is a deck of seven full-viewport cards in the exact idiom of
+  brand/post-first.html. The reader scrolls (or presses space / arrow keys); the deck snaps
+  card to card. A fixed black corner block bottom-left carries the lens mark as the wordmark.
+  A fixed "index" button top-left opens an overlay listing the seven cards.
+
+SCREENS (cards, in order)
+  01 hero          TWO LENSES. ONE FINDING.           lens state: overlap, green (a finding)
+  02 why a quorum  six lenses, two per risk           lens state: two circles apart
+  03 deletion test the one large terminal, 2 vs 0     lens state: intersection as a black void
+  04 recall        learned on a fixture, recognised   lens state: overlap, green, cropped huge
+  05 the claim     51138878.                          lens state: mark with a serial/receipt
+  06 publishing    1,000 QUORUM.                      lens state: burn (void on black)
+  07 run it        install block + code/demo links    no mark; the footer line
+
+HAPPY PATH
+  Land on 01 -> scroll through 02..06 -> 07 -> copy the install block or follow code/demo/claim.
+
+STATES
+  n/a, static page. Two fallbacks:
+  - prefers-reduced-motion: scroll-snap is switched off, smooth scrolling is switched off,
+    hover transitions are removed.
+  - no JS: the index is a <details>/<summary>, so the overlay works without any script.
+    The only script on the page marks the current card in the index and is optional.
+-->
 <style>
-@font-face{font-family:"Archivo Black";src:url("fonts/ArchivoBlack-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"IBM Plex Sans";src:url("fonts/IBMPlexSans-Medium.ttf") format("truetype");font-weight:500;font-style:normal;font-display:swap}
-:root{
-  --paper:#f3eee4;--ink:#121212;--black:#111111;--green:#3fb950;--green-ink:#2a8a38;
-  --muted:#6f6a5e;      /* text on paper, 4.7:1 */
-  --hair:#cfc8b8;       /* rules only */
-  --display:"Archivo Black",Impact,"Arial Black",sans-serif;
-  --ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --gutter:clamp(20px,4vw,64px);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-weight:500;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{color:inherit}
-:focus-visible{outline:3px solid var(--green-ink);outline-offset:3px}
-::selection{background:var(--green);color:var(--black)}
-.label{font-size:12px;letter-spacing:.28em;text-transform:uppercase;line-height:1.3}
-.green{color:var(--green-ink)}.muted{color:var(--muted)}
-h1,h2,h3{font-family:var(--display);font-weight:400;text-transform:uppercase;line-height:.9;letter-spacing:-.04em}
-h1 span,h2 span{display:block}
-.rule{width:32px;height:3px;background:var(--green-ink);margin-bottom:18px}
-code{font-family:var(--mono);font-size:.88em}
-p code{background:#e6e0d3;padding:1px 5px}
-.skip{position:absolute;left:-999px;top:0;background:var(--black);color:var(--paper);padding:12px 18px;z-index:50}
-.skip:focus{left:var(--gutter)}
-/* nav */
-nav{display:flex;justify-content:space-between;align-items:center;padding:22px var(--gutter);border-bottom:1px solid var(--ink)}
-nav .brand{display:flex;align-items:center;gap:12px;font-family:var(--display);font-size:18px;text-transform:uppercase;text-decoration:none;letter-spacing:-.02em}
-nav .brand img{width:28px;height:28px}
-nav ul{display:flex;gap:28px;list-style:none}
-nav ul a{text-decoration:none;padding:6px 0;border-bottom:2px solid transparent;transition:border-color 150ms ease-out}
-@media(max-width:640px){nav ul{gap:16px}nav ul li:nth-child(2){display:none}}
-.anchor{position:fixed;left:0;bottom:0;width:68px;height:68px;background:var(--black);z-index:20;pointer-events:none}
-@media(max-width:640px){.anchor{width:40px;height:40px}}
-/* instrument + steps */
-.wrap{display:grid;grid-template-columns:1fr 1fr}
-.wrap>*{min-width:0}
-.instrument{position:sticky;top:0;height:100vh;border-right:1px solid var(--ink);display:flex;flex-direction:column;justify-content:space-between;padding:var(--gutter);overflow:hidden}
-.instrument svg{width:100%;max-width:calc(66vh * 1.08);height:auto;display:block;align-self:center;flex:0 0 auto}
-.readout{display:grid;grid-template-columns:auto 1fr auto;gap:12px 20px;align-items:start}
-.readout .label{font-size:11px}
-.readout #ro-m{text-align:center}
-.readout.bottom{grid-template-columns:auto 1fr;padding-left:84px}
-.steps{padding:0 var(--gutter)}
-.step{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:80px 0;border-bottom:1px solid var(--hair)}
-.step>*{max-width:100%;min-width:0}
-.step:last-child{border-bottom:0}
-.step h1{font-size:clamp(40px,4.6vw,66px);margin-top:28px}
-.step h1 span{white-space:nowrap}
-.step h2{font-size:clamp(32px,3.8vw,56px);margin-top:28px}
-.step p{margin-top:24px;max-width:460px;font-size:17px}
-.step p+p{margin-top:14px}
-.cta{margin-top:36px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
-.btn{display:inline-block;background:var(--black);color:var(--paper);text-decoration:none;padding:0 26px;height:50px;line-height:50px;font-size:12px;letter-spacing:.28em;text-transform:uppercase;transition:background 150ms ease-out;border:0;cursor:pointer;font-family:var(--ui);font-weight:500}
-.link{font-size:12px;letter-spacing:.28em;text-transform:uppercase;text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:4px;transition:color 150ms ease-out,border-color 150ms ease-out}
-/* terminal */
-.term{font-family:var(--mono);font-size:13.5px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--black);color:var(--paper);padding:24px 28px;margin-top:24px;tab-size:4}
-.term .g{color:var(--green)}.term .d,.term .p{color:#9a9488}
-.term[hidden]{display:none}
-figure{margin:0}
-figcaption{margin-top:12px;font-size:13px;line-height:1.5;display:flex;gap:16px;color:var(--ink)}
-figcaption b{font-weight:500;letter-spacing:.28em;text-transform:uppercase;font-size:11px;white-space:nowrap;padding-top:2px;color:var(--muted)}
-/* pairing table */
-.pairs{margin-top:32px;border-top:1px solid var(--ink)}
-.pairs>div{display:grid;grid-template-columns:150px 1fr 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--hair);font-size:14px;line-height:1.45}
-.pairs>div.head{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);padding:10px 0}
-.pairs code{display:block;margin-bottom:4px;color:var(--green-ink);font-size:12px}
-.pairs .risk{font-family:var(--mono);font-size:13px}
-@media(max-width:560px){.pairs>div{grid-template-columns:1fr}.pairs>div.head{display:none}}
-/* switch */
-.switch{display:inline-flex;align-self:flex-start;border:2px solid var(--ink);margin-top:32px}
-.switch button{appearance:none;background:transparent;border:0;color:var(--ink);padding:12px 22px;font-family:var(--ui);font-weight:500;font-size:12px;letter-spacing:.28em;text-transform:uppercase;cursor:pointer;transition:background 150ms ease-out,color 150ms ease-out}
-.switch button[aria-pressed="true"]{background:var(--black);color:var(--paper)}
-.switch button:focus-visible{outline-offset:-5px;outline-color:var(--green)}
-/* diagram states */
-#frame{opacity:1;transition:opacity 150ms ease-out}
-#lensA,#lensB{transition:transform 150ms ease-out}
-#vesica{fill:#3fb950;transition:fill 150ms ease-out}
-#recall,#claim{opacity:0;transition:opacity 150ms ease-out}
-.instrument:not(.s-hero) #frame{opacity:0}
-.s-apart #lensA{transform:translateX(-64px)}
-.s-apart #lensB{transform:translateX(64px)}
-.s-apart #vesica{fill:#f3eee4}
-.s-void #vesica{fill:#111111}
-.s-recall #recall,.s-claim #recall,.s-claim #claim{opacity:1}
-@media(max-width:860px){
-  .wrap{grid-template-columns:1fr}
-  .instrument{height:auto;border-right:0;border-bottom:1px solid var(--ink);background:var(--paper);z-index:5;padding:14px var(--gutter);gap:10px}
-  .instrument svg{max-width:calc(30vh * 1.08)}
-  .readout.bottom{padding-left:0}
-  .step{min-height:0;padding:56px 0}
-}
-/* ledger sections */
-.ledger{padding:0 var(--gutter)}
-.sec{margin-top:0;border-top:3px solid var(--ink);padding:14px 0 96px}
-.sec .kicker{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:22px}
-.sec h2{font-size:clamp(34px,5.6vw,84px);max-width:1100px}
-.sec .lede{margin-top:32px;max-width:720px;font-size:17px}
-.sec .lede+.lede{margin-top:14px}
-.grid2{display:grid;grid-template-columns:1fr;gap:32px;margin-top:36px;max-width:1100px}
-.grid2>*{min-width:0}
-@media(max-width:900px){.grid2{grid-template-columns:1fr}}
-.table{margin-top:36px;border-top:1px solid var(--ink)}
-.row{display:grid;grid-template-columns:3fr 1.4fr 1.6fr 1.2fr;gap:24px;padding:18px 0;border-bottom:1px solid var(--hair);font-size:15px;line-height:1.5}
-.row.head{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);padding:10px 0}
-.row b{font-weight:500;display:block}
-.row code{font-size:13px}
-.row .tier{font-size:11px;letter-spacing:.28em;text-transform:uppercase}
-.row .tier.on{color:var(--green-ink)}
-@media(max-width:800px){.row{grid-template-columns:1fr 1fr}.row.head{display:none}.row>span:first-child{grid-column:1/-1}}
-.checks{margin-top:28px;list-style:none;border-top:1px solid var(--ink);max-width:720px}
-.checks li{padding:12px 0;border-bottom:1px solid var(--hair);font-size:15px;display:grid;grid-template-columns:36px 1fr;gap:12px}
-.checks li::before{content:"ok";font-family:var(--mono);font-size:12px;color:var(--green-ink);padding-top:3px}
-.token{margin-top:28px;font-size:15px;max-width:720px}
-.token a{word-break:break-all}
-.proof{display:flex;flex-wrap:wrap;gap:18px 48px;margin-top:48px;padding-top:24px;border-top:1px solid var(--ink)}
-.proof div{font-size:12px;letter-spacing:.28em;text-transform:uppercase}
-.proof b{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:-.02em;margin-right:10px;vertical-align:-2px}
-footer{border-top:3px solid var(--ink);padding:32px var(--gutter) 120px;display:flex;justify-content:space-between;gap:16px 40px;flex-wrap:wrap;font-size:13px}
-footer ul{list-style:none;display:flex;gap:28px;flex-wrap:wrap}
-footer ul a{text-decoration:none;border-bottom:2px solid var(--ink);padding-bottom:3px}
-footer .colophon{max-width:520px;color:var(--muted)}
-footer .colophon a{color:var(--ink)}
-@media(hover:hover){
-  nav ul a:hover{border-color:var(--green-ink)}
-  .btn:hover{background:var(--green-ink)}
-  .link:hover{color:var(--green-ink);border-color:var(--green-ink)}
-  footer ul a:hover{color:var(--green-ink);border-color:var(--green-ink)}
-}
-@media(prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
-  *,*::before,*::after{transition-duration:0ms!important}
-}
+  @font-face {
+    font-family: "Archivo Black";
+    src: url("fonts/ArchivoBlack-Regular.ttf") format("truetype");
+    font-weight: 400; font-style: normal; font-display: block;
+  }
+  @font-face {
+    font-family: "IBM Plex Sans";
+    src: url("fonts/IBMPlexSans-Medium.ttf") format("truetype");
+    font-weight: 500; font-style: normal; font-display: block;
+  }
+
+  :root {
+    --paper: #f3eee4;
+    --ink: #121212;
+    --black: #111111;
+    --green: #3fb950;
+    --green-ink: #2a8a38;
+    --muted: #8b8578;
+    --display: "Archivo Black", "Arial Black", sans-serif;
+    --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --gutter: clamp(20px, 5vw, 72px);
+    --card-h: 100vh;
+  }
+  @supports (height: 100svh) { :root { --card-h: 100svh; } }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html {
+    background: var(--paper);
+    color: var(--ink);
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+  }
+  body {
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 17px;
+    line-height: 1.45;
+    background: var(--paper);
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; }
+  a:focus-visible, summary:focus-visible, button:focus-visible {
+    outline: 3px solid var(--green-ink);
+    outline-offset: 3px;
+  }
+
+  /* ---------- the deck ---------- */
+  .card {
+    position: relative;
+    min-height: var(--card-h);
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    overflow: hidden;
+    padding: calc(var(--gutter) * 1.4) var(--gutter) calc(var(--gutter) * 1.4);
+  }
+  .card--ink { background: var(--black); color: var(--paper); }
+
+  .kicker {
+    font-size: 13px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--green-ink);
+    line-height: 1;
+  }
+  .kicker::before {
+    content: "";
+    display: block;
+    width: 32px; height: 3px;
+    background: var(--green-ink);
+    margin-bottom: 18px;
+  }
+  .card--ink .kicker { color: var(--green); }
+  .card--ink .kicker::before { background: var(--green); }
+
+  .folio {
+    position: absolute;
+    right: var(--gutter);
+    bottom: calc(var(--gutter) * 0.9);
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: .2em;
+    color: var(--muted);
+    z-index: 5;
+  }
+
+  .display {
+    font-family: var(--display);
+    font-weight: 400;
+    line-height: .92;
+    letter-spacing: -.04em;
+    color: inherit;
+  }
+  .display.upper { text-transform: uppercase; }
+  .display .g { color: var(--green-ink); }
+  .card--ink .display .g { color: var(--green); }
+
+  .mono {
+    font-family: var(--mono);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  .measure { max-width: 34em; }
+  code { font-family: var(--mono); font-size: .94em; }
+
+  /* text links: 44px targets by padding, only opacity/transform move */
+  .lnk {
+    display: inline-block;
+    min-height: 44px;
+    padding: 11px 0;
+    text-decoration: none;
+    border-bottom: 3px solid currentColor;
+    line-height: 1.2;
+  }
+  .lnk.g { color: var(--green-ink); }
+  .card--ink .lnk.g { color: var(--green); }
+
+  @media (hover: hover) {
+    .lnk { transition: transform 180ms ease-out; }
+    .lnk:hover { transform: translateY(-2px); }
+    .bigl { transition: opacity 180ms ease-out; }
+    .bigl:hover { opacity: .72; }
+  }
+
+  /* ---------- fixed chrome ---------- */
+  .corner {
+    position: fixed;
+    left: 0; bottom: 0;
+    width: 68px; height: 68px;
+    background: var(--black);
+    z-index: 40;
+    display: grid; place-items: center;
+    text-decoration: none;
+  }
+  .corner svg { width: 40px; height: 40px; display: block; }
+
+  .index { position: fixed; top: 0; left: 0; z-index: 50; }
+  .index summary {
+    position: relative; z-index: 2;
+    list-style: none;
+    cursor: pointer;
+    display: inline-block;
+    min-width: 44px; min-height: 44px;
+    padding: 15px 18px;
+    background: var(--black);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    line-height: 1;
+    user-select: none;
+  }
+  .index summary::-webkit-details-marker { display: none; }
+  .index[open] summary { color: var(--green); }
+  .index__sheet {
+    position: fixed;
+    inset: 0;
+    background: var(--black);
+    color: var(--paper);
+    padding: 96px var(--gutter) var(--gutter);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .index__sheet ol { list-style: none; }
+  .index__sheet a {
+    display: block;
+    text-decoration: none;
+    font-family: var(--display);
+    font-size: clamp(28px, 5.4vh, 64px);
+    line-height: 1.05;
+    letter-spacing: -.03em;
+    padding: 4px 0;
+    color: var(--paper);
+  }
+  .index__sheet a span {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: .28em;
+    color: var(--muted);
+    margin-right: 1em;
+    vertical-align: middle;
+  }
+  .index__sheet a[aria-current="true"] { color: var(--green); }
+  @media (hover: hover) {
+    .index__sheet a { transition: transform 200ms ease-out; }
+    .index__sheet a:hover { transform: translateX(12px); }
+  }
+
+  /* ---------- 01 hero: type left / art right ---------- */
+  .hero { display: grid; grid-template-columns: 1fr; padding-right: 0; }
+  .hero .copy { position: relative; z-index: 3; align-self: start; margin-top: max(0px, calc(28vh - var(--gutter) * 1.4)); }
+  .hero .display { font-size: clamp(48px, 6.2vw, 96px); margin-top: 40px; }
+  .hero .display span { display: block; }
+  .hero .lede { margin-top: 28px; }
+  .hero .art {
+    position: absolute; right: 0; top: 0; height: 100%; width: 42%;
+    z-index: 1; pointer-events: none;
+  }
+  .hero .art svg { width: 100%; height: 100%; display: block; }
+  .hero .status { margin-top: 12px; font-size: 13px; letter-spacing: .34em; text-transform: uppercase; color: var(--muted); line-height: 1; }
+  .hero .actions { margin-top: 24px; display: flex; gap: 36px; flex-wrap: wrap; }
+
+  /* ---------- 02 why a quorum: type only, huge, a ledger ---------- */
+  .quorum { display: grid; align-content: center; }
+  .quorum .display { font-size: clamp(30px, 3.9vw, 60px); max-width: 17em; margin-top: 32px; }
+  .pairs { margin-top: 40px; border-top: 3px solid var(--ink); }
+  .pairs .row {
+    display: grid;
+    grid-template-columns: 11em 1fr 1fr;
+    gap: 32px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--ink);
+  }
+  .pairs .risk { font-family: var(--mono); font-size: 16px; color: var(--green-ink); }
+  .pairs .lens b { display: block; font-family: var(--mono); font-weight: 500; font-size: 16px; margin-bottom: 4px; }
+  .quorum .apart {
+    position: absolute; top: var(--gutter); right: var(--gutter);
+    width: clamp(90px, 12vw, 172px); height: auto;
+  }
+
+  /* ---------- 03 deletion test: the terminal is the art ---------- */
+  .delete { display: grid; align-content: center; gap: 28px; }
+  .delete .display { font-size: clamp(28px, 3vw, 44px); max-width: 24em; letter-spacing: -.03em; line-height: 1; }
+  .term {
+    background: var(--black);
+    color: var(--paper);
+    padding: 28px 36px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 16px;
+    line-height: 1.6;
+    tab-size: 4;
+    background: linear-gradient(to left, var(--black) 0 12px, var(--paper) 12px 13px, var(--black) 13px);
+  }
+  .term .c { color: var(--muted); }
+  .term .p { color: var(--green); }
+  .term .hit { color: var(--green); }
+  .term .zero { color: var(--paper); background: var(--green-ink); padding: 0 .3em; }
+  .delete .void {
+    position: absolute; top: var(--gutter); right: var(--gutter);
+    width: clamp(90px, 12vw, 172px); height: auto;
+  }
+
+  /* ---------- 04 recall: art full-bleed, type in a corner ---------- */
+  .recall { display: grid; align-content: end; }
+  .recall .art {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  }
+  .recall .art svg { position: absolute; right: -10vw; top: -54vh; width: 80vw; height: auto; }
+  .recall .copy { position: relative; z-index: 2; max-width: 40rem; }
+  .recall .display { font-size: clamp(32px, 3.6vw, 54px); margin-top: 28px; letter-spacing: -.035em; line-height: .96; }
+  .recall .idioms { margin-top: 36px; }
+  .recall .idioms div { padding: 6px 0; }
+  .recall .idioms .same { color: var(--green-ink); }
+  .recall .idioms .diff { color: var(--muted); text-decoration: line-through; }
+
+  /* ---------- 05 the claim: one number ---------- */
+  .claim { display: grid; align-content: center; justify-items: center; text-align: center; }
+  .claim .number {
+    font-family: var(--display);
+    font-size: clamp(64px, 12vw, 170px);
+    line-height: .9;
+    letter-spacing: -.05em;
+    margin-top: 20px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ticket {
+    margin-top: 24px;
+    width: 100%;
+    max-width: 760px;
+    text-align: left;
+    background: var(--paper);
+    border: 2px solid var(--black);
+    padding: 22px 28px 20px;
+  }
+  .ticket .head {
+    display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    border-bottom: 2px solid var(--black); padding-bottom: 14px; margin-bottom: 16px;
+  }
+  .ticket .head span { font-size: 13px; letter-spacing: .28em; text-transform: uppercase; line-height: 1.3; }
+  .ticket dl { display: grid; grid-template-columns: max-content 1fr; column-gap: 20px; row-gap: 6px; }
+  .ticket dt { color: var(--muted); }
+  .ticket dd { overflow-wrap: anywhere; }
+  .ticket dd.g { color: var(--ink); background: rgba(63,185,80,.28); padding: 0 .3em; display: inline-block; }
+  .ticket .perf { border-top: 2px dashed var(--black); margin: 18px -28px 4px; }
+  .ticket .tx { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; font-family: var(--mono); font-size: 16px; overflow-wrap: anywhere; color: var(--green-ink); }
+  .ticket .tx span { border-bottom: 2px solid currentColor; }
+
+  /* ---------- 06 publishing costs: type over art, on black ---------- */
+  .cost { display: grid; align-content: center; }
+  .cost .art { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .cost .art svg { position: absolute; right: 3vw; top: 6vh; width: clamp(240px, 30vw, 440px); height: auto; }
+  .cost .copy { position: relative; z-index: 2; }
+  .cost .display { font-size: clamp(56px, 7vw, 100px); margin-top: 28px; letter-spacing: -.05em; line-height: .88; }
+  .cost .display span { display: block; }
+  .cost .proof { margin-top: 24px; display: grid; grid-template-columns: minmax(0, 620px) minmax(0, 1fr); gap: 32px 48px; align-items: start; max-width: 64rem; }
+  .stub { background: var(--paper); color: var(--ink); border: 2px solid var(--black); display: grid; grid-template-columns: 1fr 120px; }
+  .stub .l { padding: 20px 24px 22px; }
+  .stub .l .lab { font-size: 13px; letter-spacing: .28em; text-transform: uppercase; line-height: 1.3; margin-bottom: 12px; color: var(--green-ink); }
+  .stub .r { border-left: 2px dashed var(--black); padding: 20px 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; }
+  .stub .r .lab { font-size: 13px; letter-spacing: .28em; text-transform: uppercase; color: var(--muted); }
+  .stub .r .big { font-family: var(--display); font-size: 17px; line-height: 1; }
+  .stub .mono div { display: grid; grid-template-columns: 7ch 1fr; gap: 8px; }
+  .stub .mono .k { color: var(--muted); }
+  .cost .after { padding-top: 6px; }
+  .cost .after p + p { margin-top: 14px; }
+  .cost .tok { margin-top: 20px; font-family: var(--mono); font-size: 16px; color: var(--muted); word-break: break-all; }
+  .cost .tok a { color: var(--paper); }
+
+  /* ---------- 07 run it ---------- */
+  .run { display: grid; grid-template-columns: 1fr; gap: 40px; align-content: center; }
+  .run .install {
+    background: var(--black); color: var(--paper);
+    padding: 30px 34px;
+    font-family: var(--mono); font-size: 15px; line-height: 1.6;
+    overflow-x: auto;
+  }
+  .run .install .c { color: var(--muted); }
+  .run .links { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .bigl {
+    font-family: var(--display);
+    font-size: clamp(44px, 6.4vw, 104px);
+    line-height: .96;
+    letter-spacing: -.04em;
+    text-decoration: none;
+    display: block;
+    color: var(--ink);
+    padding: 6px 0;
+  }
+  .bigl small {
+    display: block;
+    font-family: var(--mono);
+    font-size: 15px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: var(--green-ink);
+    margin-bottom: 8px;
+  }
+  .run footer {
+    grid-column: 1 / -1;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: .04em;
+    padding-left: 88px;
+    line-height: 1.6;
+  }
+
+  /* ---------- wide ---------- */
+  @media (min-width: 900px) {
+    .hero { grid-template-columns: 52% 1fr; }
+    .run { grid-template-columns: 1.15fr 1fr; gap: 64px; }
+    .run footer { padding-left: 88px; }
+  }
+
+  /* ---------- narrow ---------- */
+  @media (max-width: 899px) {
+    .hero { padding-right: var(--gutter); }
+    .hero .art { position: relative; width: 100%; height: 38vh; order: -1; margin: -8px calc(var(--gutter) * -1) 0 auto; width: calc(100% + var(--gutter)); }
+    .hero .display { margin-top: 28px; }
+    .hero .copy { margin-top: 0; }
+    .pairs .row { grid-template-columns: 1fr; gap: 10px; }
+    .quorum .apart, .delete .void { top: 20px; right: 20px; width: 72px; }
+    .term { padding: 22px 20px; font-size: 15px; }
+    .recall .art svg { right: -30vw; top: -14vh; width: 130vw; }
+    .cost .art svg { right: -6vw; top: 14px; width: 38vw; }
+    .card { padding-bottom: 88px; }
+    .corner { width: 44px; height: 44px; }
+    .corner svg { width: 28px; height: 28px; }
+    .cost .kicker { max-width: 58%; line-height: 1.5; }
+    html { scroll-snap-type: y proximity; }
+    .card { scroll-snap-stop: normal; }
+    .cost .proof { grid-template-columns: 1fr; }
+    .stub { grid-template-columns: 1fr; }
+    .stub .r { border-left: 0; border-top: 2px dashed var(--black); flex-direction: row; align-items: center; }
+    .ticket { padding: 18px 16px; }
+    .ticket .perf { margin-left: -16px; margin-right: -16px; }
+    .ticket dl { grid-template-columns: 1fr; row-gap: 2px; }
+    .ticket dt { margin-top: 10px; }
+    .run footer { padding-left: 0; padding-bottom: 72px; }
+    .index__sheet a { font-size: clamp(24px, 4.2vh, 44px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-snap-type: none; scroll-behavior: auto; }
+    .lnk, .bigl, .index__sheet a { transition: none; }
+  }
 </style>
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<nav aria-label="Primary">
-  <a class="brand" href="#"><img src="logo.svg" alt="" width="28" height="28">Quorum.</a>
-  <ul>
-    <li><a class="label" href="https://github.com/Yonkoo11/quorum">Code</a></li>
-    <li><a class="label" href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a></li>
-    <li><a class="label" href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim on Base</a></li>
-  </ul>
-</nav>
-<div class="anchor" aria-hidden="true"></div>
 
-<div class="wrap">
-  <aside class="instrument s-hero" id="inst" aria-hidden="true">
-    <div class="readout">
-      <span class="label" id="ro-l">callorder-lens</span>
-      <span class="label green" id="ro-m">the intersection is the finding</span>
-      <span class="label" id="ro-r">guard-lens</span>
+<!-- fixed chrome -->
+<details class="index" id="index">
+  <summary aria-label="Open the index of cards">index</summary>
+  <div class="index__sheet">
+    <ol>
+      <li><a href="#c1"><span>01</span>Two lenses. One finding.</a></li>
+      <li><a href="#c2"><span>02</span>Why a quorum</a></li>
+      <li><a href="#c3"><span>03</span>The deletion test</a></li>
+      <li><a href="#c4"><span>04</span>Recall</a></li>
+      <li><a href="#c5"><span>05</span>The claim on Base</a></li>
+      <li><a href="#c6"><span>06</span>Publishing costs</a></li>
+      <li><a href="#c7"><span>07</span>Run it</a></li>
+    </ol>
+  </div>
+</details>
+
+<a class="corner" href="#c1" aria-label="Quorum, back to the top">
+  <svg viewBox="0 0 512 512" aria-hidden="true">
+    <defs><clipPath id="q-left"><circle cx="196" cy="256" r="132"/></clipPath></defs>
+    <circle cx="196" cy="256" r="132" fill="none" stroke="#3fb950" stroke-opacity=".55" stroke-width="14"/>
+    <circle cx="316" cy="256" r="132" fill="none" stroke="#3fb950" stroke-opacity=".55" stroke-width="14"/>
+    <g clip-path="url(#q-left)"><circle cx="316" cy="256" r="132" fill="#3fb950"/></g>
+  </svg>
+</a>
+
+<main>
+
+<!-- 01 HERO: type left / art right -->
+<section class="card hero" id="c1" aria-label="Two lenses. One finding.">
+  <div class="copy">
+    <div class="kicker">runquorum.site</div>
+    <div class="status">open source · solidity · MIT</div>
+    <h1 class="display upper"><span>Two lenses.</span><span>One finding.</span></h1>
+    <p class="lede measure">Six independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion, and the count of who agreed lives in memory, not in any agent's head.</p>
+    <div class="actions">
+      <a class="lnk" href="https://github.com/Yonkoo11/quorum">read the code</a>
+      <a class="lnk g" href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">the claim on Base</a>
     </div>
-    <svg viewBox="-80 0 720 664" xmlns="http://www.w3.org/2000/svg" focusable="false">
-      <defs><clipPath id="cA"><circle cx="196" cy="176" r="186"/></clipPath></defs>
-      <g id="frame">
-        <rect x="492" y="0" width="68" height="664" fill="#111111"/>
-        <rect x="280" y="0" width="280" height="40" fill="#111111"/>
-        <polygon points="400,664 560,470 560,664" fill="#111111"/>
-        <rect x="292" y="40" width="200" height="624" fill="#3fb950"/>
-        <circle cx="236" cy="664" r="156" fill="#f3eee4"/>
-        <circle cx="196" cy="176" r="186" fill="#f3eee4"/>
-        <circle cx="364" cy="176" r="186" fill="#f3eee4"/>
-      </g>
-      <g id="lensB"><circle cx="364" cy="176" r="186" fill="none" stroke="#111111" stroke-width="22"/></g>
-      <g clip-path="url(#cA)"><circle id="vesica" cx="364" cy="176" r="186"/></g>
-      <g id="lensA"><circle cx="196" cy="176" r="186" fill="none" stroke="#111111" stroke-width="22"/></g>
-      <g id="recall">
-        <circle cx="520" cy="540" r="52" fill="none" stroke="#111111" stroke-width="12"/>
-        <circle cx="520" cy="540" r="16" fill="#3fb950"/>
-        <text x="520" y="620" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="12" letter-spacing="3.4" fill="#6f6a5e">RECALLED</text>
-      </g>
-      <g id="claim">
-        <rect x="-60" y="560" width="400" height="56" fill="#111111"/>
-        <text x="-40" y="595" font-family="IBM Plex Mono, Menlo, monospace" font-size="16" fill="#f3eee4">0xfd7d…2721  block 51138878</text>
-      </g>
+  </div>
+  <div class="art" aria-hidden="true">
+    <svg viewBox="0 0 560 900" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs><clipPath id="left-lens"><circle cx="196" cy="300" r="186"/></clipPath></defs>
+      <rect x="492" y="0" width="68" height="900" fill="#111111"/>
+      <rect x="280" y="0" width="280" height="40" fill="#111111"/>
+      <polygon points="400,900 560,706 560,900" fill="#111111"/>
+      <rect x="292" y="40" width="200" height="860" fill="#3fb950"/>
+      <circle cx="236" cy="900" r="156" fill="#f3eee4"/>
+      <circle cx="196" cy="300" r="186" fill="#f3eee4"/>
+      <circle cx="364" cy="300" r="186" fill="#f3eee4"/>
+      <g clip-path="url(#left-lens)"><circle cx="364" cy="300" r="186" fill="#3fb950"/></g>
+      <circle cx="196" cy="300" r="186" fill="none" stroke="#111111" stroke-width="22"/>
+      <circle cx="364" cy="300" r="186" fill="none" stroke="#111111" stroke-width="22"/>
     </svg>
-    <div class="readout bottom">
-      <span class="label muted">Memory</span>
-      <span class="label" id="ro-state">On · confirmed 2</span>
+  </div>
+  <div class="folio">01 / 07</div>
+</section>
+
+<!-- 02 WHY A QUORUM: type only, a ledger of pairs -->
+<section class="card quorum" id="c2" aria-label="Why a quorum">
+  <svg class="apart" viewBox="0 0 200 100" aria-hidden="true">
+    <circle cx="46" cy="50" r="40" fill="none" stroke="#111111" stroke-width="10"/>
+    <circle cx="154" cy="50" r="40" fill="none" stroke="#111111" stroke-width="10"/>
+  </svg>
+  <div class="kicker">why a quorum</div>
+  <h2 class="display">a single detector that reports everything it sees is noise. six of them are six times the noise. quorum pairs its lenses two per risk, and each pair reasons from different evidence.</h2>
+  <div class="pairs" role="table" aria-label="Lens pairs">
+    <div class="row" role="row">
+      <div class="risk" role="cell">reentrancy</div>
+      <div class="lens" role="cell"><b>callorder-lens</b>an external call precedes a state write in the same function</div>
+      <div class="lens" role="cell"><b>guard-lens</b>the function moves value out and carries no reentrancy guard</div>
     </div>
-  </aside>
+    <div class="row" role="row">
+      <div class="risk" role="cell">unguarded-state-write</div>
+      <div class="lens" role="cell"><b>modifier-lens</b>externally callable, writes storage, carries no modifier at all</div>
+      <div class="lens" role="cell"><b>sender-lens</b>writes a privileged-looking variable with no <code>msg.sender</code> check anywhere on the path</div>
+    </div>
+    <div class="row" role="row">
+      <div class="risk" role="cell">unsafe-math</div>
+      <div class="lens" role="cell"><b>unchecked-lens</b>arithmetic inside an <code>unchecked</code> block</div>
+      <div class="lens" role="cell"><b>precision-lens</b>a division evaluated before a multiplication</div>
+    </div>
+  </div>
+  <div class="folio">02 / 07</div>
+</section>
 
-  <main class="steps" id="main">
-    <section class="step" data-state="s-hero" data-mid="the intersection is the finding">
-      <div class="rule"></div>
-      <div class="label green">Open source · Solidity · MIT</div>
-      <h1><span>Two lenses.</span><span>One finding.</span></h1>
-      <p>Six independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion, and the count of who agreed lives in memory, not in any agent's head.</p>
-      <div class="cta"><a class="btn" href="https://github.com/Yonkoo11/quorum">Read the code</a><a class="link" href="#run">Run it</a></div>
-    </section>
+<!-- 03 THE DELETION TEST: the one large terminal -->
+<section class="card delete" id="c3" aria-label="The deletion test">
+  <svg class="void" viewBox="0 0 200 120" aria-hidden="true">
+    <defs><clipPath id="void-left"><circle cx="72" cy="60" r="52"/></clipPath></defs>
+    <g clip-path="url(#void-left)"><circle cx="128" cy="60" r="52" fill="#111111"/></g>
+    <circle cx="72" cy="60" r="52" fill="none" stroke="#111111" stroke-width="10"/>
+    <circle cx="128" cy="60" r="52" fill="none" stroke="#111111" stroke-width="10"/>
+  </svg>
+  <div>
+    <div class="kicker">the deletion test</div>
+    <h2 class="display">Delete the memory layer and there is no swarm left. Just six programs that each shout once and forget.</h2>
+  </div>
+  <pre class="term" tabindex="0" aria-label="Terminal output from the README"><span class="p">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
+  <span class="hit">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
+  <span class="hit">QUORUM</span>    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
+scanned 12 lens-units | <span class="hit">confirmed 2</span> | recalled 1 | candidates 5
 
-    <section class="step" data-state="s-apart" data-mid="no channel between them">
-      <div class="rule"></div>
-      <div class="label green">Why a quorum</div>
-      <h2><span>Two per risk.</span><span>Different evidence.</span></h2>
-      <p>A single detector that reports everything it sees is noise. Six of them are six times the noise. Quorum pairs its lenses two per risk, and each pair reasons from different evidence.</p>
-      <div class="pairs">
-        <div class="head"><span>Risk</span><span>Lens A</span><span>Lens B</span></div>
-        <div><span class="risk">reentrancy</span><span><code>callorder-lens</code>an external call precedes a state write in the same function</span><span><code>guard-lens</code>the function moves value out and carries no reentrancy guard</span></div>
-        <div><span class="risk">unguarded-state-write</span><span><code>modifier-lens</code>externally callable, writes storage, carries no modifier at all</span><span><code>sender-lens</code>writes a privileged-looking variable with no <code style="display:inline;color:inherit;font-size:12px">msg.sender</code> check anywhere on the path</span></div>
-        <div><span class="risk">unsafe-math</span><span><code>unchecked-lens</code>arithmetic inside an <code style="display:inline;color:inherit;font-size:12px">unchecked</code> block</span><span><code>precision-lens</code>a division evaluated before a multiplication</span></div>
-      </div>
-      <p>Agreement is signal. Disagreement is kept as a candidate and never published. Run Quorum against audited production contracts and it mostly holds its tongue. On Aerodrome's Router, WETH9 and a Compound proxy it confirms nothing and files eleven candidates. That is the intended behaviour, not a failure to find bugs.</p>
-    </section>
-
-    <section class="step" data-state="s-agree" data-mid="the intersection is the finding" id="deletion">
-      <div class="rule"></div>
-      <div class="label green">The deletion test</div>
-      <h2><span>Delete the memory.</span><span>Nothing is confirmed.</span></h2>
-      <p>The rules ask what happens if you delete the memory layer. Rather than assert an answer, Quorum ships it as a runtime flag. <code>NoMemory</code> implements the identical interface and forgets everything the instant it is written.</p>
-      <div class="switch" role="group" aria-label="Memory switch" id="sw">
-        <button type="button" data-v="on" aria-pressed="true">Memory on</button>
-        <button type="button" data-v="off" aria-pressed="false">--no-memory</button>
-      </div>
-<div class="term" id="t-on" aria-live="polite"><span class="p">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
-  <span class="g">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
-  <span class="g">QUORUM</span>    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
-scanned 12 lens-units | <span class="g">confirmed 2</span> | recalled 1 | candidates 5</div>
-<div class="term" id="t-off" hidden><span class="p"># same swarm, same contracts, memory removed</span>
-<span class="p">$</span> quorum run --no-memory
-scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 12
-<span class="d">nothing was confirmed, recalled or suppressed: without memory the swarm
-cannot corroborate, recognise or forget.</span></div>
-      <p>Every claim succeeds, so agents duplicate work. Every sighting looks like the first, so corroboration never accumulates and quorum is never reached. Nothing is recognised from an earlier session. Retirements do not stick. Confirmed findings: 0. Recalled: 0. The same behaviour is asserted in <code>tests/test_quorum.py</code>.</p>
-    </section>
-
-    <section class="step" data-state="s-recall" data-mid="recognised from one sighting">
-      <div class="rule"></div>
-      <div class="label green">Recall</div>
-      <h2><span>Learned once.</span><span>Known everywhere.</span></h2>
-      <p>A new process, a new day, contracts it has never seen. Real verified Base mainnet source.</p>
-      <figure>
-<div class="term" style="margin-top:0"><span class="p">$</span> quorum run
+<span class="c"># new process, new day, contracts it has never seen. Real verified Base mainnet source</span>
+<span class="p">$</span> quorum run
 recalled before reading any code: 2 confirmed pattern(s)
-  <span class="g">RECALLED</span>  FriendtechSharesV1.sol:buyShares   reentrancy
+  <span class="hit">RECALLED</span>  FriendtechSharesV1.sol:buyShares   reentrancy
             first confirmed on VulnerableVault.sol   (1 sighting was enough)
-scanned 24 lens-units | confirmed 0 | <span class="g">recalled 1</span> | candidates 11</div>
-        <figcaption><b>Fig. 1</b><span>The pattern was learned on a teaching fixture and recognised in production code deployed on Base. <code>msg.sender.call{value: amount}("")</code> and <code>protocolFeeDestination.call{value: protocolFee}("")</code> are the same idiom, so they hash to the same signature. <code>weth.deposit{value: amountETH}()</code> is a different idiom and does not.</span></figcaption>
-      </figure>
-    </section>
+scanned 24 lens-units | confirmed 0 | <span class="hit">recalled 1</span> | candidates 11
 
-    <section class="step" data-state="s-claim" data-mid="the claim and its evidence stay joined">
-      <div class="rule"></div>
-      <div class="label green">Claims on Base</div>
-      <h2><span>Knew this shape.</span><span>At this block.</span></h2>
-      <p>When a finding reaches quorum it stops being a private opinion. <code>quorum attest</code> writes the claim digest to Base mainnet as a self-addressed 0-value transaction with <code>QUORUM1</code>-prefixed calldata.</p>
-      <figure>
-<div class="term"><span class="p">$</span> quorum attest
-signer 0xf9946775891a24462cD4ec885d0D4E2675C84355  balance 0.000500 ETH
-  <span class="g">claimed on Base</span> FriendtechSharesV1.sol:buyShares:reentrancy
-    https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713</div>
-        <figcaption><b>Fig. 2</b><span>A live claim, block 51138878. It can be read back and checked against the evidence that produced it.</span></figcaption>
-      </figure>
-      <figure>
-<div class="term"><span class="p">$</span> quorum verify 0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713
+<span class="c"># same swarm, same contracts, memory removed</span>
+<span class="p">$</span> quorum run --no-memory
+scanned 24 lens-units | <span class="zero">confirmed 0</span> | <span class="zero">recalled 0</span> | candidates 12
+nothing was confirmed, recalled or suppressed: without memory the swarm
+cannot corroborate, recognise or forget.</pre>
+  <div class="folio">03 / 07</div>
+</section>
 
-claim on Base  block 51138878  2026-09-10T19:05:03+00:00
-  published by 0xf9946775891a24462cD4ec885d0D4E2675C84355
-  digest       0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721
-
-  the evidence for this claim is still in memory
-    FriendtechSharesV1.sol:buyShares:reentrancy
-    corroborated by guard-lens  (recall)
-  <span class="g">digest recomputed from memory matches the chain</span></div>
-        <figcaption><b>Fig. 3</b><span>The digest commits to the risk, the idiom signature, the contract, the function and the exact set of lenses that corroborated it. The finding itself never leaves the machine. What goes on chain is a timestamped, verifiable claim that this swarm knew this shape at this block, which is what a disclosure timeline actually needs.</span></figcaption>
-      </figure>
-      <p>The signing key is read from the process environment at call time. It is never logged, printed or written to disk.</p>
-    </section>
-  </main>
-</div>
-
-<div class="ledger">
-  <section class="sec" id="memory">
-    <div class="kicker label"><span class="green">Where memory is load-bearing</span><span class="muted">quorum/memory.py · four call sites</span></div>
-    <h2>Four calls carry the product.</h2>
-    <p class="lede">Every Sibyl Memory read and write in this project is in one file. Every sighting, promotion, suppression and on-chain claim is also appended to the COLD journal, which is what makes a published claim auditable after the fact.</p>
-    <div class="table">
-      <div class="row head"><span>What breaks without it</span><span>Written at</span><span>Read at</span><span>Tier</span></div>
-      <div class="row"><span><b>Agents duplicate each other's work.</b>A lens claims a (contract, lens) unit; a peer that finds it claimed does not scan it. This is the only coordination mechanism in the system.</span><span><code>claim_work</code></span><span>same call</span><span class="tier">Hot · state/</span></div>
-      <div class="row"><span><b>Quorum can never be reached.</b>Corroboration is accumulated across lenses, processes and sessions on the finding entity. A lens has no idea who else agreed with it; memory does.</span><span><code>record_sighting</code></span><span><code>swarm.py:74</code></span><span class="tier">Warm · entities/</span></div>
-      <div class="row"><span><b>Nothing is ever recognised again.</b>A confirmed idiom becomes permanent swarm knowledge and is matched on sight in later sessions, on contracts the swarm has never read.</span><span><code>promote</code></span><span><code>known_pattern</code> → <code>swarm.py:79</code></span><span class="tier on">Reference · reference/</span></div>
-      <div class="row"><span><b>Human corrections evaporate.</b>Retire a finding once and no later session reports that shape again.</span><span><code>retire</code></span><span><code>is_retired</code> → <code>swarm.py:64</code></span><span class="tier">Archive · archive/</span></div>
+<!-- 04 RECALL: art full-bleed, type in the bottom-left corner -->
+<section class="card recall" id="c4" aria-label="Recall">
+  <div class="art" aria-hidden="true">
+    <svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
+      <defs><clipPath id="recall-left"><circle cx="196" cy="200" r="186"/></clipPath></defs>
+      <circle cx="196" cy="200" r="186" fill="#f3eee4"/>
+      <circle cx="364" cy="200" r="186" fill="#f3eee4"/>
+      <g clip-path="url(#recall-left)"><circle cx="364" cy="200" r="186" fill="#3fb950"/></g>
+      <circle cx="196" cy="200" r="186" fill="none" stroke="#111111" stroke-width="22"/>
+      <circle cx="364" cy="200" r="186" fill="none" stroke="#111111" stroke-width="22"/>
+    </svg>
+  </div>
+  <div class="copy">
+    <div class="kicker">recall</div>
+    <h2 class="display">The pattern was learned on a teaching fixture and recognised in production code deployed on Base. <span class="g">1 sighting was enough.</span></h2>
+    <div class="idioms mono" aria-label="Idioms">
+      <div class="same">msg.sender.call{value: amount}("")</div>
+      <div class="same">protocolFeeDestination.call{value: protocolFee}("")</div>
+      <div class="diff">weth.deposit{value: amountETH}()</div>
     </div>
-    <figure style="margin-top:36px">
-<div class="term"><span class="p">$</span> quorum swarm --workers 3
+    <p class="measure" style="margin-top:22px">The first two are the same idiom, so they hash to the same signature. The third is a different idiom and does not. The Friend.tech recall is a pattern match on a call idiom, not an allegation about that contract.</p>
+  </div>
+  <div class="folio">04 / 07</div>
+</section>
 
-3 agent processes, one memory, no message bus
-  agent-1   scanned   9  stood down on  15 units a peer had already claimed
-  agent-2   scanned   7  stood down on  17 units a peer had already claimed
-  agent-3   scanned   8  stood down on  16 units a peer had already claimed
-
-  24 units scanned in total, 48 skipped, in 0.7s
-  <span class="g">no agent sent a message to any other agent. The HOT tier decided who did what.</span></div>
-      <figcaption><b>Fig. 4</b><span>Three processes, twenty-four units of work, each done exactly once. They share one memory file and nothing else: no queue, no broker, no RPC between them. Take the HOT tier away and all three agents do all twenty-four units.</span></figcaption>
-    </figure>
-  </section>
-
-  <section class="sec" id="publishing">
-    <div class="kicker label"><span class="green">Publishing costs. Scanning does not.</span><span class="muted">QUORUM · Robinhood Chain · chain id 4663</span></div>
-    <h2>Scanning is free. Publishing is not.</h2>
-    <p class="lede">The claims above form a public registry of "this swarm knew this bug shape at this block". A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone: each claim burns 1,000 QUORUM through the token contract's own <code>burn(uint256)</code> on Robinhood Chain before the Base claim is written, and the claim's calldata (<code>QUORUM2</code> shape) carries the burn's transaction hash.</p>
-    <p class="lede"><code>quorum verify</code> checks both halves: the digest on Base, and that the burn it points at is a real burn of at least the fee by the same signer. A claim whose fee was never burned does not verify.</p>
-    <div class="grid2">
-      <figure>
-<div class="term" style="margin-top:0"><span class="p">$</span> quorum attest
-signer 0xf994...4355  0.000499 ETH on Base  0 QUORUM on Robinhood Chain
-each claim burns 1,000 QUORUM before it is written. Scanning is free; publishing is not.
-  <span class="d">not published</span> VulnerableVault.sol:withdraw:reentrancy: publishing a claim burns 1,000 QUORUM; signer holds 0 on Robinhood Chain</div>
-        <figcaption><b>Fig. 5</b><span>Each claim burns 1,000 QUORUM before it is written. Scanning is free; publishing is not.</span></figcaption>
-      </figure>
-      <figure>
-<div class="term" style="margin-top:0"><span class="p">$</span> quorum reveal VulnerableVault.sol:withdraw:reentrancy      <span class="p"># discloses the claimed fields on Base (QUORUM3)</span>
-<span class="p">$</span> quorum import 0x&lt;reveal tx&gt;                                 <span class="p"># on someone else's machine</span>
-  <span class="g">ok</span>  digest matches the claim
-  <span class="g">ok</span>  revealed by the claim's signer
-  <span class="g">ok</span>  claim fee of 1,000 QUORUM burned
-  imported into REFERENCE: the swarm will recognise this idiom on sight</div>
-        <figcaption><b>Fig. 6</b><span>Once a claim is paid, its owner can reveal the pattern behind it, and any other swarm can import it.</span></figcaption>
-      </figure>
+<!-- 05 THE CLAIM: one number -->
+<section class="card claim" id="c5" aria-label="The claim on Base">
+  <div class="kicker">the claim on Base</div>
+  <div class="number">51138878.</div>
+  <p class="measure">When a finding reaches quorum it stops being a private opinion. <code>quorum attest</code> writes the claim digest to Base mainnet as a self-addressed 0-value transaction. The finding itself never leaves the machine.</p>
+  <article class="ticket" aria-label="Claim receipt, from quorum verify">
+    <div class="head">
+      <span>quorum · claim on Base</span>
+      <span>block 51138878</span>
     </div>
-    <p class="lede" style="margin-top:36px">An import checks three things and refuses if any fails:</p>
-    <ul class="checks">
-      <li>the revealed fields hash to the claim's digest</li>
-      <li>the reveal came from the claim's signer</li>
-      <li>the claim's fee was burned</li>
-    </ul>
-    <p class="token">So a pattern nobody paid to publish never enters anyone's memory. That is the whole job of the token: it is the cost of being listened to by other people's swarms. Everything else, <code>run</code>, <code>swarm</code>, <code>recall</code>, <code>retire</code>, the memory tiers, the <code>--no-memory</code> test, has no token in it, and <code>tests/test_token.py</code> asserts that the scanner modules never touch it.</p>
-    <p class="token">Token: <code>QUORUM</code> on Robinhood Chain (chain id 4663), contract <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9"><code>0xa6452Fd7134218f62056a304eaf501F8714A26b9</code></a>. The first claim (block 51138878) predates the fee and reads back as a v1 claim with no burn to check.</p>
-  </section>
+    <dl class="mono">
+      <dt>time</dt><dd>2026-09-10T19:05:03+00:00</dd>
+      <dt>published by</dt><dd>0xf9946775891a24462cD4ec885d0D4E2675C84355</dd>
+      <dt>digest</dt><dd>0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721</dd>
+      <dt>evidence</dt><dd>the evidence for this claim is still in memory<br>FriendtechSharesV1.sol:buyShares:reentrancy</dd>
+      <dt>witness</dt><dd>corroborated by guard-lens  (recall)</dd>
+      <dt>check</dt><dd class="g">digest recomputed from memory matches the chain</dd>
+    </dl>
+    <div class="perf"></div>
+    <a class="tx" href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713"><span>basescan.org/tx/0xa648821d…f713</span></a>
+  </article>
+  <div class="folio">05 / 07</div>
+</section>
 
-  <section class="sec" id="run">
-    <div class="kicker label"><span class="green">Run it</span><span class="muted">Python 3.10 to 3.13</span></div>
-    <h2>Clone. Fetch. Run.</h2>
-    <p class="lede">If <code>python3 -m venv</code> fails on your machine, the <code>uv</code> path below avoids it entirely.</p>
-<div class="term">git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
+<!-- 06 PUBLISHING COSTS: type over art, on black -->
+<section class="card card--ink cost" id="c6" aria-label="Publishing costs">
+  <div class="art" aria-hidden="true">
+    <svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
+      <defs><clipPath id="burn-left"><circle cx="196" cy="200" r="186"/></clipPath></defs>
+      <circle cx="196" cy="200" r="186" fill="#f3eee4"/>
+      <circle cx="364" cy="200" r="186" fill="#f3eee4"/>
+      <g clip-path="url(#burn-left)"><circle cx="364" cy="200" r="186" fill="#111111"/></g>
+      <circle cx="196" cy="200" r="186" fill="none" stroke="#f3eee4" stroke-width="22"/>
+      <circle cx="364" cy="200" r="186" fill="none" stroke="#f3eee4" stroke-width="22"/>
+    </svg>
+  </div>
+  <div class="copy">
+    <div class="kicker">publishing costs. scanning does not.</div>
+    <h2 class="display upper"><span>1,000</span><span>Quorum.</span><span class="g">Burned.</span></h2>
+    <div class="proof">
+      <article class="stub" aria-label="Burn stub">
+        <div class="l">
+          <div class="lab">burn stub · Robinhood Chain</div>
+          <div class="mono">
+            <div><span class="k">fee</span><span>1,000 QUORUM</span></div>
+            <div><span class="k">how</span><span>the token contract's own <code>burn(uint256)</code></span></div>
+            <div><span class="k">when</span><span>before the Base claim is written</span></div>
+            <div><span class="k">to</span><span>nobody. destroyed rather than paid to anyone</span></div>
+            <div><span class="k">verify</span><span>the digest on Base, and that the burn it points at is a real burn of at least the fee by the same signer</span></div>
+            <div><span class="k">chain</span><span>id 4663</span></div>
+          </div>
+        </div>
+        <div class="r">
+          <div class="lab">calldata</div>
+          <div class="big">QUORUM2</div>
+        </div>
+      </article>
+      <div class="after">
+        <p>Scanning is free; publishing is not. A claim whose fee was never burned does not verify.</p>
+        <p>Once a claim is paid, its owner can <code>reveal</code> the pattern behind it, and any other swarm can <code>import</code> it. Everything else, <code>run</code>, <code>swarm</code>, <code>recall</code>, <code>retire</code>, the memory tiers, the <code>--no-memory</code> test, has no token in it.</p>
+      </div>
+    </div>
+    <div class="tok">QUORUM on Robinhood Chain (chain id 4663) · <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">0xa6452Fd7134218f62056a304eaf501F8714A26b9</a></div>
+  </div>
+  <div class="folio">06 / 07</div>
+</section>
 
-python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .   <span class="p"># or:</span>
+<!-- 07 RUN IT -->
+<section class="card run" id="c7" aria-label="Run it">
+  <div>
+    <div class="kicker">run it</div>
+    <pre class="install" tabindex="0" aria-label="Install commands from the README" style="margin-top:28px">git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
+
+python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .   <span class="c"># or:</span>
 uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python -e .
 
-<span class="p"># pull real verified source from Base mainnet (no API key needed)</span>
-.venv/bin/quorum fetch 0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4 \
-                       0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43 \
-                       0x4200000000000000000000000000000000000006
+.venv/bin/quorum run --targets fixtures/*.sol   <span class="c"># the swarm learns</span>
+.venv/bin/quorum run                            <span class="c"># a fresh session recognises</span>
+.venv/bin/quorum recall                         <span class="c"># what it knows, and how it knows it</span>
+.venv/bin/quorum swarm --workers 3              <span class="c"># three processes, one memory</span>
+.venv/bin/quorum run --no-memory                <span class="c"># the deletion test</span>
+.venv/bin/python -m pytest tests -q             <span class="c"># 16 tests</span></pre>
+  </div>
+  <div class="links">
+    <a class="bigl" href="https://github.com/Yonkoo11/quorum"><small>github</small>code.</a>
+    <a class="bigl" href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4"><small>mp4</small>demo.</a>
+    <a class="bigl" href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713"><small>basescan</small>claim.</a>
+  </div>
+  <footer>Built with Sibyl Memory · Base mainnet · MIT</footer>
+  <div class="folio">07 / 07</div>
+</section>
 
-.venv/bin/quorum run --targets fixtures/*.sol   <span class="p"># the swarm learns</span>
-.venv/bin/quorum run                            <span class="p"># a fresh session recognises</span>
-.venv/bin/quorum recall                         <span class="p"># what it knows, and how it knows it</span>
-.venv/bin/quorum swarm --workers 3              <span class="p"># three processes, one memory</span>
-.venv/bin/quorum verify &lt;tx&gt;                    <span class="p"># check a Base claim against memory</span>
-.venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   <span class="p"># what it learned since</span>
-.venv/bin/quorum run --no-memory                <span class="p"># the deletion test</span>
-.venv/bin/python -m pytest tests -q             <span class="p"># 16 tests</span></div>
-    <p class="lede" style="margin-top:24px"><code>quorum attest</code> additionally needs <code>BASE_RPC</code> and <code>DEPLOYER_PRIVATE_KEY</code> in the environment. Commands: <code>fetch</code>, <code>run</code>, <code>swarm</code>, <code>recall [--since]</code>, <code>retire &lt;key&gt; --reason</code>, <code>attest</code>, <code>status</code>.</p>
-    <div class="proof">
-      <div><b>6</b> lenses, two per risk</div>
-      <div><b>2</b> confirmed with memory</div>
-      <div><b>0</b> confirmed without</div>
-      <div><b>1</b> claim on Base</div>
-      <div><b>16</b> tests</div>
-    </div>
-  </section>
-</div>
-
-<footer>
-  <ul>
-    <li><a href="https://github.com/Yonkoo11/quorum">Code</a></li>
-    <li><a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo video</a></li>
-    <li><a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">The claim on Base</a></li>
-    <li><a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token contract</a></li>
-  </ul>
-  <p class="colophon">Not a vulnerability scanner that proves exploits. Quorum publishes corroborated idioms worth review, not confirmed vulnerabilities. The lenses are deliberately simple; the point is the coordination and memory layer. Built with <a href="https://github.com/Sibyl-Labs/Sibyl-Memory">Sibyl Memory</a> and Base mainnet. MIT licensed.</p>
-</footer>
+</main>
 
 <script>
-(function(){
-  var inst=document.getElementById('inst'),state=document.getElementById('ro-state'),mid=document.getElementById('ro-m');
-  var steps=document.querySelectorAll('.step');
-  var sw=document.getElementById('sw'),on=document.getElementById('t-on'),off=document.getElementById('t-off');
-  var btns=sw.querySelectorAll('button');
-  var mem=true,current='s-hero',midText='the intersection is the finding';
-  function apply(){
-    inst.className='instrument '+(mem?current:'s-void');
-    state.textContent=mem?(current==='s-recall'?'On · recalled 1':current==='s-claim'?'On · 1 claim on Base':'On · confirmed 2'):'Off · confirmed 0 · recalled 0';
-    state.className='label '+(mem?'':'muted');
-    mid.textContent=mem?midText:'the intersection is void';
-    mid.className='label '+(mem?'green':'muted');
-    on.hidden=!mem; off.hidden=mem;
-    btns[0].setAttribute('aria-pressed',mem?'true':'false');
-    btns[1].setAttribute('aria-pressed',mem?'false':'true');
-  }
-  if('IntersectionObserver' in window){
-    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){current=e.target.dataset.state;midText=e.target.dataset.mid;if(e.target.id!=='deletion'){mem=true}apply();}})},{threshold:.45});
-    steps.forEach(function(s){io.observe(s)});
-  }
-  sw.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;mem=(b.dataset.v==='on');apply();});
-  apply();
-})();
+  // optional: mark the current card in the index and close the sheet after a jump
+  (function () {
+    var idx = document.getElementById('index');
+    if (!idx || !('IntersectionObserver' in window)) return;
+    var links = idx.querySelectorAll('a[href^="#"]');
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        links.forEach(function (a) {
+          a.setAttribute('aria-current', a.getAttribute('href') === '#' + e.target.id ? 'true' : 'false');
+        });
+      });
+    }, { threshold: 0.6 });
+    document.querySelectorAll('.card').forEach(function (c) { io.observe(c); });
+    links.forEach(function (a) { a.addEventListener('click', function () { idx.removeAttribute('open'); }); });
+  })();
 </script>
 </body>
 </html>
