@@ -55,8 +55,8 @@ STATES
     --ink: #121212;
     --black: #111111;
     --green: #3fb950;
-    --green-ink: #2a8a38;
-    --muted: #8b8578;
+    --green-ink: #24772f; /* 4.8:1 on paper; #2a8a38 is 3.8:1, poster-size only */
+    --muted: #6f6a5e; /* 4.7:1 on paper; brand #8b8578 is 3.2:1, poster-size only */
     --display: "Archivo Black", "Arial Black", sans-serif;
     --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -158,10 +158,11 @@ STATES
   .lnk.g { color: var(--green-ink); }
   .card--ink .lnk.g { color: var(--green); }
 
+  .lnk, .bigl { transition: transform 150ms ease-out, opacity 150ms ease-out; }
+  .lnk:active { transform: scale(.97); }
+  .bigl:active { opacity: .6; }
   @media (hover: hover) {
-    .lnk { transition: transform 180ms ease-out; }
     .lnk:hover { transform: translateY(-2px); }
-    .bigl { transition: opacity 180ms ease-out; }
     .bigl:hover { opacity: .72; }
   }
 
@@ -563,7 +564,7 @@ cannot corroborate, recognise or forget.</pre>
   </div>
   <div class="copy">
     <div class="kicker">recall</div>
-    <h2 class="display">The pattern was learned on a teaching fixture and recognised in production code deployed on Base. <span class="g">1 sighting was enough.</span></h2>
+    <h2 class="display">The pattern was learned on a teaching fixture and recognised in production code deployed on Base. 1 sighting was enough.</h2>
     <div class="idioms mono" aria-label="Idioms">
       <div class="same">msg.sender.call{value: amount}("")</div>
       <div class="same">protocolFeeDestination.call{value: protocolFee}("")</div>
@@ -621,7 +622,7 @@ cannot corroborate, recognise or forget.</pre>
             <div><span class="k">fee</span><span>1,000 QUORUM</span></div>
             <div><span class="k">how</span><span>the token contract's own <code>burn(uint256)</code></span></div>
             <div><span class="k">when</span><span>before the Base claim is written</span></div>
-            <div><span class="k">to</span><span>nobody. destroyed rather than paid to anyone</span></div>
+            <div><span class="k">to</span><span>destroyed rather than paid to anyone</span></div>
             <div><span class="k">verify</span><span>the digest on Base, and that the burn it points at is a real burn of at least the fee by the same signer</span></div>
             <div><span class="k">chain</span><span>id 4663</span></div>
           </div>
