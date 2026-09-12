@@ -1,6 +1,15 @@
+<div align="center">
+
 # Quorum
 
-[quorum site](https://yonkoo11.github.io/quorum/) · [demo video](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4) · [the claim on Base](https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713)
+![deletion test](https://img.shields.io/badge/deletion%20test-confirmed%202%20%E2%86%92%200%20without%20memory-3fb950)
+[![tests](https://github.com/Yonkoo11/quorum/actions/workflows/tests.yml/badge.svg)](https://github.com/Yonkoo11/quorum/actions/workflows/tests.yml)
+![first paid claim](https://img.shields.io/badge/first%20paid%20claim-Robinhood%20Chain%20block%2060762176-121212)
+![fee](https://img.shields.io/badge/fee-100%2C000%20QUORUM%20burned%20per%20claim-3fb950)
+![production code](https://img.shields.io/badge/audited%20production%20code-0%20confirmed%20%C2%B7%2011%20candidates%20held%20back-121212)
+[![site](https://img.shields.io/badge/live-runquorum.site-3fb950)](https://runquorum.site)
+
+### Two lenses. One finding.
 
 **A swarm of security lenses that never talk to each other. Sibyl Memory is the only channel between them, and it is the only reason the swarm can agree on anything, recognise anything, or forget anything.**
 
@@ -8,9 +17,99 @@ Six independent lenses read Solidity source. No lens can publish a finding on it
 
 Delete the memory layer and there is no swarm left. Just six programs that each shout once and forget.
 
+**[ Live site ↗ ](https://runquorum.site)** · **[ Watch the demo ↗ ](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4)** · **[ Verify it yourself ↗ ](#verify-it-yourself-in-60-seconds)** · **[ The paid claim ↗ ](https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655)**
+
+Built for the Sibyl Labs Hackathon.
+
+</div>
+
 ---
 
-## The 30-second version
+## ▶ Demo
+
+*Every terminal line in the demo is a real run: the swarm learns a pattern on a teaching fixture, a fresh session recognises it in verified Base mainnet source, the same swarm with memory removed confirms nothing, and a claim is paid for and published.*
+
+**[quorum-demo-v2.mp4](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4)** (release asset, 12 MB) · the demo is also live: [the deletion test switch on the front page](https://runquorum.site) and [the in-browser claim verifier](https://runquorum.site/registry/).
+
+| Two lenses, one finding | The deletion test | The fee is burned |
+|---|---|---|
+| ![two lenses one finding](brand/post-first.png) | ![memory off](brand/post-memory-off.png) | ![the burn](brand/post-burn.png) |
+
+---
+
+## Table of contents
+
+- [The problem](#the-problem)
+- [What Quorum is](#what-quorum-is)
+- [Verify it yourself in 60 seconds](#verify-it-yourself-in-60-seconds)
+- [The headline result](#the-headline-result)
+- [Architecture](#architecture)
+- [Where memory is load-bearing](#where-memory-is-load-bearing)
+- [Coordination without a message bus](#coordination-without-a-message-bus)
+- [Why a quorum](#why-a-quorum)
+- [Claims on Robinhood Chain](#claims-on-robinhood-chain)
+- [What's real, and what we deliberately did not claim](#whats-real-and-what-we-deliberately-did-not-claim)
+- [Tech stack](#tech-stack)
+- [Project layout](#project-layout)
+- [Run it](#run-it)
+- [Tests](#tests)
+- [Site and docs](#site-and-docs)
+
+---
+
+## The problem
+
+A single detector that reports everything it sees is noise. Six of them are six times the noise.
+
+- **A lens on its own cannot tell a finding from a sighting.** Nobody checks whether a second, independent reading agrees.
+- **Agents that share nothing duplicate everything.** Without a shared record of who claimed what, every process scans every unit.
+- **Nothing learned survives the session.** A pattern confirmed today is re-derived from scratch tomorrow, on the same contract.
+- **Human corrections evaporate.** Retire a false positive and the next run reports it again.
+
+Every one of those is a memory problem, not a detection problem. Quorum is the coordination and memory layer; the lenses are the honest minimum needed to have something real to coordinate about.
+
+## What Quorum is
+
+Six regex-and-brace-matching lenses over Solidity source, coordinated through one Sibyl Memory file and nothing else. The loop:
+
+<div align="center">
+
+**`SCAN → CORROBORATE → REMEMBER → RECOGNISE → CLAIM → VERIFY`**
+
+</div>
+
+1. **Scan.** Six lenses read the source, two per risk, each pair reasoning from different evidence. A lens records what it saw and reads nothing about what its peers saw.
+2. **Corroborate.** A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion. The tally of who agreed lives on the finding in memory (WARM tier), not in any agent's head. Disagreement is kept as a candidate and never published.
+3. **Remember.** A confirmed idiom is promoted to permanent swarm knowledge (REFERENCE tier). Every sighting, promotion, suppression and on-chain claim is appended to the COLD journal.
+4. **Recognise.** In a later session, on a contract the swarm has never read, a confirmed idiom is matched on sight from a single sighting. No quorum needed the second time.
+5. **Claim.** `quorum attest` burns the fee (100,000 QUORUM, destroyed, paid to nobody) and writes the claim digest to Robinhood Chain as a self-addressed 0-value transaction. The finding itself never leaves the machine.
+6. **Verify.** `quorum verify` reads the claim back, checks the burn it points at is a real burn of at least the fee by the same signer, and recomputes the digest from memory. A claim whose fee was never burned does not verify.
+
+## Verify it yourself in 60 seconds
+
+No key, no wallet, no GPU. Every line below was run on a fresh memory file before it was written here; the expected results are in the comments.
+
+```bash
+git clone https://github.com/Yonkoo11/quorum && cd quorum
+python3 -m venv .venv && .venv/bin/pip install -e .          # or: uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
+
+.venv/bin/python -m pytest tests -q                           # → 24 passed
+.venv/bin/quorum --db fresh.db run --targets fixtures/*.sol   # → confirmed 2 | recalled 1 | candidates 5
+.venv/bin/quorum --db fresh.db run --no-memory --targets fixtures/*.sol
+                                                              # → confirmed 0 | recalled 0: without memory the swarm
+                                                              #   cannot corroborate, recognise or forget.
+.venv/bin/quorum --db fresh.db import 0x7556ec748f8ffb9e2ca5809c4383e407f4affb9b847124c0d33205281e905f32
+                                                              # → ok digest matches the claim
+                                                              #   ok revealed by the claim's signer
+                                                              #   ok claim fee of 100,000 QUORUM burned
+                                                              #   imported into REFERENCE
+```
+
+The import reads Robinhood Chain and refuses unless the revealed fields hash to the claim's digest, the reveal came from the claim's signer, and the claim's fee was burned. `quorum verify <tx>` on your machine checks the same chain half and then looks for the finding in *your* memory; on a fresh file it reports, honestly, that no finding there reproduces the digest, because the digest commits to the exact finding the publishing swarm held. The zero-install path is the [in-browser verifier](https://runquorum.site/registry/), which reads the transaction from a public node in your browser and compares it with the digest printed on the page.
+
+---
+
+## The headline result
 
 ```console
 $ quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
@@ -43,11 +142,38 @@ confirmed patterns (REFERENCE tier)
 
 The pattern was learned on a teaching fixture and recognised in production code deployed on Base. `msg.sender.call{value: amount}("")` and `protocolFeeDestination.call{value: protocolFee}("")` are the same idiom, so they hash to the same signature. `weth.deposit{value: amountETH}()` is a different idiom and does not.
 
+Run Quorum against audited production contracts and it mostly holds its tongue. On Aerodrome's Router, WETH9 and a Compound proxy it confirms nothing and files eleven candidates. That is the intended behaviour, not a failure to find bugs.
+
 ---
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph lenses["six lenses, separate processes, no messages between them"]
+    A[callorder-lens] & B[guard-lens] & C[modifier-lens] & D[sender-lens] & E[unchecked-lens] & F[precision-lens]
+  end
+  subgraph memory["one Sibyl Memory file (quorum/memory.py)"]
+    HOT["HOT state/ · who claimed which unit"]
+    WARM["WARM entities/ · sightings and who agreed"]
+    REF["REFERENCE reference/ · confirmed idioms"]
+    ARCH["ARCHIVE archive/ · retired findings"]
+    COLD["COLD journal · every event, auditable"]
+  end
+  lenses -- "claim_work / record_sighting" --> HOT & WARM
+  WARM -- "two lenses, different evidence: promote" --> REF
+  REF -- "known_pattern: recognised on sight" --> lenses
+  ARCH -- "is_retired" --> lenses
+  memory --> COLD
+  REF -- "quorum attest: burn 100,000 QUORUM, then write the digest" --> RH[("Robinhood Chain\nQUORUM2 claim · QUORUM3 reveal")]
+  RH -- "quorum verify / import" --> memory
+```
+
+Every Sibyl Memory read and write in this project is in one file, [`quorum/memory.py`](quorum/memory.py). The chain layer, [`quorum/chain.py`](quorum/chain.py), is the only module that knows the token exists; [`tests/test_token.py`](tests/test_token.py) asserts that the scanner modules never touch it.
 
 ## Where memory is load-bearing
 
-Every Sibyl Memory read and write in this project is in one file: [`quorum/memory.py`](quorum/memory.py). Four call sites carry the whole product.
+Four call sites carry the whole product.
 
 | What breaks without it | Written at | Read at | Tier |
 |---|---|---|---|
@@ -96,8 +222,6 @@ agents do all twenty-four units.
 
 ## Why a quorum
 
-A single detector that reports everything it sees is noise. Six of them are six times the noise.
-
 Quorum pairs its lenses two per risk, and each pair reasons from different evidence:
 
 | Risk | Lens A | Lens B |
@@ -106,7 +230,7 @@ Quorum pairs its lenses two per risk, and each pair reasons from different evide
 | `unguarded-state-write` | `modifier-lens`: externally callable, writes storage, carries no modifier at all | `sender-lens`: writes a privileged-looking variable with no `msg.sender` check anywhere on the path |
 | `unsafe-math` | `unchecked-lens`: arithmetic inside an `unchecked` block | `precision-lens`: a division evaluated before a multiplication |
 
-Agreement is signal. Disagreement is kept as a candidate and never published. Run Quorum against audited production contracts and it mostly holds its tongue. On Aerodrome's Router, WETH9 and a Compound proxy it confirms nothing and files eleven candidates. That is the intended behaviour, not a failure to find bugs.
+Agreement is signal. Disagreement is kept as a candidate and never published.
 
 ---
 
@@ -187,6 +311,51 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 
 ---
 
+## What's real, and what we deliberately did not claim
+
+| Capability | Status |
+|---|---|
+| **The deletion test** | Real, and a runtime flag, not a paragraph. `--no-memory` runs the identical swarm through [`NoMemory`](quorum/memory.py#L225): confirmed 0, recalled 0, asserted in [`tests/test_quorum.py`](tests/test_quorum.py). |
+| **Cross-session recognition** | Real. Learned on a teaching fixture, recognised in verified Base mainnet source in a new process from one sighting. The signature hashes the idiom on a line, not the identifiers on it. |
+| **Coordination without a message bus** | Real. Three OS processes, one memory file, 24 units each done exactly once; the HOT tier decided who did what. Take it away and all three do all 24. |
+| **Paid claims on chain** | Real. Fee burned through the token's own `burn(uint256)`, claim written with the burn hash in its calldata, both live on Robinhood Chain (block 60762176). Reveal and import ran live the same day. |
+| **Restraint on production code** | Measured, not asserted. On Aerodrome's Router, WETH9 and a Compound proxy: 0 confirmed, 11 candidates held back. |
+| **Tests** | 24, run in CI on every push. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that `attest` burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move. |
+| The lenses | Deliberately simple: regex-and-brace-matching heuristics over source text, not a compiler front end. The point of this project is the coordination and memory layer. |
+| Vulnerability claims | **None.** Quorum publishes *corroborated idioms worth review*, not confirmed vulnerabilities. A quorum means two independent lenses agreed on a shape, nothing more. The Friend.tech recall above is a pattern match on a call idiom, not an allegation about that contract. |
+| The fixtures | [`fixtures/`](fixtures/) are vulnerable on purpose and are not deployed anywhere. |
+| The first claim | On Base, block 51138878, before the fee and the move. It reads back as a v1 claim with no burn to check. |
+| Exploits, proofs of concept, severity | Not claimed, anywhere in this repository. |
+
+---
+
+## Tech stack
+
+- **Language:** Python 3.10 to 3.13. No framework; the CLI is `argparse`.
+- **Memory:** [Sibyl Memory](https://github.com/Sibyl-Labs/Sibyl-Memory), all five tiers, load-bearing. Every read and write in one file.
+- **Chain:** `web3.py` against Robinhood Chain (chain id 4663) for the token, the fee burn, claims, reveals and imports; Base mainnet for the first claim and for verified target source via Blockscout (no API key needed).
+- **Tests:** pytest, 24 tests, no chain access needed (the chain is mocked where it matters).
+- **Site:** static HTML, CSS and JavaScript in [`docs/`](docs/), served by GitHub Pages at [runquorum.site](https://runquorum.site); the in-browser verifier reads the chain through public JSON-RPC nodes.
+- **Demo:** the terminal recording lives in [`demo/`](demo/) and the video assembly in [`video/`](video/).
+
+## Project layout
+
+```
+quorum/
+  agents.py      # the six lenses, two per risk
+  swarm.py       # the run: claim units, record sightings, promote, recall, retire
+  memory.py      # every Sibyl Memory read and write (HOT, WARM, REFERENCE, ARCHIVE, COLD) and NoMemory
+  chain.py       # claim digest, QUORUM1/2/3 calldata, fee schedule, burn check, attest, verify, reveal, import
+  targets.py     # quorum fetch: verified source from Blockscout
+  cli.py         # the command line
+tests/           # 24 tests: test_quorum.py (the swarm) and test_token.py (the token boundary)
+fixtures/        # two teaching contracts, vulnerable on purpose
+docs/            # the site (runquorum.site): five pages, one stylesheet, one script, self-hosted fonts
+brand/           # the cards, marks and fonts the site and the posts are built from
+demo/            # the recorded terminal session and its beats
+video/           # the demo video pipeline
+```
+
 ## Run it
 
 Python 3.10 to 3.13. If `python3 -m venv` fails on your machine, the `uv` path below avoids it entirely.
@@ -209,21 +378,23 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/quorum verify <tx>                    # check a claim against memory
 .venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   # what it learned since
 .venv/bin/quorum run --no-memory                # the deletion test
-.venv/bin/python -m pytest tests -q             # 19 tests
+.venv/bin/python -m pytest tests -q             # 24 tests
 ```
 
 `quorum attest` additionally needs `DEPLOYER_PRIVATE_KEY` in the environment, gas on Robinhood Chain, and the claim fee in QUORUM. `QUORUM_RPC` overrides the public Robinhood Chain endpoint; `BASE_RPC` overrides the public Base endpoint used only to read the first claim.
 
 Commands: `fetch`, `run`, `swarm`, `recall [--since]`, `retire <key> --reason`, `attest`, `verify <tx>`, `reveal <key>`, `import <tx>`, `status`.
 
----
+## Tests
 
-## What this is not
+```bash
+.venv/bin/python -m pytest tests -q             # 24 passed
+```
 
-- **Not a vulnerability scanner that proves exploits.** Quorum publishes *corroborated idioms worth review*, not confirmed vulnerabilities. A quorum means two independent lenses agreed on a shape, nothing more. The Friend.tech recall above is a pattern match on a call idiom, not an allegation about that contract.
-- **The lenses are deliberately simple.** They are regex-and-brace-matching heuristics over source text, not a compiler front end. The point of this project is the coordination and memory layer; the lenses are the honest minimum needed to have something real to coordinate about.
-- **The fixtures in `fixtures/` are vulnerable on purpose** and are not deployed anywhere.
+[`tests/test_quorum.py`](tests/test_quorum.py) drives the swarm end to end on the fixtures: one lens never confirms, two lenses from different evidence do, the signature matches across contracts, the deletion test confirms nothing, a retirement sticks. [`tests/test_token.py`](tests/test_token.py) pins the calldata shapes, the digest a reveal must reproduce, the burn rules a claim must satisfy, that `attest` burns before it claims and reuses a saved burn rather than paying twice, that the scanner modules never import the chain, and that the first Base claim still reads after the move to Robinhood Chain. The same suite runs in [CI](https://github.com/Yonkoo11/quorum/actions/workflows/tests.yml) on every push.
 
-## Built with
+## Site and docs
 
-[Sibyl Memory](https://github.com/Sibyl-Labs/Sibyl-Memory) (all five tiers, load-bearing) · Base mainnet (verified target source via Blockscout) · Robinhood Chain (token, fee burn and claims via `web3.py`) · MIT licensed.
+[runquorum.site](https://runquorum.site) · [The lenses](https://runquorum.site/lenses/) · [The memory](https://runquorum.site/memory/) · [The registry, with the in-browser verifier](https://runquorum.site/registry/) · [Run it](https://runquorum.site/start/)
+
+MIT licensed. Memory is a local file; nothing is uploaded.
