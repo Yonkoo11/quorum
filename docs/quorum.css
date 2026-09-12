@@ -391,3 +391,6 @@ td b { font-family: var(--display); font-weight: 400; letter-spacing: -.01em; di
   pre.terminal .hi { color: var(--ink); font-weight: 700; }
   a[href^="http"]::after { content: " (" attr(href) ")"; font-size: var(--t-sm); color: var(--muted); }
 }
+
+/* A link that stands alone in its own paragraph is a target, not prose: give it the tap height. */
+.side p > a:only-child { display: inline-flex; align-items: center; min-height: var(--tap); }
