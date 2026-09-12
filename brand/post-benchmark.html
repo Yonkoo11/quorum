@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Quorum: benchmark card</title>
+<style>
+  @font-face {
+    font-family: "Archivo Black";
+    src: url("fonts/ArchivoBlack-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "IBM Plex Sans";
+    src: url("fonts/IBMPlexSans-Medium.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: block;
+  }
+
+  :root {
+    --paper: #f3eee4;
+    --ink: #121212;
+    --green: #3fb950;
+    --green-ink: #2a8a38;
+    --muted: #8b8578;
+    --black: #111111;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 1280px;
+    height: 720px;
+    background: #fbfaf7;
+    overflow: hidden;
+  }
+
+  .frame {
+    width: 1280px;
+    height: 720px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fbfaf7;
+  }
+
+  .card {
+    position: relative;
+    width: 1224px;
+    height: 664px;
+    background: var(--paper);
+    border-radius: 36px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px rgba(18, 18, 18, 0.10), 0 2px 0 rgba(18, 18, 18, 0.04);
+  }
+
+  .copy {
+    position: absolute;
+    left: 72px;
+    top: 96px;
+    width: 640px;
+    z-index: 3;
+  }
+
+  .rule {
+    width: 32px;
+    height: 3px;
+    background: var(--green-ink);
+    margin-bottom: 20px;
+  }
+
+  .kicker {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.28em;
+    color: var(--green-ink);
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .status {
+    margin-top: 11px;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.34em;
+    color: var(--muted);
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  h1 {
+    margin-top: 64px;
+    font-family: "Archivo Black", sans-serif;
+    font-weight: 400;
+    font-size: 58px;
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  h1 span { display: block; }
+
+  .amount {
+    margin-top: 28px;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .anchor {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 68px;
+    height: 68px;
+    background: var(--black);
+    z-index: 4;
+  }
+
+  .art {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 560px;
+    height: 664px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .art svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <article class="card" id="card">
+      <div class="copy">
+        <div class="rule"></div>
+        <div class="kicker">runquorum.site</div>
+        <div class="status">measured</div>
+        <h1>
+          <span>One lens: 14%.</span>
+          <span>Two lenses: 44%.</span>
+        </h1>
+        <div class="amount">precision on 143 labelled contracts, same recall</div>
+      </div>
+
+      <div class="anchor" aria-hidden="true"></div>
+
+      <div class="art" aria-hidden="true">
+        <svg viewBox="0 0 560 664" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="left-lens-benchmark">
+              <circle cx="196" cy="176" r="186"/>
+            </clipPath>
+          </defs>
+
+          <rect x="468" y="0" width="92" height="664" fill="#111111"/>
+          <rect x="240" y="0" width="320" height="44" fill="#111111"/>
+          <polygon points="360,664 560,430 560,664" fill="#111111"/>
+
+          <circle cx="196" cy="176" r="186" fill="#f3eee4"/>
+          <circle cx="364" cy="176" r="186" fill="#f3eee4"/>
+
+          <g clip-path="url(#left-lens-benchmark)">
+            <circle cx="364" cy="176" r="186" fill="#3fb950"/>
+          </g>
+
+          <circle cx="196" cy="176" r="186" fill="none" stroke="#111111" stroke-width="22"/>
+          <circle cx="364" cy="176" r="186" fill="none" stroke="#111111" stroke-width="22"/>
+        </svg>
+      </div>
+    </article>
+  </div>
+</body>
+</html>
