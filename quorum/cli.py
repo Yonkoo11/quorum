@@ -245,7 +245,7 @@ def cmd_verify(args) -> int:
         if burn["valid"] and same_signer:
             print(f"  {GREEN}fee burned{RESET}   {amount:,.0f} QUORUM on Robinhood Chain, block {burn['block']}, by the same signer")
         else:
-            print(f"  {RED}fee check failed{RESET}  burn tx is not a valid {chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS:,} QUORUM burn by the claim's signer")
+            print(f"  {RED}fee check failed{RESET}  burn tx is not a valid {burn['required'] // 10**chain.TOKEN_DECIMALS:,} QUORUM burn by the claim's signer")
             return 1
     else:
         print(f"  {DIM}v1 claim: published before the fee existed, no burn to check{RESET}")
@@ -287,8 +287,9 @@ def cmd_import(args) -> int:
     r = chain.read_reveal(args.tx)
     fields = r["fields"]
     print(f"\n{BOLD}reveal{RESET} {fields['risk']}  {fields['signature']}  by {r['revealed_by']}")
+    required = (r["burn"] or {}).get("required", chain.CLAIM_FEE) // 10**chain.TOKEN_DECIMALS
     checks = [("digest matches the claim", r["digest_matches"]), ("revealed by the claim's signer", r["same_signer"]),
-              (f"claim fee of {chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS:,} QUORUM burned", r["fee_paid"])]
+              (f"claim fee of {required:,} QUORUM burned", r["fee_paid"])]
     for label, ok in checks:
         print(f"  {GREEN if ok else RED}{'ok ' if ok else 'no '}{RESET} {label}")
     if not all(ok for _, ok in checks):

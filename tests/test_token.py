@@ -47,10 +47,10 @@ def test_reveal_fields_hash_to_the_claim_digest():
     assert chain.claim_digest({**tampered, "seen_by": tampered["corroborated_by"]}) != DIGEST
 
 
-def _fake_burn_tx(to, amount, status=1):
+def _fake_burn_tx(to, amount, status=1, block=chain.FEE_RAISE_BLOCK + 1):
     data = chain.BURN_SELECTOR + amount.to_bytes(32, "big")
     tx = {"to": to, "input": data, "from": "0xf9946775891a24462cD4ec885d0D4E2675C84355"}
-    receipt = {"blockNumber": 1, "status": status}
+    receipt = {"blockNumber": block, "status": status}
     w3 = mock.Mock()
     w3.eth.get_transaction.return_value = tx
     w3.eth.get_transaction_receipt.return_value = receipt
@@ -207,3 +207,17 @@ def test_send_returns_a_0x_prefixed_hash():
     w3.eth.wait_for_transaction_receipt.return_value = {"blockNumber": 1, "gasUsed": 1, "status": 1}
     acct = mock.Mock(); acct.address = SIGNER
     assert chain._send(w3, acct, {})["tx"] == "0x" + "ab" * 32
+
+
+def test_fee_is_judged_at_the_burns_own_block():
+    """Raising the fee must not break claims paid at the launch rate."""
+    launch, raised = chain.FEE_SCHEDULE[0][1], chain.FEE_SCHEDULE[1][1]
+    assert launch == 1_000 * 10**18 and raised == 100_000 * 10**18 and chain.CLAIM_FEE == raised
+    assert chain.fee_at(60748823) == launch          # this morning's burn, before the raise
+    assert chain.fee_at(chain.FEE_RAISE_BLOCK) == raised
+    with mock.patch.object(chain, "_token_w3", return_value=_fake_burn_tx(chain.TOKEN, launch, block=60748823)):
+        assert chain.read_burn("0x" + "01" * 32)["valid"]
+    with mock.patch.object(chain, "_token_w3", return_value=_fake_burn_tx(chain.TOKEN, launch)):
+        assert not chain.read_burn("0x" + "01" * 32)["valid"], "1,000 is not enough after the raise"
+    with mock.patch.object(chain, "_token_w3", return_value=_fake_burn_tx(chain.TOKEN, raised)):
+        assert chain.read_burn("0x" + "01" * 32)["valid"]

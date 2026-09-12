@@ -52,7 +52,17 @@ EXPLORER = os.getenv("QUORUM_EXPLORER", CHAINS[CHAIN_ID]["explorer"])
 
 TOKEN = Web3.to_checksum_address("0xa6452Fd7134218f62056a304eaf501F8714A26b9")
 TOKEN_DECIMALS = 18
-CLAIM_FEE = 1_000 * 10**TOKEN_DECIMALS  # 1,000 QUORUM per published claim, burned
+# The fee per claim, by Robinhood Chain block height of the burn. Raising the fee
+# must not invalidate claims paid at the earlier rate, so a burn is judged against
+# the fee in force at its own block. Launch fee 1,000; 100,000 from block 60761164.
+FEE_RAISE_BLOCK = 60761164
+FEE_SCHEDULE = ((0, 1_000 * 10**TOKEN_DECIMALS), (FEE_RAISE_BLOCK, 100_000 * 10**TOKEN_DECIMALS))
+CLAIM_FEE = FEE_SCHEDULE[-1][1]  # the fee in force now, in base units
+
+
+def fee_at(block: int) -> int:
+    """The fee a burn at this block must meet."""
+    return next(fee for start, fee in reversed(FEE_SCHEDULE) if block >= start)
 TOKEN_EXPLORER = os.getenv("QUORUM_TOKEN_EXPLORER", CHAINS[TOKEN_CHAIN_ID]["explorer"])
 BURN_SELECTOR = Web3.keccak(text="burn(uint256)")[:4]
 _TOKEN_ABI = [
@@ -162,17 +172,18 @@ def burn_fee() -> dict[str, Any]:
     acct = _account(w3)
     token = w3.eth.contract(address=TOKEN, abi=_TOKEN_ABI)
     held = token.functions.balanceOf(acct.address).call()
-    if held < CLAIM_FEE:
+    fee = fee_at(w3.eth.block_number)
+    if held < fee:
         raise RuntimeError(
-            f"publishing a claim burns {CLAIM_FEE // 10**TOKEN_DECIMALS:,} QUORUM; "
+            f"publishing a claim burns {fee // 10**TOKEN_DECIMALS:,} QUORUM; "
             f"signer holds {held / 10**TOKEN_DECIMALS:,.0f} on Robinhood Chain"
         )
-    tx = token.functions.burn(CLAIM_FEE).build_transaction({"from": acct.address, "chainId": TOKEN_CHAIN_ID})
+    tx = token.functions.burn(fee).build_transaction({"from": acct.address, "chainId": TOKEN_CHAIN_ID})
     result = _send(w3, acct, tx)
     if result["status"] != 1:
         raise RuntimeError(f"fee burn reverted: {result['tx']}")
     result["url"] = TOKEN_EXPLORER + result["tx"]
-    result["amount"] = CLAIM_FEE
+    result["amount"] = fee
     return result
 
 
@@ -184,12 +195,14 @@ def read_burn(tx_hash: str) -> dict[str, Any]:
     data = bytes(tx["input"])
     ok_call = tx["to"] == TOKEN and data[:4] == BURN_SELECTOR and len(data) == 36
     amount = int.from_bytes(data[4:36], "big") if ok_call else 0
+    required = fee_at(receipt["blockNumber"])
     return {
         "from": tx["from"],
         "amount": amount,
+        "required": required,
         "block": receipt["blockNumber"],
         "status": receipt["status"],
-        "valid": bool(ok_call and receipt["status"] == 1 and amount >= CLAIM_FEE),
+        "valid": bool(ok_call and receipt["status"] == 1 and amount >= required),
     }
 
 
@@ -294,7 +307,7 @@ def attest(finding: dict[str, Any], dry_run: bool = False, burn_tx: str | None =
     if burn_tx:
         burn = read_burn(burn_tx)
         if not burn["valid"] or burn["from"].lower() != acct.address.lower():
-            raise RuntimeError(f"{burn_tx} is not a valid {CLAIM_FEE // 10**TOKEN_DECIMALS:,} QUORUM burn by {acct.address}; not reusing it")
+            raise RuntimeError(f"{burn_tx} is not a valid fee burn by {acct.address}; not reusing it")
         burn = {**burn, "tx": burn_tx, "url": TOKEN_EXPLORER + burn_tx, "reused": True}
     else:
         burn = burn_fee()
