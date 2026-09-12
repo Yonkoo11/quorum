@@ -27,6 +27,10 @@ Built for the Sibyl Labs Hackathon.
 
 ## ▶ Demo
 
+![The memory switch on the live front page: memory on, 2 confirmed; memory off, 0 confirmed; the terminal below crossfades between the two runs](brand/deletion-test.gif)
+
+*The switch on [runquorum.site](https://runquorum.site), recorded live: flip the memory off and the same swarm on the same contracts confirms nothing.*
+
 *Every terminal line in the demo is a real run: an empty memory, six lenses on two teaching contracts, two findings published and five held back, three processes sharing one memory and doing twenty-four units of work once each, the reentrancy idiom recognised inside Friend.tech's live contract from a single sighting, the same swarm with memory removed confirming nothing, and the first claim on Base verified against memory. The video predates the fee: the paid claim on Robinhood Chain is on the registry page, not in the video.*
 
 **[quorum-demo-v2.mp4](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4)** (release asset, 12 MB) · the demo is also live: [the deletion test switch on the front page](https://runquorum.site) and [the in-browser claim verifier](https://runquorum.site/registry/).
