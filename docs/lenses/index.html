@@ -13,8 +13,11 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../quorum.css">
+<script>try{var m=localStorage.getItem("quorum-theme");if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);}catch(e){}</script>
+<script src="../quorum.js" defer></script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="page">
 
 <div class="masthead-sm">
@@ -23,12 +26,14 @@
 </div>
 <nav class="nav small" aria-label="Sections">
   <ul><li><a href=".././">Front page</a></li><li><a href="../lenses/" aria-current="page">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul>
+  <button type="button" class="theme" id="theme-toggle" aria-live="polite">Theme</button>
 </nav>
 
+<main id="main">
 <section class="grid sec-head">
   <div class="t">
     <p class="kicker small">The lenses</p>
-    <h2>Six readings.<br>Two per risk.</h2>
+    <h1>Six readings.<br>Two per risk.</h1>
     <p class="deck">A single detector that reports everything it sees is noise. Six of them are six times the noise. Quorum pairs its lenses two per risk, and each pair reasons from different evidence.</p>
   </div>
   <div class="aside">Agreement is signal. Disagreement is kept as a candidate and never published.</div>
@@ -36,7 +41,7 @@
 
 <section class="grid row art">
   <div class="col">
-    <h3>What a lens may not do</h3>
+    <h2>What a lens may not do</h2>
     <p>No lens can publish a finding on its own. A lens records what it saw and reads nothing about
       what its peers saw; the tally of who agreed lives on the finding in memory, not inside any
       agent. A second lens that reaches the same (contract, function, risk) from a different reading
@@ -54,7 +59,7 @@
 </section>
 
 <section class="row">
-  <div class="risk"><h3>reentrancy</h3><span class="pair small">callorder-lens &middot; guard-lens</span></div>
+  <div class="risk"><h2>reentrancy</h2><span class="pair small">callorder-lens &middot; guard-lens</span></div>
   <div class="entry">
   <div><span class="n">callorder-lens</span><span class="cls">Evidence: call ordering</span></div>
   <div><p>An external call precedes a state write in the same function.</p></div>
@@ -64,7 +69,7 @@
   <div><p>The function moves value out and carries no reentrancy guard.</p></div>
 </div>
 
-  <div class="risk"><h3>unguarded-state-write</h3><span class="pair small">modifier-lens &middot; sender-lens</span></div>
+  <div class="risk"><h2>unguarded-state-write</h2><span class="pair small">modifier-lens &middot; sender-lens</span></div>
   <div class="entry">
   <div><span class="n">modifier-lens</span><span class="cls">Evidence: declaration</span></div>
   <div><p>Externally callable, writes storage, carries no modifier at all.</p></div>
@@ -74,7 +79,7 @@
   <div><p>Writes a privileged-looking variable with no <code>msg.sender</code> check anywhere on the path.</p></div>
 </div>
 
-  <div class="risk"><h3>unsafe-math</h3><span class="pair small">unchecked-lens &middot; precision-lens</span></div>
+  <div class="risk"><h2>unsafe-math</h2><span class="pair small">unchecked-lens &middot; precision-lens</span></div>
   <div class="entry">
   <div><span class="n">unchecked-lens</span><span class="cls">Evidence: block context</span></div>
   <div><p>Arithmetic inside an <code>unchecked</code> block.</p></div>
@@ -87,7 +92,7 @@
 
 <section class="grid row art">
   <div class="col">
-    <h3>Not a vulnerability scanner that proves exploits</h3>
+    <h2>Not a vulnerability scanner that proves exploits</h2>
     <p>Quorum publishes corroborated idioms worth review, not confirmed vulnerabilities. A quorum
       means two independent lenses agreed on a shape, nothing more. The Friend.tech recall on the
       front page is a pattern match on a call idiom, not an allegation about that contract.</p>
@@ -102,9 +107,10 @@
   </aside>
 </section>
 
+</main>
 <div class="prev-next"><a href="../"><span class="lbl">Previous</span>Front page</a><a href="../memory/"><span class="lbl">Next</span>The memory</a></div>
 
-<nav class="colophon small" aria-label="Site">
+<footer class="colophon small">
   <span class="corner" aria-hidden="true"></span>
   <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
   <span class="links">
@@ -113,7 +119,7 @@
     <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim</a>
     <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
   </span>
-</nav>
+</footer>
 
 </div>
 </body>

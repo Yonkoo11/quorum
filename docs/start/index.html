@@ -13,8 +13,11 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../quorum.css">
+<script>try{var m=localStorage.getItem("quorum-theme");if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);}catch(e){}</script>
+<script src="../quorum.js" defer></script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="page">
 
 <div class="masthead-sm">
@@ -23,29 +26,31 @@
 </div>
 <nav class="nav small" aria-label="Sections">
   <ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/" aria-current="page">Run it</a></li></ul>
+  <button type="button" class="theme" id="theme-toggle" aria-live="polite">Theme</button>
 </nav>
 
+<main id="main">
 <section class="grid sec-head">
   <div class="t">
     <p class="kicker small">Run it</p>
-    <h2>On your own<br>machine.</h2>
+    <h1>On your own<br>machine.</h1>
     <p class="deck">Python 3.10 to 3.13. If <code>python3 -m venv</code> fails on your machine, the <code>uv</code> path avoids it entirely. No API key is needed to pull verified source from Base.</p>
   </div>
   <div class="aside">Memory is a local file. Nothing is uploaded. Only <code>attest</code>, <code>verify</code>, <code>reveal</code> and <code>import</code> touch a network.</div>
 </section>
 
-<section class="row"><pre class="terminal"><span class="prompt">$</span> git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
+<section class="row"><div class="copyable"><pre class="terminal" data-copy=""><span class="prompt">$</span> git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
 
 <span class="prompt">$</span> python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .   <span class="cmt"># or:</span>
-<span class="prompt">$</span> uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python -e .</pre></section>
-<section class="row"><pre class="terminal"><span class="cmt"># pull real verified source from Base mainnet (no API key needed)</span>
+<span class="prompt">$</span> uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python -e .</pre></div></section>
+<section class="row"><div class="copyable"><pre class="terminal" data-copy=""><span class="cmt"># pull real verified source from Base mainnet (no API key needed)</span>
 <span class="prompt">$</span> .venv/bin/quorum fetch 0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4 \
                        0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43 \
-                       0x4200000000000000000000000000000000000006</pre></section>
+                       0x4200000000000000000000000000000000000006</pre></div></section>
 
 <section class="grid row art">
   <div class="col">
-    <h3>Every command</h3>
+    <h2>Every command</h2>
     <dl class="rows cmds">
       <div><dt><code>quorum fetch &lt;address&gt;</code></dt><dd>Download verified contract source from Base into <code>targets/</code>.</dd></div>
       <div><dt><code>quorum run</code></dt><dd>Run the swarm over <code>targets/</code>. Add <code>--targets &lt;files&gt;</code> to point it somewhere else.</dd></div>
@@ -75,7 +80,7 @@
 
 <section class="grid row art">
   <div class="col">
-    <h3>The tests</h3>
+    <h2>The tests</h2>
     <p><code>.venv/bin/python -m pytest tests -q</code> runs 16 tests. They cover the idiom signature
       matching across contracts, that one lens never confirms, that two lenses reach quorum, that the
       deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is
@@ -89,9 +94,10 @@
   </aside>
 </section>
 
+</main>
 <div class="prev-next"><a href="../registry/"><span class="lbl">Previous</span>The registry</a><span></span></div>
 
-<nav class="colophon small" aria-label="Site">
+<footer class="colophon small">
   <span class="corner" aria-hidden="true"></span>
   <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
   <span class="links">
@@ -100,7 +106,7 @@
     <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim</a>
     <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
   </span>
-</nav>
+</footer>
 
 </div>
 </body>

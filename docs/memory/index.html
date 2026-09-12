@@ -13,8 +13,11 @@
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="../quorum.css">
+<script>try{var m=localStorage.getItem("quorum-theme");if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);}catch(e){}</script>
+<script src="../quorum.js" defer></script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="page">
 
 <div class="masthead-sm">
@@ -23,12 +26,14 @@
 </div>
 <nav class="nav small" aria-label="Sections">
   <ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/" aria-current="page">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul>
+  <button type="button" class="theme" id="theme-toggle" aria-live="polite">Theme</button>
 </nav>
 
+<main id="main">
 <section class="grid sec-head">
   <div class="t">
     <p class="kicker small">The memory</p>
-    <h2>Four calls carry<br>the product.</h2>
+    <h1>Four calls carry<br>the product.</h1>
     <p class="deck">Every Sibyl Memory read and write in this project is in one file, <code>quorum/memory.py</code>. Four call sites carry the whole product.</p>
   </div>
   <div class="aside">Every sighting, promotion, suppression and on-chain claim is also appended to the COLD journal, which is what makes a published claim auditable after the fact.</div>
@@ -62,7 +67,7 @@
 
 <section class="grid row art">
   <div class="col">
-    <h3>Coordination without a message bus</h3>
+    <h2>Coordination without a message bus</h2>
     <p>Quorum&rsquo;s agents are separate operating-system processes. They share one memory file and
       nothing else: no queue, no broker, no RPC between them.</p>
     <p>Three processes, twenty-four units of work, each done exactly once. Claiming is optimistic
@@ -91,7 +96,7 @@
 
 <section class="grid row art">
   <div class="col">
-    <h3>What counts as the same idiom</h3>
+    <h2>What counts as the same idiom</h2>
     <p>A signature hashes the idiom on a line, not the identifiers on it. That is what lets a pattern
       the swarm confirmed on one contract be recognised in a completely different one. Receiver and
       argument names collapse, the method name survives, and the target of a write keeps its class.</p>
@@ -106,9 +111,10 @@
   </aside>
 </section>
 
+</main>
 <div class="prev-next"><a href="../lenses/"><span class="lbl">Previous</span>The lenses</a><a href="../registry/"><span class="lbl">Next</span>The registry</a></div>
 
-<nav class="colophon small" aria-label="Site">
+<footer class="colophon small">
   <span class="corner" aria-hidden="true"></span>
   <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
   <span class="links">
@@ -117,7 +123,7 @@
     <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim</a>
     <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
   </span>
-</nav>
+</footer>
 
 </div>
 </body>
