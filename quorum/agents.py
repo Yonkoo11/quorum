@@ -15,7 +15,7 @@ from typing import Iterator
 from .memory import signature
 
 PRIVILEGED = re.compile(r"\b(owner|admin|treasury|fee|rate|price|oracle|paused|router|beneficiary)\w*\b", re.I)
-EXTERNAL_CALL = re.compile(r"\.(call|delegatecall|transfer|send)\s*[{(]|\.\w+\s*\{\s*value\s*:")
+EXTERNAL_CALL = re.compile(r"\.(call|delegatecall|transfer|send)\s*[{(]|\.\w+\s*\{\s*value\s*:|\.(call|delegatecall|callcode)\.value\s*\(")
 STATE_WRITE = re.compile(r"^\s*([A-Za-z_]\w*)\s*(\[[^\]]*\]|\.\w+)*\s*(=|\+=|-=)[^=]")
 FUNC = re.compile(r"^\s*function\s+(\w+)\s*\(", re.M)
 
@@ -90,7 +90,9 @@ def state_vars(src: str) -> set[str]:
 
 
 def _is_external(fn: Function) -> bool:
-    return bool(re.search(r"\b(external|public)\b", fn.header))
+    # Before 0.5 a function with no visibility keyword was public; from 0.5 the keyword is mandatory,
+    # so "not internal and not private" is callable from outside on every compiler version.
+    return not re.search(r"\b(internal|private)\b", fn.header)
 
 
 def _is_readonly(fn: Function) -> bool:

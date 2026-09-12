@@ -323,9 +323,10 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 | **Cross-session recognition** | Real. Learned on a teaching fixture, recognised in verified Base mainnet source in a new process from one sighting. The signature hashes the idiom on a line, not the identifiers on it. |
 | **Coordination without a message bus** | Real. Three OS processes, one memory file, 24 units each done exactly once; the HOT tier decided who did what. Take it away and all three do all 24. |
 | **Paid claims on chain** | Real. Fee burned through the token's own `burn(uint256)`, claim written with the burn hash in its calldata, both live on Robinhood Chain (block 60762176). Reveal and import ran live the same day. |
+| **Measured against labelled bugs** | [`bench/BENCHMARK.md`](bench/BENCHMARK.md), run 2026-09-12 on SmartBugs-curated (143 files). Reentrancy: the lenses alone find 94% of the labelled functions at 14% precision; the two-witness rule turns that into 39% precision at 68% recall. Access control 5% recall, arithmetic 0%: those lenses look for modern shapes (`unchecked` blocks, missing modifiers) that this 0.4-era corpus does not contain. The first run scored 1% overall; two idiom fixes to the lenses (`.call.value()`, implicit `public`) took it to 31%, and they were made on this corpus, so treat the number as tuned until a held-out run exists. [`bench/README.md`](bench/README.md) has the history. |
 | **Restraint on production code** | Measured, not asserted. On Aerodrome's Router, WETH9 and a Compound proxy: 0 confirmed, 11 candidates held back. |
 | **Tests** | 24, run in CI on every push. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that `attest` burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move. |
-| The lenses | Deliberately simple: regex-and-brace-matching heuristics over source text, not a compiler front end. The point of this project is the coordination and memory layer. |
+| The lenses | Deliberately simple: regex-and-brace-matching heuristics over source text, not a compiler front end. They cannot follow a storage alias (`var acc = Acc[msg.sender]; acc.balance -= x`), which is the largest remaining reentrancy miss in the benchmark. The point of this project is the coordination and memory layer. |
 | Vulnerability claims | **None.** Quorum publishes *corroborated idioms worth review*, not confirmed vulnerabilities. A quorum means two independent lenses agreed on a shape, nothing more. The Friend.tech recall above is a pattern match on a call idiom, not an allegation about that contract. |
 | The fixtures | [`fixtures/`](fixtures/) are vulnerable on purpose and are not deployed anywhere. |
 | The first claim | On Base, block 51138878, before the fee and the move. It reads back as a v1 claim with no burn to check. |
@@ -356,6 +357,7 @@ tests/           # 24 tests: test_quorum.py (the swarm) and test_token.py (the t
 fixtures/        # two teaching contracts, vulnerable on purpose
 docs/            # the site (runquorum.site): five pages, one stylesheet, one script, self-hosted fonts
 brand/           # the cards, marks and fonts the site and the posts are built from
+bench/           # the benchmark runner and its numbers, re-run with one command
 demo/            # the recorded terminal session and its beats
 video/           # the demo video pipeline
 ```

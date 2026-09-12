@@ -88,3 +88,28 @@ def test_recall_adds_provenance_without_rewriting_it():
     assert pattern["first_confirmed_on"] == "V.sol"
     assert pattern["recognised_on"] == ["Shares.sol"]
     assert sorted(pattern["confirmed_by"]) == ["callorder-lens", "guard-lens"]
+
+
+PRE_05_VAULT = """
+contract Bank {
+    mapping(address => uint) balances;
+    function CashOut(uint _am) {
+        if (_am <= balances[msg.sender]) {
+            if (msg.sender.call.value(_am)()) {
+                balances[msg.sender] -= _am;
+            }
+        }
+    }
+}
+"""
+
+
+def test_pre_05_idioms_reach_quorum():
+    """Before 0.5 the call was `.call.value(x)()` and a function with no visibility keyword was
+    public. 29 of the 32 reentrancy files in SmartBugs-curated use both; the first benchmark run
+    scored 0% on them because neither lens could see the call."""
+    from quorum.agents import callorder_lens, guard_lens
+
+    seen = {s.lens for s in callorder_lens("Bank.sol", PRE_05_VAULT) + guard_lens("Bank.sol", PRE_05_VAULT)
+            if s.function == "CashOut" and s.risk == "reentrancy"}
+    assert seen == {"callorder-lens", "guard-lens"}
