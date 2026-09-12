@@ -193,3 +193,17 @@ def test_attest_refuses_to_reuse_a_burn_that_is_not_the_signers_fee():
             except RuntimeError as exc:
                 assert "not reusing" in str(exc)
         assert calls == []
+
+
+def test_send_returns_a_0x_prefixed_hash():
+    """Explorer links and memory records must carry the canonical 0x form."""
+    from hexbytes import HexBytes
+    w3 = mock.Mock()
+    w3.eth.get_transaction_count.return_value = 0
+    w3.eth.estimate_gas.return_value = 21000
+    w3.eth.fee_history.return_value = {"baseFeePerGas": [10]}
+    w3.to_wei.return_value = 1
+    w3.eth.send_raw_transaction.return_value = HexBytes("ab" * 32)
+    w3.eth.wait_for_transaction_receipt.return_value = {"blockNumber": 1, "gasUsed": 1, "status": 1}
+    acct = mock.Mock(); acct.address = SIGNER
+    assert chain._send(w3, acct, {})["tx"] == "0x" + "ab" * 32

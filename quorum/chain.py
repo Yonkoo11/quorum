@@ -152,7 +152,7 @@ def _send(w3: Web3, acct, tx: dict[str, Any]) -> dict[str, Any]:
     signed = acct.sign_transaction(tx)
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
-    return {"tx": tx_hash.hex(), "block": receipt["blockNumber"], "gas_used": receipt["gasUsed"],
+    return {"tx": Web3.to_hex(tx_hash), "block": receipt["blockNumber"], "gas_used": receipt["gasUsed"],
             "status": receipt["status"]}
 
 
