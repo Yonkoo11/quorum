@@ -144,18 +144,37 @@ The signing key is read from the process environment at call time. It is never l
 
 The claims above form a public registry of "this swarm knew this bug shape at this block". A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone: each claim burns **1,000 QUORUM** through the token contract's own `burn(uint256)` on Robinhood Chain before the claim is written to the same chain, and the claim's calldata (`QUORUM2` shape) carries the burn's transaction hash. `quorum verify` checks both halves: the digest on chain, and that the burn it points at is a real burn of at least the fee by the same signer. Burn and claim share one chain, so one RPC verifies both. A claim whose fee was never burned does not verify.
 
+The first paid claim, 2026-09-12:
+
 ```console
-$ quorum attest
-signer 0xf994...4355  0.003483 ETH on Robinhood Chain  0 QUORUM on Robinhood Chain
+$ quorum attest --limit 1
+signer 0xf994...4355  0.002366 ETH on Robinhood Chain  101,830 QUORUM on Robinhood Chain
 each claim burns 1,000 QUORUM before it is written. Scanning is free; publishing is not.
-  not published VulnerableVault.sol:withdraw:reentrancy: publishing a claim burns 1,000 QUORUM; signer holds 0 on Robinhood Chain
+  burned 1,000 QUORUM
+    https://robinhoodchain.blockscout.com/tx/0x76da2f2ff9f847bc28ade38dacb054e27f1e37b338880dd7520b87dbc07bd5d7
+  claimed on Robinhood Chain FriendtechSharesV1.sol:buyShares:reentrancy
+    https://robinhoodchain.blockscout.com/tx/0xacd1231786291007fa64f789fc37a386b33b4a3bcfa49b45de78d41ae583efb0
+
+$ quorum verify 0xacd1231786291007fa64f789fc37a386b33b4a3bcfa49b45de78d41ae583efb0
+claim on Robinhood Chain  block 60748972  2026-09-12T02:24:34+00:00
+  published by 0xf9946775891a24462cD4ec885d0D4E2675C84355
+  digest       0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721
+  fee burned   1,000 QUORUM on Robinhood Chain, block 60748823, by the same signer
+  ...
+  digest recomputed from memory matches the chain
 ```
 
-Once a claim is paid, its owner can **reveal** the pattern behind it, and any other swarm can **import** it:
+The burn is saved to memory the moment it lands, before the claim is sent, so if the claim transaction fails the next `quorum attest` reuses that burn instead of paying a second fee.
+
+Once a claim is paid, its owner can **reveal** the pattern behind it, and any other swarm can **import** it. Run live the same day, the import into a memory database that had never seen anything:
 
 ```console
-$ quorum reveal VulnerableVault.sol:withdraw:reentrancy      # discloses the claimed fields on chain (QUORUM3)
-$ quorum import 0x<reveal tx>                                 # on someone else's machine
+$ quorum reveal FriendtechSharesV1.sol:buyShares:reentrancy      # discloses the claimed fields on chain (QUORUM3)
+  revealed on Robinhood Chain FriendtechSharesV1.sol:buyShares:reentrancy
+    https://robinhoodchain.blockscout.com/tx/0xe0cfcaffface2e2493dc802788120e6d490a786e060c3239cd5610debbb2c496
+
+$ quorum --db fresh.db import 0xe0cfcaffface2e2493dc802788120e6d490a786e060c3239cd5610debbb2c496   # someone else's machine
+reveal reentrancy  reentrancy:97d18d17cfa4494a  by 0xf9946775891a24462cD4ec885d0D4E2675C84355
   ok  digest matches the claim
   ok  revealed by the claim's signer
   ok  claim fee of 1,000 QUORUM burned
@@ -164,7 +183,7 @@ $ quorum import 0x<reveal tx>                                 # on someone else'
 
 An import checks three things and refuses if any fails: the revealed fields hash to the claim's digest, the reveal came from the claim's signer, and the claim's fee was burned. So a pattern nobody paid to publish never enters anyone's memory. That is the whole job of the token: it is the cost of being listened to by other people's swarms. Everything else, `run`, `swarm`, `recall`, `retire`, the memory tiers, the `--no-memory` test, has no token in it, and [`tests/test_token.py`](tests/test_token.py) asserts that the scanner modules never touch it.
 
-Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f62056a304eaf501F8714A26b9`](https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9). The first claim (Base, block 51138878) predates the fee and the move to Robinhood Chain; `quorum verify` looks on Robinhood Chain first, then Base, and reads it back as a v1 claim with no burn to check. `QUORUM_CHAIN_ID` can point new claims at any chain in `chain.CHAINS`; the fee burn is always on Robinhood Chain, where the token is.
+Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f62056a304eaf501F8714A26b9`](https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9). The first claim (Base, block 51138878) predates the fee and the move to Robinhood Chain; the first paid claim is the one above; `quorum verify` looks on Robinhood Chain first, then Base, and reads it back as a v1 claim with no burn to check. `QUORUM_CHAIN_ID` can point new claims at any chain in `chain.CHAINS`; the fee burn is always on Robinhood Chain, where the token is.
 
 ---
 
