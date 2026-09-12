@@ -148,3 +148,48 @@ def test_a_missing_claim_is_reported_not_invented():
             assert False, "should have raised"
         except RuntimeError as exc:
             assert "Robinhood Chain" in str(exc) and "Base" in str(exc)
+
+
+SIGNER = "0x" + "22" * 20
+
+
+def _attest_env(burn_valid=True, burn_from=SIGNER):
+    """Patches for attest with no chain: records the order of burn / record / claim."""
+    calls = []
+    patches = [
+        mock.patch.object(chain, "_w3"),
+        mock.patch.object(chain, "_account"),
+        mock.patch.object(chain, "burn_fee", side_effect=lambda: calls.append("burn") or {"tx": "0x" + "ab" * 32, "url": "u"}),
+        mock.patch.object(chain, "read_burn", return_value={"from": burn_from, "amount": chain.CLAIM_FEE, "block": 1, "status": 1, "valid": burn_valid}),
+        mock.patch.object(chain, "_send", side_effect=lambda *a: calls.append("claim") or {"tx": "0x1", "block": 1, "gas_used": 1, "status": 1}),
+    ]
+    return calls, patches
+
+
+def test_attest_records_the_burn_before_the_claim_is_sent():
+    calls, patches = _attest_env()
+    with patches[0], patches[1] as acct, patches[2], patches[3], patches[4]:
+        acct.return_value.address = SIGNER
+        chain.attest(FINDING, on_burn=lambda burn: calls.append("record"))
+    assert calls == ["burn", "record", "claim"]
+
+
+def test_attest_reuses_a_saved_burn_instead_of_burning_twice():
+    calls, patches = _attest_env()
+    with patches[0], patches[1] as acct, patches[2], patches[3], patches[4]:
+        acct.return_value.address = SIGNER
+        result = chain.attest(FINDING, burn_tx="0x" + "ab" * 32)
+    assert calls == ["claim"] and result["burn"]["reused"] and result["burn"]["tx"] == "0x" + "ab" * 32
+
+
+def test_attest_refuses_to_reuse_a_burn_that_is_not_the_signers_fee():
+    for kwargs in ({"burn_valid": False}, {"burn_from": "0x" + "33" * 20}):
+        calls, patches = _attest_env(**kwargs)
+        with patches[0], patches[1] as acct, patches[2], patches[3], patches[4]:
+            acct.return_value.address = SIGNER
+            try:
+                chain.attest(FINDING, burn_tx="0x" + "ab" * 32)
+                assert False, "should have refused"
+            except RuntimeError as exc:
+                assert "not reusing" in str(exc)
+        assert calls == []

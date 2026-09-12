@@ -273,17 +273,33 @@ def read_reveal(tx_hash: str) -> dict[str, Any]:
     }
 
 
-def attest(finding: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
-    """Burn the fee on Robinhood Chain, then publish the finding's digest to the claim chain."""
+def attest(finding: dict[str, Any], dry_run: bool = False, burn_tx: str | None = None,
+           on_burn=None) -> dict[str, Any]:
+    """Burn the fee on Robinhood Chain, then publish the finding's digest to the claim chain.
+
+    A burn and a claim are two transactions, so the burn can land and the claim
+    can still fail. on_burn, if given, is called with the burn the moment it is
+    final and before the claim is sent, so the caller can record it. burn_tx
+    reuses such a recorded burn on a retry instead of burning a second fee; it
+    must be a valid fee burn by this signer or the claim is refused.
+    """
     w3 = _w3()
     acct = _account(w3)
     digest = claim_digest(finding)
 
     if dry_run:
         return {"dry_run": True, "from": acct.address, "digest": digest.hex(), "chain_id": CHAIN_ID,
-                "fee": CLAIM_FEE, "token_balance": token_balance()}
+                "fee": CLAIM_FEE, "token_balance": token_balance(), "reuses_burn": burn_tx}
 
-    burn = burn_fee()
+    if burn_tx:
+        burn = read_burn(burn_tx)
+        if not burn["valid"] or burn["from"].lower() != acct.address.lower():
+            raise RuntimeError(f"{burn_tx} is not a valid {CLAIM_FEE // 10**TOKEN_DECIMALS:,} QUORUM burn by {acct.address}; not reusing it")
+        burn = {**burn, "tx": burn_tx, "url": TOKEN_EXPLORER + burn_tx, "reused": True}
+    else:
+        burn = burn_fee()
+        if on_burn:
+            on_burn(burn)
     tx = {
         "from": acct.address,
         "to": acct.address,

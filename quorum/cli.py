@@ -191,19 +191,31 @@ def cmd_attest(args) -> int:
     print(f"signer {chain.address()}  {chain.balance_wei()/1e18:.6f} ETH on {chain.chain_name()}  {held:,.0f} QUORUM on Robinhood Chain")
     print(f"each claim burns {fee:,} QUORUM before it is written. Scanning is free; publishing is not.")
     for f in pending[: args.limit]:
+        earlier_burn = f.get("fee_burn_tx")  # a fee already paid by an attempt whose claim never landed
+
+        def record(burn, f=f):
+            """Save the burn the moment it is final, so a failed claim cannot lose it."""
+            memory.client.set_entity("finding", f["key"], {**f, "fee_burn_tx": burn["tx"]})
+            memory.log(evaluated={"key": f["key"]}, acted={"burned": burn["tx"]}, forward={"fee": fee})
+
         try:
-            result = chain.attest(f, dry_run=args.dry_run)
+            result = chain.attest(f, dry_run=args.dry_run, burn_tx=earlier_burn, on_burn=record)
         except RuntimeError as exc:
             print(f"  {RED}not published{RESET} {f['key']}: {exc}")
+            saved = (memory.get_finding(f["key"]) or {}).get("fee_burn_tx")
+            if saved:
+                print(f"  {YELLOW}the fee burn is saved{RESET} ({saved[:14]}...). Run attest again and it is reused, not burned twice.")
             return 1
         if args.dry_run:
-            print(f"  {YELLOW}dry run{RESET} {f['key']}  digest {result['digest'][:18]}...  would burn {fee:,} QUORUM")
+            cost = f"would reuse burn {earlier_burn[:14]}..." if earlier_burn else f"would burn {fee:,} QUORUM"
+            print(f"  {YELLOW}dry run{RESET} {f['key']}  digest {result['digest'][:18]}...  {cost}")
             continue
         burn = result["burn"]
         memory.client.set_entity("finding", f["key"], {**f, "attested_tx": result["tx"], "fee_burn_tx": burn["tx"]})
         memory.log(evaluated={"key": f["key"]}, acted={"attested": result["tx"], "burned": burn["tx"]},
                    forward={"block": result["block"], "fee": fee})
-        print(f"  {GREEN}burned {fee:,} QUORUM{RESET}\n    {burn['url']}")
+        label = "reusing the fee burned earlier" if burn.get("reused") else f"burned {fee:,} QUORUM"
+        print(f"  {GREEN}{label}{RESET}\n    {burn['url']}")
         print(f"  {GREEN}claimed on {chain.chain_name()}{RESET} {f['key']}\n    {result['url']}")
     return 0
 
