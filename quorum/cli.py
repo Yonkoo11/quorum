@@ -3,6 +3,7 @@
     quorum fetch 0x...          pull a verified Base contract into targets/
     quorum run                  run the swarm over targets/
     quorum run --no-memory      the deletion test: same swarm, memory removed
+    quorum run --sarif f.sarif  the same run, confirmed findings also written as SARIF
     quorum recall               what the swarm knows before it reads any code
     quorum retire <key>         a human overrules a finding, permanently
     quorum attest               burn the fee, publish confirmed findings to Robinhood Chain
@@ -78,6 +79,15 @@ def cmd_run(args) -> int:
         print(f"  {DIM}suppressed {f['contract']}:{f['function']} {f['risk']} — retired earlier: {f['reason']}{RESET}")
 
     print(f"\n{report.summary()}")
+    if getattr(args, "sarif", None):
+        from pathlib import Path
+
+        from . import sarif
+        from .targets import TARGET_DIR
+
+        paths = args.targets or [str(p) for p in sorted(TARGET_DIR.glob("*.sol"))]
+        n = sarif.write(report, {Path(p).name: p for p in paths}, args.sarif)
+        print(f"{GREEN}wrote{RESET} {n} finding(s) as SARIF to {args.sarif}  {DIM}candidates are not findings and are not written{RESET}")
     if not memory.enabled:
         print(f"{RED}nothing was confirmed, recalled or suppressed: without memory the swarm "
               f"cannot corroborate, recognise or forget.{RESET}")
@@ -327,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--targets", nargs="*")
     p.add_argument("--json", action="store_true", help="machine-readable summary")
     p.add_argument("--agent-id", dest="agent_id", help="identity this agent claims work under")
+    p.add_argument("--sarif", metavar="PATH", help="also write confirmed findings as SARIF 2.1.0 (GitHub Security tab)")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("swarm", help="run N agent processes against one memory")

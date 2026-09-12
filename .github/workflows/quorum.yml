@@ -1,0 +1,25 @@
+# Quorum on its own teaching fixtures, every push. The two confirmed findings land in this
+# repository's Security tab with both witnesses named in each message. The fixtures are
+# vulnerable on purpose; the alerts are the demonstration.
+name: quorum
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e .
+      - run: quorum --db "$RUNNER_TEMP/quorum-memory.db" run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol --sarif quorum.sarif
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: quorum.sarif
+          category: quorum

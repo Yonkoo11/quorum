@@ -157,9 +157,11 @@ class SwarmMemory:
         """Add one lens's sighting to a candidate finding and return its new state."""
         body = self.get_finding(key) or {}
         seen_by = sorted(set(body.get("seen_by", [])) | {lens})
+        witnesses = {**body.get("witnesses", {}), lens: {"line": meta.get("line"), "evidence": meta.get("evidence")}}
         body = {
             **meta,
             "seen_by": seen_by,
+            "witnesses": witnesses,  # what each lens saw, kept per lens so a finding can name both
             "corroborations": len(seen_by),
             "status": body.get("status", "candidate"),
             "first_seen": body.get("first_seen", _now()),

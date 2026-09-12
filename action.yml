@@ -1,0 +1,32 @@
+name: Quorum
+description: Two lenses, one finding. Confirmed Solidity findings as SARIF, each naming both witnesses and what each read.
+branding:
+  icon: check-circle
+  color: green
+inputs:
+  targets:
+    description: Space-separated Solidity files or globs, relative to the repository root.
+    required: true
+  sarif:
+    description: Where to write the SARIF log.
+    default: quorum.sarif
+  upload:
+    description: "Upload the log to the Security tab. The calling job needs permissions: security-events: write."
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - shell: bash
+      run: python -m pip install --quiet "quorum-swarm @ git+https://github.com/Yonkoo11/quorum"
+    - shell: bash
+      run: |
+        shopt -s globstar nullglob
+        quorum --db "$RUNNER_TEMP/quorum-memory.db" run --targets ${{ inputs.targets }} --sarif "${{ inputs.sarif }}"
+    - if: inputs.upload == 'true'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif }}
+        category: quorum

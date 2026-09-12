@@ -158,3 +158,31 @@ def test_callorder_lens_follows_a_storage_alias():
     """`var acc = Accounts[msg.sender]; acc.balance -= x` writes storage through a local name.
     The largest remaining reentrancy miss on SmartBugs-curated was this shape."""
     assert _reentrancy_lenses_on(ALIASED_VAULT, "CashOut") == {"callorder-lens", "guard-lens"}
+
+
+def test_sarif_names_both_witnesses_and_no_candidates(tmp_path):
+    """A SARIF result is the product's claim in the buyer's tool: both lenses, what each read,
+    the idiom signature as the fingerprint. Candidates are not findings and are not written."""
+    import json
+    import subprocess
+    import sys
+
+    out = tmp_path / "q.sarif"
+    fixtures = ["fixtures/VulnerableVault.sol", "fixtures/OpenFeeSetter.sol"]
+    subprocess.run([sys.executable, "-m", "quorum.cli", "--db", _db(), "run", "--targets", *fixtures,
+                    "--sarif", str(out)], check=True, capture_output=True)
+    log = json.loads(out.read_text())
+    results = log["runs"][0]["results"]
+    assert len(results) == 3, "confirmed 2, recalled 1 on the fixtures; the five candidates are left out"
+    assert {r["ruleId"] for r in results} == {"reentrancy", "unguarded-state-write"}
+    quorum = [r for r in results if r["properties"]["confirmedVia"] == "quorum"]
+    recalled = [r for r in results if r["properties"]["confirmedVia"] == "recall"]
+    assert len(quorum) == 2 and len(recalled) == 1
+    for r in quorum:
+        assert len(r["properties"]["seenBy"]) == 2
+        for lens in r["properties"]["seenBy"]:
+            assert lens in r["message"]["text"]
+    assert "Recognised from memory" in recalled[0]["message"]["text"]
+    for r in results:
+        assert r["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] in fixtures
+        assert r["partialFingerprints"]["quorum/idiom/v1"].startswith(r["ruleId"] + ":")
