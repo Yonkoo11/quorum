@@ -34,9 +34,9 @@
   --t-label: 12px;
   --t-mono: clamp(13px, 0.95vw, 14px);
   --t-body: 16px;
-  --t-number: clamp(24px, 2.4vw, 34px);
-  --t-sign: clamp(24px, 3.4vw, 40px);
-  --t-display: clamp(36px, 7vw, 80px);
+  --t-md: clamp(24px, 3vw, 36px);
+  --t-brand: 22px;
+  --t-display: clamp(32px, 7vw, 80px);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --dur: 150ms;
   --z-bar: 20; --z-grain: 40; --z-skip: 50;
@@ -84,7 +84,7 @@ body { background: var(--ground); color: var(--ink); font-family: var(--sans); f
 .display { font-family: var(--display); font-weight: 400; text-transform: uppercase; line-height: .92; letter-spacing: -.03em;
   text-wrap: balance; overflow-wrap: anywhere; }
 pre, .hash { font-family: var(--mono); font-size: var(--t-mono); }
-.number { font-size: var(--t-number); line-height: 1.1; letter-spacing: -.02em; }
+.number { font-size: var(--t-md); line-height: 1.1; letter-spacing: -.02em; }
 .number:empty { display: none; }
 code { font-family: inherit; font-size: inherit; background: var(--tint); padding: 0 .3em; border-radius: var(--radius-sm); }
 pre code { background: none; padding: 0; }
@@ -135,13 +135,13 @@ pre.terminal:focus-visible { box-shadow: inset 0 0 0 3px var(--green); }
 .bar { position: sticky; top: 0; z-index: var(--z-bar); background: var(--ground); border-bottom: 2px solid var(--ink); }
 .bar .wrap { display: flex; align-items: center; gap: var(--sp-4); min-height: 64px; }
 .brand { display: inline-flex; align-items: center; gap: var(--sp-3); min-height: var(--tap); text-decoration: none;
-  font-family: var(--display); font-weight: 400; font-size: 22px; letter-spacing: -.02em; text-transform: uppercase; line-height: 1; }
+  font-family: var(--display); font-weight: 400; font-size: var(--t-brand); letter-spacing: -.02em; text-transform: uppercase; line-height: 1; }
 .bar nav { margin-left: auto; }
 .bar nav ul { list-style: none; display: flex; flex-wrap: wrap; gap: 0 var(--sp-1); }
 .bar nav a { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-3); white-space: nowrap;
   text-decoration: none; position: relative; border-radius: var(--radius-sm); }
 .bar nav a[aria-current="page"]::after { content: ""; position: absolute; left: var(--sp-3); right: var(--sp-3); bottom: 6px; height: 3px; background: var(--green); }
-.theme { min-width: 96px; }
+.theme { min-width: 96px; box-shadow: none; border-color: var(--hair); background: transparent; }
 
 /* ---------- the statement, before the board ---------- */
 .statement { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sp-5) var(--sp-6);
@@ -171,14 +171,16 @@ pre.terminal:focus-visible { box-shadow: inset 0 0 0 3px var(--green); }
 .plabel .aside { margin-left: auto; color: var(--muted); text-align: right; }
 .panel p + p { margin-top: calc(-1 * var(--sp-4) + var(--sp-2)); }
 .panel .more { align-self: flex-start; margin-top: auto; }
-.panel .sign { font-size: var(--t-sign); max-width: 16ch; }
+.panel .sign { font-size: var(--t-md); max-width: 16ch; }
 
 /* terminal: the black bleeds to the panel's side edges, a window in the sheet */
 pre.terminal { background: var(--term-bg); color: var(--term-fg); padding: var(--sp-5) var(--sp-4); margin-inline: calc(-1 * var(--pad));
-  line-height: 1.6; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; display: block; border-radius: var(--radius-0); }
+  line-height: 1.6; overflow-x: auto; white-space: pre-wrap; overflow-wrap: normal; tab-size: 4; display: block; border-radius: var(--radius-0); }
 pre.terminal[hidden] { display: none; }
 pre.terminal .prompt, pre.terminal .cmt { color: var(--term-dim); }
 pre.terminal .hi { color: var(--green); }
+pre.terminal .nb { white-space: nowrap; }
+pre.terminal .url { overflow-wrap: anywhere; }
 .copyable { position: relative; margin-inline: calc(-1 * var(--pad)); }
 .copyable pre.terminal { margin-inline: 0; padding-top: calc(var(--tap) + var(--sp-5)); }
 .copy { position: absolute; top: var(--sp-3); right: var(--sp-3); z-index: 2; appearance: none; background: var(--term-bg); color: var(--term-fg);
@@ -233,7 +235,7 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
 /* ---------- footer: the black corner block carries the sign-off ---------- */
 .foot { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sp-6); padding-bottom: var(--sp-9); align-items: stretch; }
 .slab { background: var(--ink); color: var(--ground); padding: var(--sp-6); box-shadow: var(--shadow-2); display: flex; flex-direction: column; gap: var(--sp-6); }
-.slab .sign { font-size: var(--t-sign); max-width: 14ch; margin-top: auto; }
+.slab .sign { font-size: var(--t-md); max-width: 14ch; margin-top: auto; }
 .slab .mark circle { stroke: var(--ground); }
 .foottext { display: flex; flex-direction: column; gap: var(--sp-3); justify-content: flex-end; }
 .foottext .links { display: flex; flex-wrap: wrap; gap: 0 var(--sp-4); max-width: none; }
@@ -241,6 +243,7 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
   letter-spacing: .2em; text-transform: uppercase; border-bottom: 3px solid var(--green); padding: 0; margin: 0; }
 
 /* ---------- hover: transform or shadow, never colour alone, only where hover exists and motion is welcome ---------- */
+/* Every :hover rule on the page lives in this block; audit.js reports them because its regex cannot see the enclosing @media. */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .btn, .switch button, .bar nav a, .more, .copy, .foottext .links a, .brand, .prevnext a, p a, .rows dd a, td a {
     transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
@@ -279,7 +282,7 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
   .board { gap: var(--sp-5); padding-block: var(--sp-5) var(--sp-8); }
   .band, .stack { display: contents; }
   .front .sw { order: 1; } .front .term { order: 2; } .front .claim { order: 3; } .front .supply { order: 4; } .front .lenses { order: 5; } .front .cost { order: 6; }
-  pre.terminal { padding: var(--sp-4); }
+  pre.terminal { padding: var(--sp-4); overflow-wrap: anywhere; }
   .copyable pre.terminal { padding-top: calc(var(--tap) + var(--sp-4)); }
   .copy { top: var(--sp-2); right: var(--sp-2); }
   .rows > div, .rows.code > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--sp-1); }
@@ -289,7 +292,7 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
   .ledger tr { border-top: 1px solid var(--hair); padding-block: var(--sp-3); display: grid; grid-template-columns: 42px minmax(0, 1fr); column-gap: var(--sp-2); }
   .ledger tr > td.markcell { grid-row: 1 / span 6; }
   .ledger tr.nomark { grid-template-columns: minmax(0, 1fr); }
-  .ledger td, .ledger tbody tr:last-child td { border: 0; padding: 2px 0; width: auto; }
+  .ledger td, .ledger tbody tr:last-child td { border: 0; padding: var(--sp-1) 0; width: auto; }
   .ledger td.markcell { padding-top: var(--sp-1); }
   .ledger td.tier { white-space: normal; }
   .ledger td[data-label]::before { content: attr(data-label); display: block; color: var(--muted); }
