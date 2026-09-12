@@ -1,0 +1,36 @@
+{
+  "corpus": "DeFiVulnLabs",
+  "source": "https://github.com/SunWeb3Sec/DeFiVulnLabs",
+  "scan": "src/test/*.sol",
+  "how_labelled": "By hand, 2026-09-12, before the lenses were run on this corpus. One label per file for the bug the file teaches, only where that bug is one of the three risks Quorum covers. Every file under `scan` is scanned, so a confirmed finding in an attack contract, a test harness or a remediated twin counts as false. Quorum keys a finding by file, function and risk, not by contract, so a vulnerable contract and its remediated twin in the same file share a key; that is a limitation of Quorum's key and it is recorded here rather than hidden.",
+  "labels": [
+    {"path": "src/test/Reentrancy.sol", "function": "withdrawFunds", "risk": "reentrancy",
+     "why": "EtherStore sends ether with .call before writing balances. EtherStoreRemediated:withdrawFunds shares the key."},
+    {"path": "src/test/ERC777-reentrancy.sol", "function": "claim", "risk": "reentrancy",
+     "why": "SimpleBank calls token.transfer, whose ERC777 hook re-enters, before writing _mints."},
+    {"path": "src/test/ReadOnlyReentrancy.sol", "function": "getReward", "risk": "reentrancy",
+     "why": "VulnContract reads a pool price that is stale during the pool's own callback. A view function; neither reentrancy lens looks at views."},
+    {"path": "src/test/Unprotected-callback.sol", "function": "mint", "risk": "reentrancy",
+     "why": "MaxMint721 calls _safeMint in a loop; onERC721Received re-enters mint before the balance check catches up."},
+    {"path": "src/test/Overflow.sol", "function": "increaseLockTime", "risk": "unsafe-math",
+     "why": "TimeLock on 0.7.6: lockTime += x wraps."},
+    {"path": "src/test/Overflow2.sol", "function": "_transfer", "risk": "unsafe-math",
+     "why": "TokenWhaleChallenge on 0.7.6: balanceOf[msg.sender] -= value underflows via transferFrom."},
+    {"path": "src/test/Divmultiply.sol", "function": "price", "risk": "unsafe-math",
+     "why": "Miscalculation divides before it multiplies. Calculation:price, the correct twin, shares the key."},
+    {"path": "src/test/Precision-loss.sol", "function": "getCurrentReward", "risk": "unsafe-math",
+     "why": "SimplePool rounds the reward to zero: the denominator is 365 days * 1e18 against a 6-decimal debt."},
+    {"path": "src/test/Visibility.sol", "function": "changeOwner", "risk": "unguarded-state-write",
+     "why": "ownerGame.changeOwner is public with no modifier and no sender check."},
+    {"path": "src/test/txorigin.sol", "function": "transfer", "risk": "unguarded-state-write",
+     "why": "Wallet.transfer authorises on tx.origin. Mapped to the access-control risk for consistency with the SmartBugs mapping; it moves value rather than writing storage, so the modifier and sender lenses are not built to see it."}
+  ],
+  "excluded": [
+    {"path": "src/test/Backdoor-assembly.sol", "why": "a hidden admin privilege via sstore, not a missing guard"},
+    {"path": "src/test/Selfdestruct.sol", "why": "force-fed ether breaking a balance invariant; not one of the three risks"},
+    {"path": "src/test/Selfdestruct2.sol", "why": "same"},
+    {"path": "src/test/SenseFinance_exp.sol", "why": "the vulnerable contract is reached through an interface; not in the file"},
+    {"path": "src/test/Immunefi_ch2.sol", "why": "proxy storage layout; not one of the three risks"},
+    {"path": "src/test/UnsafeCall.sol", "why": "call injection; not one of the three risks"}
+  ]
+}
