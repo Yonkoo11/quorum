@@ -3,6 +3,8 @@ import { Composition, registerRoot } from "remotion";
 import { MainVideo } from "./MainVideo";
 import { SocialClip, SOCIAL_DURATION, SOCIAL_FPS, SOCIAL_H, SOCIAL_W } from "./SocialClip";
 import { FPS, H, TOTAL_FRAMES, W } from "./constants";
+import { UiLaunch } from "./ui/UiLaunch";
+import { UI_FPS, UI_H, UI_TOTAL_FRAMES, UI_W } from "./ui/constants";
 
 export const RemotionRoot: React.FC = () => (
   <>
@@ -15,6 +17,7 @@ export const RemotionRoot: React.FC = () => (
       width={SOCIAL_W}
       height={SOCIAL_H}
     />
+    <Composition id="UiLaunch" component={UiLaunch} durationInFrames={UI_TOTAL_FRAMES} fps={UI_FPS} width={UI_W} height={UI_H} />
   </>
 );
 
