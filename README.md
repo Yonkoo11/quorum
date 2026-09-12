@@ -97,7 +97,7 @@ No key, no wallet, no GPU. Every line below was run on a fresh memory file befor
 git clone https://github.com/Yonkoo11/quorum && cd quorum
 python3 -m venv .venv && .venv/bin/pip install -e .          # or: uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 
-.venv/bin/python -m pytest tests -q                           # → 25 passed
+.venv/bin/python -m pytest tests -q                           # → 27 passed
 .venv/bin/quorum --db fresh.db run --targets fixtures/*.sol   # → confirmed 2 | recalled 1 | candidates 5
 .venv/bin/quorum --db fresh.db run --no-memory --targets fixtures/*.sol
                                                               # → confirmed 0 | recalled 0: without memory the swarm
@@ -323,10 +323,10 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 | **Cross-session recognition** | Real. Learned on a teaching fixture, recognised in verified Base mainnet source in a new process from one sighting. The signature hashes the idiom on a line, not the identifiers on it. |
 | **Coordination without a message bus** | Real. Three OS processes, one memory file, 24 units each done exactly once; the HOT tier decided who did what. Take it away and all three do all 24. |
 | **Paid claims on chain** | Real. Fee burned through the token's own `burn(uint256)`, claim written with the burn hash in its calldata, both live on Robinhood Chain (block 60762176). Reveal and import ran live the same day. |
-| **Measured against labelled bugs** | Two corpora, one harsh rule: a finding counts only if it names a labelled function. [`bench/BENCHMARK.md`](bench/BENCHMARK.md), SmartBugs-curated (143 files from 2017, 71 targets): two-witness 31% recall at 39% precision, reentrancy 68% / 39%, after two idiom fixes made on that corpus, so tuned. [`bench/HELDOUT.md`](bench/HELDOUT.md), DeFiVulnLabs (57 modern files, 10 targets hand-labelled before the run, no lens changed since): 30% recall at 60% precision. [`bench/SLITHER.md`](bench/SLITHER.md) and [`bench/SLITHER-HELDOUT.md`](bench/SLITHER-HELDOUT.md) score Slither the same way: 48% / 40% on SmartBugs, where it beats the lenses on reentrancy (90% / 62%), and 40% / 20% on the held-out set. Arithmetic is 0% for both tools on 2017 code, and Quorum's arithmetic pair looks for two different bugs, so it can never agree with itself. [`bench/README.md`](bench/README.md) has the tables, the history and the caveats. |
+| **Measured against labelled bugs** | Two corpora, one harsh rule: a finding counts only if it names a labelled function. [`bench/BENCHMARK.md`](bench/BENCHMARK.md), SmartBugs-curated (143 files from 2017, 73 targets): two-witness 40% recall at 44% precision, reentrancy 90% / 44%, after four lens fixes made on that corpus, so tuned. [`bench/HELDOUT.md`](bench/HELDOUT.md), DeFiVulnLabs (57 modern files, 10 targets hand-labelled before the run; the later fixes did not move it): 30% recall at 60% precision. [`bench/SLITHER.md`](bench/SLITHER.md) and [`bench/SLITHER-HELDOUT.md`](bench/SLITHER-HELDOUT.md) score Slither the same way: 48% / 41% on SmartBugs, where it finds the same reentrancy targets at higher precision (90% / 62%), and 40% / 20% on the held-out set. Arithmetic is 0% for both tools on 2017 code, and Quorum's arithmetic pair looks for two different bugs, so it can never agree with itself. [`bench/README.md`](bench/README.md) has the tables, the history and the caveats. |
 | **Restraint on production code** | Measured, not asserted. On Aerodrome's Router, WETH9 and a Compound proxy: 0 confirmed, 11 candidates held back. |
-| **Tests** | 25, run in CI on every push. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that `attest` burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move, and that the pre-0.5 call idiom reaches quorum. |
-| The lenses | Deliberately simple: regex-and-brace-matching heuristics over source text, not a compiler front end. They cannot follow a storage alias (`var acc = Acc[msg.sender]; acc.balance -= x`), which is the largest remaining reentrancy miss in the benchmark. The point of this project is the coordination and memory layer. |
+| **Tests** | 27, run in CI on every push. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that `attest` burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move, that the pre-0.5 call idiom reaches quorum, that an unnamed 0.4 fallback is parsed as a function, and that the call-order lens follows a storage alias. |
+| The lenses | Deliberately simple: regex-and-brace-matching heuristics over source text, not a compiler front end. They read lines rather than a call graph, which is why Slither is more precise on the same reentrancy targets, and they key a finding by file, function and risk, so two contracts in one file can share a key. The point of this project is the coordination and memory layer. |
 | Vulnerability claims | **None.** Quorum publishes *corroborated idioms worth review*, not confirmed vulnerabilities. A quorum means two independent lenses agreed on a shape, nothing more. The Friend.tech recall above is a pattern match on a call idiom, not an allegation about that contract. |
 | The fixtures | [`fixtures/`](fixtures/) are vulnerable on purpose and are not deployed anywhere. |
 | The first claim | On Base, block 51138878, before the fee and the move. It reads back as a v1 claim with no burn to check. |
@@ -339,7 +339,7 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 - **Language:** Python 3.10 to 3.13. No framework; the CLI is `argparse`.
 - **Memory:** [Sibyl Memory](https://github.com/Sibyl-Labs/Sibyl-Memory), all five tiers, load-bearing. Every read and write in one file.
 - **Chain:** `web3.py` against Robinhood Chain (chain id 4663) for the token, the fee burn, claims, reveals and imports; Base mainnet for the first claim and for verified target source via Blockscout (no API key needed).
-- **Tests:** pytest, 25 tests, no chain access needed (the chain is mocked where it matters).
+- **Tests:** pytest, 27 tests, no chain access needed (the chain is mocked where it matters).
 - **Site:** static HTML, CSS and JavaScript in [`docs/`](docs/), served by GitHub Pages at [runquorum.site](https://runquorum.site); the in-browser verifier reads the chain through public JSON-RPC nodes.
 - **Demo:** the terminal recording lives in [`demo/`](demo/) and the video assembly in [`video/`](video/).
 
@@ -353,7 +353,7 @@ quorum/
   chain.py       # claim digest, QUORUM1/2/3 calldata, fee schedule, burn check, attest, verify, reveal, import
   targets.py     # quorum fetch: verified source from Blockscout
   cli.py         # the command line
-tests/           # 25 tests: test_quorum.py (the swarm) and test_token.py (the token boundary)
+tests/           # 27 tests: test_quorum.py (the swarm) and test_token.py (the token boundary)
 fixtures/        # two teaching contracts, vulnerable on purpose
 docs/            # the site (runquorum.site): five pages, one stylesheet, one script, self-hosted fonts
 brand/           # the cards, marks and fonts the site and the posts are built from
@@ -384,7 +384,7 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/quorum verify <tx>                    # check a claim against memory
 .venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   # what it learned since
 .venv/bin/quorum run --no-memory                # the deletion test
-.venv/bin/python -m pytest tests -q             # 25 tests
+.venv/bin/python -m pytest tests -q             # 27 tests
 ```
 
 `quorum attest` additionally needs `DEPLOYER_PRIVATE_KEY` in the environment, gas on Robinhood Chain, and the claim fee in QUORUM. `QUORUM_RPC` overrides the public Robinhood Chain endpoint; `BASE_RPC` overrides the public Base endpoint used only to read the first claim.
@@ -394,7 +394,7 @@ Commands: `fetch`, `run`, `swarm`, `recall [--since]`, `retire <key> --reason`, 
 ## Tests
 
 ```bash
-.venv/bin/python -m pytest tests -q             # 25 passed
+.venv/bin/python -m pytest tests -q             # 27 passed
 ```
 
 [`tests/test_quorum.py`](tests/test_quorum.py) drives the swarm end to end on the fixtures: one lens never confirms, two lenses from different evidence do, the signature matches across contracts, the deletion test confirms nothing, a retirement sticks. [`tests/test_token.py`](tests/test_token.py) pins the calldata shapes, the digest a reveal must reproduce, the burn rules a claim must satisfy, that `attest` burns before it claims and reuses a saved burn rather than paying twice, that the scanner modules never import the chain, and that the first Base claim still reads after the move to Robinhood Chain. The same suite runs in [CI](https://github.com/Yonkoo11/quorum/actions/workflows/tests.yml) on every push.
