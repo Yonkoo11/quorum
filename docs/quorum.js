@@ -37,12 +37,23 @@
       bOn = document.getElementById("btn-on"),
       bOff = document.getElementById("btn-off");
   if (on && off && bOn && bOff) {
-    var marks = document.querySelectorAll("[data-mark]");
+    var marks = document.querySelectorAll("[data-mark]"),
+        swOn = document.getElementById("sw-on"),
+        swOff = document.getElementById("sw-off"),
+        state = document.getElementById("term-state"),
+        /* the memory page keeps both panes in view; the switch then chooses which one is the record */
+        keep = on.hasAttribute("data-keep");
     var show = function (memoryOn) {
-      on.hidden = !memoryOn;
-      off.hidden = memoryOn;
+      if (!keep) {
+        on.hidden = !memoryOn;
+        off.hidden = memoryOn;
+      }
+      if (swOn) swOn.hidden = !memoryOn;
+      if (swOff) swOff.hidden = memoryOn;
+      if (state) state.textContent = memoryOn ? "Memory on" : "Memory off";
       bOn.setAttribute("aria-pressed", String(memoryOn));
       bOff.setAttribute("aria-pressed", String(!memoryOn));
+      document.body.setAttribute("data-memory", memoryOn ? "on" : "off");
       for (var i = 0; i < marks.length; i++) {
         marks[i].setAttribute("data-mark", memoryOn ? "agreed" : "void");
       }
@@ -81,7 +92,7 @@
           { name: "Robinhood Chain", rpcs: ["https://rpc.mainnet.chain.robinhood.com"] },
           { name: "Base", rpcs: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"] }
         ],
-        btn = document.getElementById("verify-btn"),
+        vbtn = document.getElementById("verify-btn"),
         out = document.getElementById("verify-out"),
         status = document.getElementById("verify-status");
 
@@ -134,9 +145,9 @@
       if (cls) el.className = cls;
     };
 
-    btn.addEventListener("click", function () {
-      btn.disabled = true;
-      status.textContent = "Reading Base…";
+    vbtn.addEventListener("click", function () {
+      vbtn.disabled = true;
+      status.textContent = "Reading Robinhood Chain…";
       findTx(TX).then(function (found) {
         return onChain(found.chain, "eth_blockNumber", []).then(function (h) {
           return { tx: found.tx, chain: found.chain, head: parseInt(h, 16) };
@@ -166,19 +177,20 @@
               ? "matches the digest printed on this page"
               : "does NOT match the digest printed on this page", match ? "ok" : "bad");
         status.textContent = "Read from " + res.chain.name + " just now, in your browser. Nothing was sent anywhere.";
-        btn.disabled = false;
-        btn.textContent = "Read it again";
+        vbtn.disabled = false;
+        vbtn.textContent = "Read it again";
       }).catch(function (e) {
         status.textContent = "Could not read the claim from this browser (" + e.message +
           "). The facts above come from the transaction itself and are unchanged.";
-        btn.disabled = false;
+        vbtn.disabled = false;
       });
     });
   }
 
   /* ---------- live token supply, read from Robinhood Chain ---------- */
-  var sup = document.getElementById("supply");
+  var sup = document.getElementById("supply"), supN = document.getElementById("supply-n");
   if (sup) {
+    sup.textContent = "Reading the token contract…";
     fetch("https://rpc.mainnet.chain.robinhood.com", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -189,8 +201,14 @@
     }).then(function (r) { return r.json(); }).then(function (j) {
       if (!j.result) throw new Error("no result");
       var whole = BigInt(j.result) / (10n ** 18n);
-      sup.textContent = whole.toLocaleString() + " QUORUM in existence, read from the chain just now";
+      if (supN) {
+        supN.textContent = whole.toLocaleString();
+        sup.textContent = "QUORUM in existence, read from the chain just now";
+      } else {
+        sup.textContent = whole.toLocaleString() + " QUORUM in existence, read from the chain just now";
+      }
     }).catch(function () {
+      if (supN) supN.textContent = "";
       sup.textContent = "Supply is read from the token contract; this browser could not reach the chain.";
     });
   }

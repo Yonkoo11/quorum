@@ -4,59 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The registry · Quorum</title>
-<meta name="description" content="Claims on Base, and what it costs to publish one.">
+<meta name="description" content="Claims on chain, and what it costs to publish one.">
 <link rel="icon" href="../icon-256.png">
 <meta name="theme-color" content="#f3eee4">
 <meta property="og:title" content="The registry · Quorum">
-<meta property="og:description" content="Claims on Base, and what it costs to publish one.">
+<meta property="og:description" content="Claims on chain, and what it costs to publish one.">
 <meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="../quorum.css">
 <script>try{var m=localStorage.getItem("quorum-theme");if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);}catch(e){}</script>
+<style>
+@font-face { font-family: "Archivo Black"; src: url("../fonts/ArchivoBlack-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../fonts/IBMPlexSans-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+</style>
+<link rel="stylesheet" href="../quorum.css">
 <script src="../quorum.js" defer></script>
 </head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
+<body data-memory="on">
+<a class="skip label" href="#main">Skip to content</a>
+<svg class="grain" aria-hidden="true" focusable="false"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#grain)"/></svg>
+<svg class="defs" aria-hidden="true" focusable="false"><defs><clipPath id="lens-clip"><circle cx="19" cy="19" r="17"/></clipPath></defs></svg>
 <header class="bar">
   <div class="wrap">
-    <a class="brand" href="../"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="bar-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
-<g clip-path="url(#bar-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
-<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
-    <nav aria-label="Sections"><ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/" aria-current="page">Registry</a></li><li><a href="../start/">Run it</a></li></ul></nav>
+    <a class="brand" href="../"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><span>Quorum</span></a>
+    <nav aria-label="Sections"><ul class="label"><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/" aria-current="page">Registry</a></li><li><a href="../start/">Run it</a></li></ul></nav>
     <button type="button" class="btn theme" id="theme-toggle">Theme</button>
   </div>
 </header>
 <main id="main">
-<section class="pagehead wrap">
-  <div><p class="cap">The registry</p><h1 class="stmt">Knew this shape.<br>At this block.</h1><p class="deck">When a finding reaches quorum it stops being a private opinion. <code>quorum attest</code> writes the claim digest to Robinhood Chain, where the token is, as a self-addressed 0-value transaction. The finding itself never leaves the machine.</p></div>
-  <p class="aside">Claims default to the token's chain so a verifier needs one RPC, not two. The first claim was written to Base at block 51138878, before the fee and before the move, and <code>quorum verify</code> still finds it there. The signing key is read from the process environment at call time and never logged.</p>
-</section>
-
-<section class="split wrap">
-  <div>
-    <h2>What goes on chain</h2>
-    <p>The digest commits to the risk, the idiom signature, the contract, the function and the exact set of lenses that corroborated it. What goes on chain is a timestamped, verifiable claim that this swarm knew this shape at this block, which is what a disclosure timeline actually needs.</p>
-    <p><code>quorum verify</code> reads the claim back and recomputes the digest from memory: the claim is only meaningful if the evidence behind it is still there and still hashes the same. The transaction hash is written back onto the finding in memory, so the claim and its evidence stay joined.</p>
-  </div>
-  <div class="side sheet">
-    <p class="cap">The first paid claim, on Robinhood Chain</p>
-    <dl class="rows">
-      <div><dt>Claimed</dt><dd>FriendtechSharesV1.sol:buyShares:reentrancy</dd></div>
-      <div><dt>Block</dt><dd class="num">60762176 &middot; 2026-09-12T02:46:55+00:00</dd></div>
-      <div><dt>Fee burn</dt><dd class="num">100,000 QUORUM at block 60762150, <a href="https://robinhoodchain.blockscout.com/tx/0x2005d3b84a3286980ff134d0641d120e7859e13568abf003e393300ac3c9b34a">burn transaction</a></dd></div>
-      <div><dt>Signer</dt><dd><code>0xf9946775891a24462cD4ec885d0D4E2675C84355</code></dd></div>
-      <div><dt>Digest</dt><dd><code>0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721</code></dd></div>
-    </dl>
-    <p style="margin-top:var(--sp-4)"><a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Read the claim on Blockscout</a></p>
-    <p class="fine" style="margin-top:var(--sp-2)">The first claim of all, <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Base block 51138878</a>, predates the fee and the move and still verifies.</p>
-  </div>
-</section>
-
-<section class="band"><div class="wrap"><div class="head"><span class="cap">quorum verify</span></div><pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum verify 0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655
+<section class="statement wrap" aria-labelledby="h-stmt"><h1 class="display" id="h-stmt">Knew this shape. <br><span class="g">At this block.</span></h1><p class="lede">When a finding reaches quorum it stops being a private opinion. <code>quorum attest</code> writes the claim digest to Robinhood Chain, where the token is, as a self-addressed 0-value transaction. The finding itself never leaves the machine.</p></section><div class="board wrap" id="board"><div class="band c-1"><section class="panel findings" id="findings" aria-labelledby="h-findings"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-findings">Findings</h2><span class="aside">Agreement is signal.</span></header><div class="tablewrap"><table class="ledger"><thead><tr><th>Mark</th><th>Finding</th><th>Risk</th><th>Corroborated by</th><th>State</th></tr></thead><tbody><tr data-state="agreed"><td class="markcell"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg></td><td class="fn" data-label="Finding">VulnerableVault.sol:<wbr>withdraw</td><td data-label="Risk">reentrancy</td><td data-label="Corroborated by">callorder-lens, guard-lens</td><td data-label="State">Confirmed</td></tr><tr data-state="agreed"><td class="markcell"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg></td><td class="fn" data-label="Finding">OpenFeeSetter.sol:<wbr>setFeeRate</td><td data-label="Risk">unguarded-state-write</td><td data-label="Corroborated by">modifier-lens, sender-lens</td><td data-label="State">Confirmed</td></tr><tr data-state="agreed"><td class="markcell"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg></td><td class="fn" data-label="Finding">FriendtechSharesV1.sol:<wbr>buyShares</td><td data-label="Risk">reentrancy</td><td data-label="Corroborated by">guard-lens (recall); first confirmed on VulnerableVault.sol, 1 sighting was enough</td><td data-label="State">Recalled</td></tr><tr data-state="refused"><td class="markcell"><svg class="mark void" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg></td><td class="fn" data-label="Finding">Aerodrome Router, WETH9, a Compound proxy</td><td data-label="Risk">11 candidates, none published.</td><td data-label="Corroborated by">no second lens agreed</td><td data-label="State">Refused</td></tr></tbody></table></div><p class="fine">Disagreement is kept as a candidate and never published. Run Quorum against audited production contracts and it mostly holds its tongue.</p></section></div><div class="band c-5-7"><section class="panel raised claim" id="claim" aria-labelledby="h-claim"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-claim">The first paid claim, on Robinhood Chain</h2></header><dl class="rows"><div><dt>Claimed</dt><dd>FriendtechSharesV1.sol:buyShares:reentrancy</dd></div><div><dt>Block</dt><dd>60762176 &middot; 2026-09-12T02:46:55+00:00</dd></div><div><dt>Fee burn</dt><dd>100,000 QUORUM at block 60762150, <a href="https://robinhoodchain.blockscout.com/tx/0x2005d3b84a3286980ff134d0641d120e7859e13568abf003e393300ac3c9b34a">burn transaction</a></dd></div><div><dt>Signer</dt><dd class="hash">0xf9946775891a24462cD4ec885d0D4E2675C84355</dd></div><div><dt>Digest</dt><dd class="hash">0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721</dd></div></dl><p><a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Read the claim on Blockscout</a></p><p class="fine">The first claim of all, <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Base block 51138878</a>, predates the fee and the move and still verifies.</p></section><section class="panel verify-term" id="verify-term" aria-labelledby="h-verify-term"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-verify-term">quorum verify</h2></header><pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum verify 0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655
 
 claim on Robinhood Chain  block 60762176  2026-09-12T02:46:55+00:00
   published by 0xf9946775891a24462cD4ec885d0D4E2675C84355
@@ -66,77 +42,7 @@ claim on Robinhood Chain  block 60762176  2026-09-12T02:46:55+00:00
   <span class="hi">the evidence for this claim is still in memory</span>
     FriendtechSharesV1.sol:buyShares:reentrancy
     corroborated by guard-lens  (recall)
-  <span class="hi">digest recomputed from memory matches the chain</span></pre></div></section>
-
-<section class="verify wrap" id="verify"
-         data-tx="0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655"
-         data-digest="0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721">
-  <div class="sheet">
-    <p class="cap">In your browser</p>
-    <h2>Verify it yourself</h2>
-    <p class="lede">Everything above is a claim about a transaction. Read that transaction from the chain in this browser and check it
-      against the digest printed on this page. Nothing is sent anywhere; the request goes straight from you to a public node,
-      asking Robinhood Chain first and Base second, the same order <code>quorum verify</code> uses.</p>
-    <button type="button" class="btn primary" id="verify-btn">Verify against the chain</button>
-    <p class="vstatus" id="verify-status" role="status" aria-live="polite"></p>
-    <dl class="vrows" id="verify-out" hidden>
-      <div><dt>Chain</dt><dd id="v-chain"></dd></div>
-      <div><dt>Calldata</dt><dd id="v-prefix"></dd></div>
-      <div><dt>Block</dt><dd id="v-block"></dd></div>
-      <div><dt>Published by</dt><dd id="v-from"></dd></div>
-      <div><dt>Self-addressed</dt><dd id="v-selfaddr"></dd></div>
-      <div><dt>Digest on chain</dt><dd id="v-digest"></dd></div>
-      <div><dt>Fee burn</dt><dd id="v-burn"></dd></div>
-      <div><dt>Result</dt><dd id="v-match"></dd></div>
-    </dl>
-  </div>
-</section>
-
-<section class="statement wrap" id="cost"><p class="stmt">Scanning is free. Publishing is <span class="g">not.</span></p></section>
-
-<section class="split wrap">
-  <div class="slab">
-    <span style="display:block;width:72px;margin-bottom:var(--sp-4)" data-mark="void" aria-hidden="true"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="burn-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
-<g clip-path="url(#burn-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--ink)"/></g>
-<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg></span>
-    <h2>Publishing costs. Scanning does not.</h2>
-    <p>The claims above form a public registry of &ldquo;this swarm knew this bug shape at this block&rdquo;. A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone.</p>
-    <p>Each claim burns <span class="fee">100,000 QUORUM</span> through the token contract&rsquo;s own <code>burn(uint256)</code> on Robinhood Chain before the claim is written to the same chain, and the claim&rsquo;s calldata carries the burn&rsquo;s transaction hash.</p>
-    <p><code>quorum verify</code> checks both halves: the digest on chain, and that the burn it points at is a real burn of at least the fee by the same signer. A claim whose fee was never burned does not verify.</p>
-    <p>The fee was 1,000 QUORUM at launch and is 100,000 from Robinhood Chain block 60761164. A burn is judged against the fee in force at its own block, so claims paid at the launch rate keep verifying.</p>
-    <p class="fine">Everything else &mdash; <code>run</code>, <code>swarm</code>, <code>recall</code>, <code>retire</code>, the memory tiers, the <code>--no-memory</code> test &mdash; has no token in it, and <code>tests/test_token.py</code> asserts that the scanner modules never touch it.</p>
-  </div>
-  <div class="side">
-    <p class="cap">The token</p>
-    <dl class="rows">
-      <div><dt>Contract</dt><dd><code>0xa6452Fd7134218f62056a304eaf501F8714A26b9</code></dd></div>
-      <div><dt>Chain</dt><dd>Robinhood Chain, id 4663</dd></div>
-      <div><dt>Fee</dt><dd class="num">100,000 QUORUM per published claim (1,000 at launch, until block 60761164)</dd></div>
-      <div><dt>Paid to</dt><dd>Nobody. Burned through <code>burn(uint256)</code>.</dd></div>
-      <div><dt>Supply</dt><dd id="supply" data-token="0xa6452Fd7134218f62056a304eaf501F8714A26b9">997,399,000 QUORUM in existence</dd></div>
-      <div><dt>Claim shape</dt><dd><code>QUORUM2</code>: digest plus burn transaction hash</dd></div>
-      <div><dt>Claim chain</dt><dd>Robinhood Chain by default (<code>QUORUM_CHAIN_ID</code> can point at Base)</dd></div>
-    </dl>
-    <p class="fine" style="margin-top:var(--sp-4)">The first claim, Base block 51138878, predates the fee and the move; it reads back as a v1 claim with no burn to check.</p>
-  </div>
-</section>
-
-<section class="split wrap">
-  <div>
-    <h2>Reveal, and import</h2>
-    <p>Once a claim is paid, its owner can reveal the pattern behind it, and any other swarm can import it. An import checks three things and refuses if any fails: the revealed fields hash to the claim&rsquo;s digest, the reveal came from the claim&rsquo;s signer, and the claim&rsquo;s fee was burned.</p>
-    <p>So a pattern nobody paid to publish never enters anyone&rsquo;s memory. That is the whole job of the token: it is the cost of being listened to by other people&rsquo;s swarms.</p>
-  </div>
-  <div class="side sheet pinned">
-    <p class="cap">No second fee</p>
-    <p>The claim already burned it. What the reveal adds is checkability, since anyone can hash the revealed fields and compare them to the claim.</p>
-  </div>
-</section>
-
-<section class="band"><div class="wrap"><div class="head"><span class="cap">quorum reveal, quorum import</span></div><pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum reveal FriendtechSharesV1.sol:buyShares:reentrancy      <span class="cmt"># discloses the claimed fields on chain (QUORUM3)</span>
+  <span class="hi">digest recomputed from memory matches the chain</span></pre></section></div><div class="band c-7-5"><section class="panel raised verify" id="verify" aria-labelledby="h-verify" data-tx="0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655" data-digest="0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-verify">In your browser</h2></header><p>Everything above is a claim about a transaction. Read that transaction from the chain in this browser and check it against the digest printed on this page. Nothing is sent anywhere; the request goes straight from you to a public node, asking Robinhood Chain first and Base second, the same order <code>quorum verify</code> uses.</p><div><button type="button" class="btn primary" id="verify-btn">Verify against the chain</button></div><p class="vstatus" id="verify-status" role="status" aria-live="polite"></p><dl class="rows" id="verify-out" hidden><div><dt>Chain</dt><dd id="v-chain"></dd></div><div><dt>Calldata</dt><dd id="v-prefix"></dd></div><div><dt>Block</dt><dd id="v-block"></dd></div><div><dt>Published by</dt><dd id="v-from" class="hash"></dd></div><div><dt>Self-addressed</dt><dd id="v-selfaddr"></dd></div><div><dt>Digest on chain</dt><dd id="v-digest" class="hash"></dd></div><div><dt>Fee burn</dt><dd id="v-burn" class="hash"></dd></div><div><dt>Result</dt><dd id="v-match"></dd></div></dl></section><section class="panel onchain" id="onchain" aria-labelledby="h-onchain"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-onchain">What goes on chain</h2></header><p>The digest commits to the risk, the idiom signature, the contract, the function and the exact set of lenses that corroborated it. What goes on chain is a timestamped, verifiable claim that this swarm knew this shape at this block, which is what a disclosure timeline actually needs.</p><p><code>quorum verify</code> reads the claim back and recomputes the digest from memory: the claim is only meaningful if the evidence behind it is still there and still hashes the same. The transaction hash is written back onto the finding in memory, so the claim and its evidence stay joined.</p><p class="fine">Claims default to the token&rsquo;s chain so a verifier needs one RPC, not two. The signing key is read from the process environment at call time and never logged.</p></section></div><div class="band c-5-7"><section class="panel token" id="token" aria-labelledby="h-token"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-token">The token</h2></header><dl class="rows"><div><dt>Contract</dt><dd class="hash"><a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">0xa6452Fd7134218f62056a304eaf501F8714A26b9</a></dd></div><div><dt>Chain</dt><dd>Robinhood Chain, id 4663</dd></div><div><dt>Fee</dt><dd>100,000 QUORUM per published claim (1,000 at launch, until block 60761164)</dd></div><div><dt>Paid to</dt><dd>Nobody. Burned through <code>burn(uint256)</code>.</dd></div><div><dt>Supply</dt><dd id="supply" data-token="0xa6452Fd7134218f62056a304eaf501F8714A26b9" aria-live="polite">Supply is read from the token contract.</dd></div><div><dt>Claim shape</dt><dd><code>QUORUM2</code>: digest plus burn transaction hash</dd></div><div><dt>Claim chain</dt><dd>Robinhood Chain by default (<code>QUORUM_CHAIN_ID</code> can point at Base)</dd></div></dl><p class="fine">The first claim, Base block 51138878, predates the fee and the move; it reads back as a v1 claim with no burn to check.</p></section><section class="panel raised cost" id="cost" aria-labelledby="h-cost"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-cost">Publishing costs</h2></header><p class="sign display">Scanning is free. Publishing is <span class="g">not.</span></p><p>The claims above form a public registry of &ldquo;this swarm knew this bug shape at this block&rdquo;. A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone.</p><p>Each claim burns 100,000 QUORUM through the token contract&rsquo;s own <code>burn(uint256)</code> on Robinhood Chain before the claim is written to the same chain, and the claim&rsquo;s calldata carries the burn&rsquo;s transaction hash.</p><p><code>quorum verify</code> checks both halves: the digest on chain, and that the burn it points at is a real burn of at least the fee by the same signer. A claim whose fee was never burned does not verify.</p><p>The fee was 1,000 QUORUM at launch and is 100,000 from Robinhood Chain block 60761164. A burn is judged against the fee in force at its own block, so claims paid at the launch rate keep verifying.</p><p class="fine">Everything else, <code>run</code>, <code>swarm</code>, <code>recall</code>, <code>retire</code>, the memory tiers, the <code>--no-memory</code> test, has no token in it, and <code>tests/test_token.py</code> asserts that the scanner modules never touch it.</p></section></div><div class="band c-8-4"><section class="panel raised import" id="import" aria-labelledby="h-import"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-import">quorum reveal, quorum import</h2></header><pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum reveal FriendtechSharesV1.sol:buyShares:reentrancy      <span class="cmt"># discloses the claimed fields on chain (QUORUM3)</span>
   revealed on Robinhood Chain FriendtechSharesV1.sol:buyShares:reentrancy
     https://robinhoodchain.blockscout.com/tx/0x7556ec748f8ffb9e2ca5809c4383e407f4affb9b847124c0d33205281e905f32
 
@@ -145,18 +51,19 @@ reveal reentrancy  reentrancy:97d18d17cfa4494a  by 0xf9946775891a24462cD4ec885d0
   <span class="hi">ok</span>  digest matches the claim
   <span class="hi">ok</span>  revealed by the claim's signer
   <span class="hi">ok</span>  claim fee of 100,000 QUORUM burned
-  imported into REFERENCE: the swarm will recognise this idiom on sight</pre></div></section>
-<div class="prevnext wrap"><a href="../memory/"><span class="lbl">Previous</span>The memory</a><a href="../start/"><span class="lbl">Next</span>Run it</a></div>
+  imported into REFERENCE: the swarm will recognise this idiom on sight</pre></section><section class="panel reveal" id="reveal" aria-labelledby="h-reveal"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-reveal">Reveal, and import</h2></header><p>Once a claim is paid, its owner can reveal the pattern behind it, and any other swarm can import it. An import checks three things and refuses if any fails: the revealed fields hash to the claim&rsquo;s digest, the reveal came from the claim&rsquo;s signer, and the claim&rsquo;s fee was burned.</p><p>So a pattern nobody paid to publish never enters anyone&rsquo;s memory. That is the whole job of the token: it is the cost of being listened to by other people&rsquo;s swarms.</p><p class="fine">No second fee. The claim already burned it. What the reveal adds is checkability, since anyone can hash the revealed fields and compare them to the claim.</p></section></div></div><div class="prevnext wrap"><a href="../memory/"><span class="lbl">Previous</span>The memory</a><a href="../start/"><span class="lbl">Next</span>Run it</a></div>
 </main>
 <footer class="foot wrap">
-  <span class="corner" aria-hidden="true"></span>
-  <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
-  <span class="links">
-    <a href="https://github.com/Yonkoo11/quorum">Code</a>
-    <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
-    <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
-    <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
-  </span>
+  <div class="slab"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><p class="sign display">The intersection is the finding.</p></div>
+  <div class="foottext">
+    <p class="links">
+      <a href="https://github.com/Yonkoo11/quorum">Code</a>
+      <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+      <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
+      <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
+    </p>
+    <p class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</p>
+  </div>
 </footer>
 </body>
 </html>

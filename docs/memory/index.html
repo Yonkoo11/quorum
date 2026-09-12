@@ -12,42 +12,46 @@
 <meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="../quorum.css">
 <script>try{var m=localStorage.getItem("quorum-theme");if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);}catch(e){}</script>
+<style>
+@font-face { font-family: "Archivo Black"; src: url("../fonts/ArchivoBlack-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../fonts/IBMPlexSans-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+</style>
+<link rel="stylesheet" href="../quorum.css">
 <script src="../quorum.js" defer></script>
 </head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
+<body data-memory="on">
+<a class="skip label" href="#main">Skip to content</a>
+<svg class="grain" aria-hidden="true" focusable="false"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#grain)"/></svg>
+<svg class="defs" aria-hidden="true" focusable="false"><defs><clipPath id="lens-clip"><circle cx="19" cy="19" r="17"/></clipPath></defs></svg>
 <header class="bar">
   <div class="wrap">
-    <a class="brand" href="../"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="bar-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
-<g clip-path="url(#bar-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
-<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
-    <nav aria-label="Sections"><ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/" aria-current="page">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul></nav>
+    <a class="brand" href="../"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><span>Quorum</span></a>
+    <nav aria-label="Sections"><ul class="label"><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/" aria-current="page">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul></nav>
     <button type="button" class="btn theme" id="theme-toggle">Theme</button>
   </div>
 </header>
 <main id="main">
-<section class="pagehead wrap">
-  <div><p class="cap">The memory</p><h1 class="stmt">Four calls carry<br>the product.</h1><p class="deck">Every Sibyl Memory read and write in this project is in one file, <code>quorum/memory.py</code>. Four call sites carry the whole product.</p></div>
-  <p class="aside">Every sighting, promotion, suppression and on-chain claim is also appended to the COLD journal, which is what makes a published claim auditable after the fact.</p>
-</section>
+<section class="statement wrap" aria-labelledby="h-stmt"><h1 class="display" id="h-stmt">Four calls carry <br><span class="g">the product.</span></h1><p class="lede">Every Sibyl Memory read and write in this project is in one file, <code>quorum/memory.py</code>. Four call sites carry the whole product.</p></section><div class="board wrap" id="board"><div class="band c-8-4"><section class="panel raised sw" id="sw" aria-labelledby="h-sw"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-sw">The deletion test</h2></header><div class="switch" role="group" aria-label="Memory"><button type="button" id="btn-on" aria-pressed="true" aria-controls="pane-on">Memory on</button><button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">Memory off</button></div><p id="sw-on">Once a pattern is confirmed, the swarm recognises that idiom on sight in a completely different contract, in a completely different session, from a single sighting.</p><p id="sw-off" hidden>Delete the memory layer and there is no swarm left. Just six programs that each shout once and forget.</p><p>Rather than assert an answer, Quorum ships it as a runtime flag. <code>NoMemory</code> implements the identical interface and forgets everything the instant it is written.</p><p>Same swarm, same contracts, memory removed. Every claim succeeds, so agents duplicate work. Every sighting looks like the first, so corroboration never accumulates and quorum is never reached. Retirements do not stick.</p><p class="fine">The same behaviour is asserted in <code>tests/test_quorum.py</code>.</p></section><section class="panel once" id="once" aria-labelledby="h-once"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-once">A pattern is confirmed once</h2></header><p>Recognising it in a later contract adds to its provenance rather than rewriting it: the swarm never loses the record of where it originally paid for this knowledge.</p><p class="fine">The deletion test on the front page shows the other half: with <code>NoMemory</code>, confirmed findings are 0 and recalled is 0.</p></section></div><div class="band c-7-5"><section class="panel raised term-on" id="term-on" aria-labelledby="h-term-on"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-term-on">Memory on</h2><span class="aside"><span class="on">the record</span><span class="off">the shadow</span></span></header><pre class="terminal" id="pane-on" tabindex="0" aria-label="Terminal output, memory on" data-keep=""><span class="prompt">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
+  <span class="hi">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
+  <span class="hi">QUORUM</span>    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
+scanned 12 lens-units | <span class="hi">confirmed 2</span> | <span class="hi">recalled 1</span> | candidates 5
 
-<section class="ledger wrap"><div class="tablewrap"><table>
-  <thead><tr><th>What breaks without it</th><th>Written at</th><th>Read at</th><th>Tier</th></tr></thead>
-  <tbody>
-    <tr><td data-label="Breaks"><b>Agents duplicate each other&rsquo;s work.</b> A lens claims a (contract, lens) unit; a peer that finds it claimed does not scan it. This is the only coordination mechanism in the system.</td><td data-label="Written"><code>claim_work</code></td><td data-label="Read">same call</td><td data-label="Tier">HOT <code>state/</code></td></tr>
-    <tr><td data-label="Breaks"><b>Quorum can never be reached.</b> Corroboration is accumulated across lenses, processes and sessions on the finding entity. A lens has no idea who else agreed with it; memory does.</td><td data-label="Written"><code>record_sighting</code></td><td data-label="Read"><code>swarm.py:74</code></td><td data-label="Tier">WARM <code>entities/</code></td></tr>
-    <tr><td data-label="Breaks"><b>Nothing is ever recognised again.</b> A confirmed idiom becomes permanent swarm knowledge and is matched on sight in later sessions, on contracts the swarm has never read.</td><td data-label="Written"><code>promote</code></td><td data-label="Read"><code>known_pattern</code> &rarr; <code>swarm.py:79</code></td><td data-label="Tier">REFERENCE <code>reference/</code></td></tr>
-    <tr><td data-label="Breaks"><b>Human corrections evaporate.</b> Retire a finding once and no later session reports that shape again.</td><td data-label="Written"><code>retire</code></td><td data-label="Read"><code>is_retired</code> &rarr; <code>swarm.py:64</code></td><td data-label="Tier">ARCHIVE <code>archive/</code></td></tr>
-  </tbody></table></div></section>
+<span class="cmt"># new process, new day, contracts it has never seen. Real verified Base mainnet source</span>
+<span class="prompt">$</span> quorum run
+recalled before reading any code: 2 confirmed pattern(s)
+  <span class="hi">RECALLED</span>  FriendtechSharesV1.sol:buyShares   reentrancy
+            first confirmed on VulnerableVault.sol   (1 sighting was enough)
+scanned 24 lens-units | confirmed 0 | <span class="hi">recalled 1</span> | candidates 11</pre></section><section class="panel raised term-off" id="term-off" aria-labelledby="h-term-off"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-term-off">Memory off</h2><span class="aside"><span class="on">the record</span><span class="off">the shadow</span></span></header><pre class="terminal" id="pane-off" tabindex="0" aria-label="Terminal output, memory off" data-keep=""><span class="cmt"># same swarm, same contracts, memory removed</span>
+<span class="prompt">$</span> quorum run --no-memory
+scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 12
+nothing was confirmed, recalled or suppressed: without memory the swarm
+cannot corroborate, recognise or forget.</pre></section></div><div class="band c-5-7"><section class="panel idiom" id="idiom" aria-labelledby="h-idiom"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-idiom">What counts as the same idiom</h2></header><p>A signature hashes the idiom on a line, not the identifiers on it. That is what lets a pattern the swarm confirmed on one contract be recognised in a completely different one. Receiver and argument names collapse, the method name survives, and the target of a write keeps its class.</p><p><code>msg.sender.call{value: amount}("")</code> and <code>protocolFeeDestination.call{value: protocolFee}("")</code> are the same idiom and hash the same. <code>weth.deposit{value: amountETH}()</code> is a different idiom and does not.</p></section><section class="panel raised recall" id="recall" aria-labelledby="h-recall"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-recall">quorum recall</h2><span class="aside">REFERENCE tier</span></header><pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum recall
 
-<section class="band"><div class="wrap">
-  <div class="head"><span class="cap">Coordination without a message bus</span></div>
-  <pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum swarm --workers 3
+confirmed patterns (REFERENCE tier)
+  reentrancy             <span class="hi">reentrancy:97d18d17cfa4494a</span>
+    first confirmed on VulnerableVault.sol by callorder-lens, guard-lens
+    recognised since on FriendtechSharesV1.sol  (1 sighting each, no quorum needed)</pre></section></div><div class="band c-1"><section class="panel tiers" id="tiers" aria-labelledby="h-tiers"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-tiers">Where memory is load-bearing</h2></header><div class="tablewrap"><table class="ledger"><thead><tr><th>Tier</th><th>What breaks without it</th><th>Written at</th><th>Read at</th></tr></thead><tbody><tr class="nomark"><td class="tier" data-label="Tier">HOT <code>state/</code></td><td data-label="What breaks without it"><b>Agents duplicate each other&rsquo;s work.</b> A lens claims a (contract, lens) unit; a peer that finds it claimed does not scan it. This is the only coordination mechanism in the system.</td><td data-label="Written at"><code>claim_work</code></td><td data-label="Read at">same call</td></tr><tr class="nomark"><td class="tier" data-label="Tier">WARM <code>entities/</code></td><td data-label="What breaks without it"><b>Quorum can never be reached.</b> Corroboration is accumulated across lenses, processes and sessions on the finding entity. A lens has no idea who else agreed with it; memory does.</td><td data-label="Written at"><code>record_sighting</code></td><td data-label="Read at"><code>swarm.py:74</code></td></tr><tr class="nomark"><td class="tier" data-label="Tier">REFERENCE <code>reference/</code></td><td data-label="What breaks without it"><b>Nothing is ever recognised again.</b> A confirmed idiom becomes permanent swarm knowledge and is matched on sight in later sessions, on contracts the swarm has never read.</td><td data-label="Written at"><code>promote</code></td><td data-label="Read at"><code>known_pattern</code> &rarr; <code>swarm.py:79</code></td></tr><tr class="nomark"><td class="tier" data-label="Tier">ARCHIVE <code>archive/</code></td><td data-label="What breaks without it"><b>Human corrections evaporate.</b> Retire a finding once and no later session reports that shape again.</td><td data-label="Written at"><code>retire</code></td><td data-label="Read at"><code>is_retired</code> &rarr; <code>swarm.py:64</code></td></tr></tbody></table></div><p class="fine">Every sighting, promotion, suppression and on-chain claim is also appended to the COLD journal, which is what makes a published claim auditable after the fact.</p></section></div><div class="band c-7-5"><section class="panel raised swarm" id="swarm" aria-labelledby="h-swarm"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-swarm">Coordination without a message bus</h2><span class="aside">HOT tier</span></header><pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum swarm --workers 3
 
 3 agent processes, one memory, no message bus
   agent-1   scanned   9  stood down on  15 units a peer had already claimed
@@ -55,41 +59,19 @@
   agent-3   scanned   8  stood down on  16 units a peer had already claimed
 
   24 units scanned in total, 48 skipped, in 0.7s
-  no agent sent a message to any other agent. The HOT tier decided who did what.</pre>
-  <div class="cap-row"><span aria-hidden="true"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="swarm-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
-<g clip-path="url(#swarm-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
-<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg></span><div>
-    <p>Quorum&rsquo;s agents are separate operating-system processes. They share one memory file and nothing else: no queue, no broker, no RPC between them. Three processes, twenty-four units of work, each done exactly once.</p>
-    <p>Claiming is optimistic because a read-then-write across processes is not atomic: an agent writes its own id into the claim, waits out the window in which a peer could be writing too, then reads the claim back and stands down unless it sees itself. Take the HOT tier away and all three agents do all twenty-four units.</p>
-  </div></div>
-</div></section>
-
-<section class="split wrap">
-  <div>
-    <h2>What counts as the same idiom</h2>
-    <p>A signature hashes the idiom on a line, not the identifiers on it. That is what lets a pattern the swarm confirmed on one contract be recognised in a completely different one. Receiver and argument names collapse, the method name survives, and the target of a write keeps its class.</p>
-    <p><code>msg.sender.call{value: amount}("")</code> and <code>protocolFeeDestination.call{value: protocolFee}("")</code> are the same idiom and hash the same. <code>weth.deposit{value: amountETH}()</code> is a different idiom and does not.</p>
-  </div>
-  <div class="side sheet pinned">
-    <p class="cap">A pattern is confirmed once</p>
-    <p>Recognising it in a later contract adds to its provenance rather than rewriting it: the swarm never loses the record of where it originally paid for this knowledge.</p>
-    <p class="fine">The deletion test on the front page shows the other half: with <code>NoMemory</code>, confirmed findings are 0 and recalled is 0.</p>
-  </div>
-</section>
-<div class="prevnext wrap"><a href="../lenses/"><span class="lbl">Previous</span>The lenses</a><a href="../registry/"><span class="lbl">Next</span>The registry</a></div>
+  no agent sent a message to any other agent. The HOT tier decided who did what.</pre></section><section class="panel processes" id="processes" aria-labelledby="h-processes"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-processes">Three processes, one memory</h2></header><p>Quorum&rsquo;s agents are separate operating-system processes. They share one memory file and nothing else: no queue, no broker, no RPC between them. Three processes, twenty-four units of work, each done exactly once.</p><p>Claiming is optimistic because a read-then-write across processes is not atomic: an agent writes its own id into the claim, waits out the window in which a peer could be writing too, then reads the claim back and stands down unless it sees itself. Take the HOT tier away and all three agents do all twenty-four units.</p></section></div></div><div class="prevnext wrap"><a href="../lenses/"><span class="lbl">Previous</span>The lenses</a><a href="../registry/"><span class="lbl">Next</span>The registry</a></div>
 </main>
 <footer class="foot wrap">
-  <span class="corner" aria-hidden="true"></span>
-  <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
-  <span class="links">
-    <a href="https://github.com/Yonkoo11/quorum">Code</a>
-    <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
-    <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
-    <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
-  </span>
+  <div class="slab"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><p class="sign display">The intersection is the finding.</p></div>
+  <div class="foottext">
+    <p class="links">
+      <a href="https://github.com/Yonkoo11/quorum">Code</a>
+      <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+      <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
+      <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
+    </p>
+    <p class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</p>
+  </div>
 </footer>
 </body>
 </html>

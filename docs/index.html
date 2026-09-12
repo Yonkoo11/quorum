@@ -12,63 +12,27 @@
 <meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="./quorum.css">
 <script>try{var m=localStorage.getItem("quorum-theme");if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);}catch(e){}</script>
+<style>
+@font-face { font-family: "Archivo Black"; src: url("./fonts/ArchivoBlack-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: "IBM Plex Sans"; src: url("./fonts/IBMPlexSans-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+</style>
+<link rel="stylesheet" href="./quorum.css">
 <script src="./quorum.js" defer></script>
 </head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
+<body data-memory="on">
+<a class="skip label" href="#main">Skip to content</a>
+<svg class="grain" aria-hidden="true" focusable="false"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#grain)"/></svg>
+<svg class="defs" aria-hidden="true" focusable="false"><defs><clipPath id="lens-clip"><circle cx="19" cy="19" r="17"/></clipPath></defs></svg>
 <header class="bar">
   <div class="wrap">
-    <a class="brand" href="./"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="bar-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
-<g clip-path="url(#bar-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
-<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
-    <nav aria-label="Sections"><ul><li><a href="././" aria-current="page">Front page</a></li><li><a href="./lenses/">Lenses</a></li><li><a href="./memory/">Memory</a></li><li><a href="./registry/">Registry</a></li><li><a href="./start/">Run it</a></li></ul></nav>
+    <a class="brand" href="./"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><span>Quorum</span></a>
+    <nav aria-label="Sections"><ul class="label"><li><a href="././" aria-current="page">Front page</a></li><li><a href="./lenses/">Lenses</a></li><li><a href="./memory/">Memory</a></li><li><a href="./registry/">Registry</a></li><li><a href="./start/">Run it</a></li></ul></nav>
     <button type="button" class="btn theme" id="theme-toggle">Theme</button>
   </div>
 </header>
 <main id="main">
-<section class="hero">
-  <div class="wrap">
-    <div class="text">
-      <div class="rule" aria-hidden="true"></div>
-      <p class="kicker cap">A swarm that agrees through memory</p>
-      <h1><span>Two lenses.</span><span>One finding.</span></h1>
-      <p class="lead">Six security lenses read Solidity and never talk to each other. Sibyl Memory is the only
-        channel between them, and the only reason the swarm can agree on anything, recognise anything, or forget anything.</p>
-      <div class="acts">
-        <a class="btn primary" href="https://github.com/Yonkoo11/quorum">Read the code</a>
-        <a class="btn" href="start/">Run it</a>
-      </div>
-    </div>
-    <div class="art" data-mark="agreed"><svg viewBox="0 0 560 664" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="hero-lens"><circle cx="196" cy="176" r="186"/></clipPath></defs>
-<rect x="492" y="0" width="68" height="664" fill="var(--ink)"/>
-<rect x="280" y="0" width="280" height="40" fill="var(--ink)"/>
-<polygon points="400,664 560,470 560,664" fill="var(--ink)"/>
-<rect class="slabfill" x="292" y="40" width="200" height="624" fill="var(--green)"/>
-<circle cx="236" cy="664" r="156" fill="var(--ground)"/>
-<circle cx="196" cy="176" r="186" fill="var(--ground)"/><circle cx="364" cy="176" r="186" fill="var(--ground)"/>
-<g clip-path="url(#hero-lens)"><circle class="vesica" cx="364" cy="176" r="186" fill="var(--green)"/></g>
-<circle cx="196" cy="176" r="186" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="176" r="186" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span class="lbl">The intersection is the finding</span></div>
-  </div>
-</section>
-
-<section class="band" aria-labelledby="deletion-h">
-  <div class="wrap">
-    <div class="head">
-      <span class="cap" id="deletion-h">The deletion test</span>
-      <span class="switch" role="group" aria-label="Memory">
-        <button type="button" id="btn-on" aria-pressed="true" aria-controls="pane-on">Memory on</button>
-        <button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">Memory off</button>
-      </span>
-    </div>
-    <figure>
-      <div class="panes"><pre class="terminal" id="pane-on" tabindex="0" aria-label="Terminal output, memory on"><span class="prompt">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
+<section class="statement wrap" aria-labelledby="h-stmt"><h1 class="display" id="h-stmt">Two lenses. <br><span class="g">One finding.</span></h1><p class="lede">Six security lenses read Solidity and never talk to each other. Sibyl Memory is the only channel between them, and the only reason the swarm can agree on anything, recognise anything, or forget anything.</p></section><div class="board wrap front" id="board"><div class="band c-1-300"><section class="panel raised term" id="term" aria-labelledby="h-term"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-term">The deletion test</h2><span class="aside"><span id="term-state">Memory on</span></span></header><pre class="terminal" id="pane-on" tabindex="0" aria-label="Terminal output, memory on"><span class="prompt">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
   <span class="hi">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
   <span class="hi">QUORUM</span>    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
 scanned 12 lens-units | <span class="hi">confirmed 2</span> | <span class="hi">recalled 1</span> | candidates 5
@@ -82,70 +46,19 @@ scanned 24 lens-units | confirmed 0 | <span class="hi">recalled 1</span> | candi
 <span class="prompt">$</span> quorum run --no-memory
 scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 12
 nothing was confirmed, recalled or suppressed: without memory the swarm
-cannot corroborate, recognise or forget.</pre></div>
-      <figcaption class="cap-row">
-        <span data-mark="void" aria-hidden="true"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="void-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
-<g clip-path="url(#void-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--ink)"/></g>
-<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg></span>
-        <div>
-          <p>Same swarm, same contracts, memory removed. Every claim succeeds, so agents duplicate work. Every sighting
-            looks like the first, so corroboration never accumulates and quorum is never reached. Retirements do not stick.</p>
-          <p>The same behaviour is asserted in <code>tests/test_quorum.py</code>. Flip the switch: the lenses above lose their intersection.</p>
-        </div>
-      </figcaption>
-    </figure>
-  </div>
-</section>
-
-<section class="notes wrap" aria-label="Pinned">
-  <a class="sheet" href="memory/">
-    <p class="cap">Recall</p>
-    <h2>Learned on a teaching fixture. Recognised on Base from one sighting.</h2>
-    <p><code>msg.sender.call{value: amount}("")</code> and <code>protocolFeeDestination.call{value: protocolFee}("")</code>
-      are the same idiom, so they hash to the same signature. <code>weth.deposit{value: amountETH}()</code> is a different idiom and does not.</p>
-    <dl>
-      <dt>Confirmed pattern</dt><dd class="mono">reentrancy:97d18d17cfa4494a</dd>
-      <dt>Recognised since on</dt><dd>FriendtechSharesV1.sol (1 sighting each, no quorum needed)</dd>
-    </dl>
-    <span class="more">The memory</span>
-  </a>
-  <a class="sheet pinned" href="registry/">
-    <p class="cap">The first paid claim</p>
-    <p class="big num">60762176</p>
-    <p>When a finding reaches quorum it stops being a private opinion. The first paid claim is on Robinhood Chain at that block,
-      its fee burned at block 60762150; the finding itself never left the machine. The first claim of all, Base block 51138878, predates the fee.</p>
-    <span class="more">The registry</span>
-  </a>
-  <a class="sheet pinned" href="registry/#cost">
-    <p class="cap">Publishing costs</p>
-    <p class="big num">100,000</p>
-    <p>QUORUM burned per published claim, from Robinhood Chain block 60761164 (1,000 at launch). Scanning is free; publishing is not, and nobody receives the fee.</p>
-    <span class="more">What it costs</span>
-  </a>
-</section>
-
-<section class="contents wrap">
-  <h2>Read next</h2>
-  <ol>
-    <li><a href="lenses/">The lenses</a><span class="ln">Six readings, two per risk, each pair reasoning from different evidence.</span></li>
-    <li><a href="memory/">The memory</a><span class="ln">Four call sites carry the product, and the tier each one writes to.</span></li>
-    <li><a href="registry/">The registry</a><span class="ln">Claims on chain, and what it costs to publish one.</span></li>
-    <li><a href="start/">Run it</a><span class="ln">Install, every command, and what each one needs.</span></li>
-  </ol>
-</section>
+cannot corroborate, recognise or forget.</pre></section><section class="panel sw" id="sw" aria-labelledby="h-sw"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-sw">Memory</h2></header><div class="switch" role="group" aria-label="Memory"><button type="button" id="btn-on" aria-pressed="true" aria-controls="pane-on">Memory on</button><button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">Memory off</button></div><p id="sw-on">Once a pattern is confirmed, the swarm recognises that idiom on sight in a completely different contract, in a completely different session, from a single sighting.</p><p id="sw-off" hidden>Delete the memory layer and there is no swarm left. Just six programs that each shout once and forget.</p><p class="fine">The same behaviour is asserted in <code>tests/test_quorum.py</code>.</p></section></div><div class="band c-5-4-3"><section class="panel raised claim" id="claim" aria-labelledby="h-claim"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-claim">The first paid claim</h2></header><p class="number">60762176</p><p>When a finding reaches quorum it stops being a private opinion. The first paid claim is on Robinhood Chain at that block, its fee burned at block 60762150; the finding itself never left the machine. The first claim of all, Base block 51138878, predates the fee.</p><a class="more" href="registry/">The registry</a></section><section class="panel lenses" id="lenses" aria-labelledby="h-lenses"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-lenses">The lenses</h2></header><p>Six readings. Two per risk. No lens can publish a finding on its own.</p><dl class="rows pairs"><div><dt>reentrancy</dt><dd><a href="lenses/#callorder-lens">callorder-lens</a> &middot; <a href="lenses/#guard-lens">guard-lens</a></dd></div><div><dt>unguarded-state-write</dt><dd><a href="lenses/#modifier-lens">modifier-lens</a> &middot; <a href="lenses/#sender-lens">sender-lens</a></dd></div><div><dt>unsafe-math</dt><dd><a href="lenses/#unchecked-lens">unchecked-lens</a> &middot; <a href="lenses/#precision-lens">precision-lens</a></dd></div></dl><a class="more" href="lenses/">The lenses</a></section><div class="stack"><section class="panel supply" id="supply-panel" aria-labelledby="h-supply-panel"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-supply-panel">Supply</h2></header><p class="number" id="supply-n" aria-live="polite"></p><p class="fine" id="supply" data-token="0xa6452Fd7134218f62056a304eaf501F8714A26b9">Supply is read from the token contract.</p><dl class="rows narrow"><div><dt>Contract</dt><dd class="hash"><a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">0xa6452Fd7134218f62056a304eaf501F8714A26b9</a></dd></div></dl></section><section class="panel cost" id="cost" aria-labelledby="h-cost"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-cost">Publishing costs</h2></header><p class="number">100,000</p><p>QUORUM burned per published claim, from Robinhood Chain block 60761164 (1,000 at launch). Scanning is free; publishing is not, and nobody receives the fee.</p><a class="more" href="registry/#cost">What it costs</a></section></div></div></div><div class="prevnext wrap"><span></span><a href="lenses/"><span class="lbl">Next</span>The lenses</a></div>
 </main>
 <footer class="foot wrap">
-  <span class="corner" aria-hidden="true"></span>
-  <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
-  <span class="links">
-    <a href="https://github.com/Yonkoo11/quorum">Code</a>
-    <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
-    <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
-    <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
-  </span>
+  <div class="slab"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><p class="sign display">The intersection is the finding.</p></div>
+  <div class="foottext">
+    <p class="links">
+      <a href="https://github.com/Yonkoo11/quorum">Code</a>
+      <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+      <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
+      <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
+    </p>
+    <p class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</p>
+  </div>
 </footer>
 </body>
 </html>

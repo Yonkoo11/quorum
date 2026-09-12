@@ -12,86 +12,42 @@
 <meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="../quorum.css">
 <script>try{var m=localStorage.getItem("quorum-theme");if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);}catch(e){}</script>
+<style>
+@font-face { font-family: "Archivo Black"; src: url("../fonts/ArchivoBlack-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../fonts/IBMPlexSans-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+</style>
+<link rel="stylesheet" href="../quorum.css">
 <script src="../quorum.js" defer></script>
 </head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
+<body data-memory="on">
+<a class="skip label" href="#main">Skip to content</a>
+<svg class="grain" aria-hidden="true" focusable="false"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#grain)"/></svg>
+<svg class="defs" aria-hidden="true" focusable="false"><defs><clipPath id="lens-clip"><circle cx="19" cy="19" r="17"/></clipPath></defs></svg>
 <header class="bar">
   <div class="wrap">
-    <a class="brand" href="../"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="bar-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
-<g clip-path="url(#bar-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
-<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
-    <nav aria-label="Sections"><ul><li><a href=".././">Front page</a></li><li><a href="../lenses/" aria-current="page">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul></nav>
+    <a class="brand" href="../"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><span>Quorum</span></a>
+    <nav aria-label="Sections"><ul class="label"><li><a href=".././">Front page</a></li><li><a href="../lenses/" aria-current="page">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul></nav>
     <button type="button" class="btn theme" id="theme-toggle">Theme</button>
   </div>
 </header>
 <main id="main">
-<section class="pagehead wrap">
-  <div><p class="cap">The lenses</p><h1 class="stmt">Six readings.<br>Two per risk.</h1><p class="deck">A single detector that reports everything it sees is noise. Six of them are six times the noise. Quorum pairs its lenses two per risk, and each pair reasons from different evidence.</p></div>
-  <p class="aside">Agreement is signal. Disagreement is kept as a candidate and never published.</p>
-</section>
-
-<section class="ledger wrap">
-  <div class="risk"><h2>reentrancy</h2><span class="pair cap">callorder-lens &middot; guard-lens</span></div>
-  <div class="entry"><div><span class="n">callorder-lens</span><span class="cls">Evidence: call ordering</span></div><p>An external call precedes a state write in the same function.</p></div>
-  <div class="entry"><div><span class="n">guard-lens</span><span class="cls">Evidence: guard absence</span></div><p>The function moves value out and carries no reentrancy guard.</p></div>
-  <div class="risk"><h2>unguarded-state-write</h2><span class="pair cap">modifier-lens &middot; sender-lens</span></div>
-  <div class="entry"><div><span class="n">modifier-lens</span><span class="cls">Evidence: declaration</span></div><p>Externally callable, writes storage, carries no modifier at all.</p></div>
-  <div class="entry"><div><span class="n">sender-lens</span><span class="cls">Evidence: reachability</span></div><p>Writes a privileged-looking variable with no <code>msg.sender</code> check anywhere on the path.</p></div>
-  <div class="risk"><h2>unsafe-math</h2><span class="pair cap">unchecked-lens &middot; precision-lens</span></div>
-  <div class="entry"><div><span class="n">unchecked-lens</span><span class="cls">Evidence: block context</span></div><p>Arithmetic inside an <code>unchecked</code> block.</p></div>
-  <div class="entry"><div><span class="n">precision-lens</span><span class="cls">Evidence: operator order</span></div><p>A division evaluated before a multiplication.</p></div>
-</section>
-
-<section class="statement wrap"><p class="stmt">Agreement is <span class="g">signal.</span></p></section>
-
-<section class="split wrap">
-  <div>
-    <h2>What a lens may not do</h2>
-    <p>No lens can publish a finding on its own. A lens records what it saw and reads nothing about what its peers saw;
-      the tally of who agreed lives on the finding in memory, not inside any agent. A second lens that reaches the same
-      (contract, function, risk) from a different reading is what turns a sighting into a finding.</p>
-    <p>The lenses are deliberately simple. They are regex-and-brace-matching heuristics over source text, not a compiler
-      front end. The point of this project is the coordination and memory layer; the lenses are the honest minimum needed
-      to have something real to coordinate about.</p>
-  </div>
-  <div class="side sheet pinned">
-    <p class="cap">On audited production code</p>
-    <p>Run Quorum against audited production contracts and it mostly holds its tongue. On Aerodrome&rsquo;s Router, WETH9 and
-      a Compound proxy it confirms nothing and files eleven candidates. That is the intended behaviour, not a failure to find bugs.</p>
-  </div>
-</section>
-
-<section class="split wrap">
-  <div>
-    <h2>Not a vulnerability scanner that proves exploits</h2>
-    <p>Quorum publishes corroborated idioms worth review, not confirmed vulnerabilities. A quorum means two independent lenses
-      agreed on a shape, nothing more. The Friend.tech recall on the front page is a pattern match on a call idiom, not an
-      allegation about that contract.</p>
-    <p>The fixtures in <code>fixtures/</code> are vulnerable on purpose and are not deployed anywhere.</p>
-  </div>
-  <div class="side">
-    <p class="cap">Where the count lives</p>
-    <p>Corroboration is accumulated across lenses, processes and sessions on the finding entity in the WARM tier. A lens has no
-      idea who else agreed with it; memory does. <a href="../memory/">The memory &rarr;</a></p>
-  </div>
-</section>
-<div class="prevnext wrap"><a href="../"><span class="lbl">Previous</span>Front page</a><a href="../memory/"><span class="lbl">Next</span>The memory</a></div>
+<section class="statement wrap" aria-labelledby="h-stmt"><h1 class="display" id="h-stmt">Six readings. <br><span class="g">Two per risk.</span></h1><p class="lede">A single detector that reports everything it sees is noise. Six of them are six times the noise. Quorum pairs its lenses two per risk, and each pair reasons from different evidence.</p></section><div class="board wrap" id="board"><div class="band c-7-5"><section class="panel raised run" id="run" aria-labelledby="h-run"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-run">quorum run</h2><span class="aside">Agreement is signal.</span></header><pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
+  <span class="hi">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
+  <span class="hi">QUORUM</span>    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
+scanned 12 lens-units | <span class="hi">confirmed 2</span> | <span class="hi">recalled 1</span> | candidates 5</pre></section><section class="panel may-not" id="may-not" aria-labelledby="h-may-not"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-may-not">What a lens may not do</h2></header><p>No lens can publish a finding on its own. A lens records what it saw and reads nothing about what its peers saw; the tally of who agreed lives on the finding in memory, not inside any agent. A second lens that reaches the same (contract, function, risk) from a different reading is what turns a sighting into a finding.</p><p>The lenses are deliberately simple. They are regex-and-brace-matching heuristics over source text, not a compiler front end. The point of this project is the coordination and memory layer; the lenses are the honest minimum needed to have something real to coordinate about.</p></section></div><div class="band c-5-4-3 three"><section class="panel lens" id="callorder-lens" aria-labelledby="h-callorder-lens"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-callorder-lens">callorder-lens</h2><span class="aside">reentrancy</span></header><p>An external call precedes a state write in the same function.</p><dl class="rows"><div><dt>Evidence</dt><dd>call ordering</dd></div><div><dt>Pair</dt><dd><a href="#guard-lens">guard-lens</a></dd></div></dl></section><section class="panel lens" id="guard-lens" aria-labelledby="h-guard-lens"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-guard-lens">guard-lens</h2><span class="aside">reentrancy</span></header><p>The function moves value out and carries no reentrancy guard.</p><dl class="rows"><div><dt>Evidence</dt><dd>guard absence</dd></div><div><dt>Pair</dt><dd><a href="#callorder-lens">callorder-lens</a></dd></div></dl></section><section class="panel audited" id="audited" aria-labelledby="h-audited"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-audited">On audited production code</h2></header><p>Run Quorum against audited production contracts and it mostly holds its tongue. On Aerodrome&rsquo;s Router, WETH9 and a Compound proxy it confirms nothing and files eleven candidates. That is the intended behaviour, not a failure to find bugs.</p><p class="fine">Disagreement is kept as a candidate and never published.</p></section></div><div class="band c-3-5-4 three"><section class="panel lens" id="modifier-lens" aria-labelledby="h-modifier-lens"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-modifier-lens">modifier-lens</h2><span class="aside">unguarded-state-write</span></header><p>Externally callable, writes storage, carries no modifier at all.</p><dl class="rows"><div><dt>Evidence</dt><dd>declaration</dd></div><div><dt>Pair</dt><dd><a href="#sender-lens">sender-lens</a></dd></div></dl></section><section class="panel lens" id="sender-lens" aria-labelledby="h-sender-lens"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-sender-lens">sender-lens</h2><span class="aside">unguarded-state-write</span></header><p>Writes a privileged-looking variable with no <code>msg.sender</code> check anywhere on the path.</p><dl class="rows"><div><dt>Evidence</dt><dd>reachability</dd></div><div><dt>Pair</dt><dd><a href="#modifier-lens">modifier-lens</a></dd></div></dl></section><section class="panel not-scanner" id="not-scanner" aria-labelledby="h-not-scanner"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-not-scanner">Not a vulnerability scanner that proves exploits</h2></header><p>Quorum publishes corroborated idioms worth review, not confirmed vulnerabilities. A quorum means two independent lenses agreed on a shape, nothing more. The Friend.tech recall on the front page is a pattern match on a call idiom, not an allegation about that contract.</p><p class="fine">The fixtures in <code>fixtures/</code> are vulnerable on purpose and are not deployed anywhere.</p></section></div><div class="band c-4-3-5 three"><section class="panel lens" id="unchecked-lens" aria-labelledby="h-unchecked-lens"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-unchecked-lens">unchecked-lens</h2><span class="aside">unsafe-math</span></header><p>Arithmetic inside an <code>unchecked</code> block.</p><dl class="rows"><div><dt>Evidence</dt><dd>block context</dd></div><div><dt>Pair</dt><dd><a href="#precision-lens">precision-lens</a></dd></div></dl></section><section class="panel lens" id="precision-lens" aria-labelledby="h-precision-lens"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-precision-lens">precision-lens</h2><span class="aside">unsafe-math</span></header><p>A division evaluated before a multiplication.</p><dl class="rows"><div><dt>Evidence</dt><dd>operator order</dd></div><div><dt>Pair</dt><dd><a href="#unchecked-lens">unchecked-lens</a></dd></div></dl></section><section class="panel count" id="count" aria-labelledby="h-count"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-count">Where the count lives</h2></header><p>Corroboration is accumulated across lenses, processes and sessions on the finding entity in the WARM tier. A lens has no idea who else agreed with it; memory does.</p><a class="more" href="../memory/">The memory</a></section></div></div><div class="prevnext wrap"><a href="../"><span class="lbl">Previous</span>Front page</a><a href="../memory/"><span class="lbl">Next</span>The memory</a></div>
 </main>
 <footer class="foot wrap">
-  <span class="corner" aria-hidden="true"></span>
-  <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
-  <span class="links">
-    <a href="https://github.com/Yonkoo11/quorum">Code</a>
-    <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
-    <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
-    <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
-  </span>
+  <div class="slab"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><p class="sign display">The intersection is the finding.</p></div>
+  <div class="foottext">
+    <p class="links">
+      <a href="https://github.com/Yonkoo11/quorum">Code</a>
+      <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+      <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
+      <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
+    </p>
+    <p class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</p>
+  </div>
 </footer>
 </body>
 </html>

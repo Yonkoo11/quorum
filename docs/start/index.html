@@ -12,90 +12,45 @@
 <meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="../quorum.css">
 <script>try{var m=localStorage.getItem("quorum-theme");if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);}catch(e){}</script>
+<style>
+@font-face { font-family: "Archivo Black"; src: url("../fonts/ArchivoBlack-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+@font-face { font-family: "IBM Plex Sans"; src: url("../fonts/IBMPlexSans-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+</style>
+<link rel="stylesheet" href="../quorum.css">
 <script src="../quorum.js" defer></script>
 </head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
+<body data-memory="on">
+<a class="skip label" href="#main">Skip to content</a>
+<svg class="grain" aria-hidden="true" focusable="false"><filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#grain)"/></svg>
+<svg class="defs" aria-hidden="true" focusable="false"><defs><clipPath id="lens-clip"><circle cx="19" cy="19" r="17"/></clipPath></defs></svg>
 <header class="bar">
   <div class="wrap">
-    <a class="brand" href="../"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="bar-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
-<g clip-path="url(#bar-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
-<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
-    <nav aria-label="Sections"><ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/" aria-current="page">Run it</a></li></ul></nav>
+    <a class="brand" href="../"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><span>Quorum</span></a>
+    <nav aria-label="Sections"><ul class="label"><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/" aria-current="page">Run it</a></li></ul></nav>
     <button type="button" class="btn theme" id="theme-toggle">Theme</button>
   </div>
 </header>
 <main id="main">
-<section class="pagehead wrap">
-  <div><p class="cap">Run it</p><h1 class="stmt">On your own<br>machine.</h1><p class="deck">Python 3.10 to 3.13. If <code>python3 -m venv</code> fails on your machine, the <code>uv</code> path avoids it entirely. No API key is needed to pull verified source from Base.</p></div>
-  <p class="aside">Memory is a local file. Nothing is uploaded. Only <code>attest</code>, <code>verify</code>, <code>reveal</code> and <code>import</code> touch a network.</p>
-</section>
-
-<section class="band"><div class="wrap"><div class="head"><span class="cap">Install</span></div><div class="copyable"><pre class="terminal" tabindex="0" aria-label="Terminal output" data-copy=""><span class="prompt">$</span> git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
+<section class="statement wrap" aria-labelledby="h-stmt"><h1 class="display" id="h-stmt">On your own <br><span class="g">machine.</span></h1><p class="lede">Python 3.10 to 3.13. If <code>python3 -m venv</code> fails on your machine, the <code>uv</code> path avoids it entirely. No API key is needed to pull verified source from Base.</p></section><div class="board wrap" id="board"><div class="band c-7-5"><section class="panel raised install" id="install" aria-labelledby="h-install"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-install">Install</h2><span class="aside">Python 3.10 to 3.13</span></header><div class="copyable"><pre class="terminal" tabindex="0" aria-label="Install commands" data-copy=""><span class="prompt">$</span> git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
 
 <span class="prompt">$</span> python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .   <span class="cmt"># or:</span>
-<span class="prompt">$</span> uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python -e .</pre></div>
-  <div style="height:var(--sp-5)"></div><div class="copyable"><pre class="terminal" tabindex="0" aria-label="Terminal output" data-copy=""><span class="cmt"># pull real verified source from Base mainnet (no API key needed)</span>
+<span class="prompt">$</span> uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python -e .</pre></div></section><section class="panel env" id="env" aria-labelledby="h-env"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-env">Environment</h2></header><dl class="rows code"><div><dt>DEPLOYER_PRIVATE_KEY</dt><dd>Signing key, read at call time, never logged or written to disk.</dd></div><div><dt>QUORUM_RPC</dt><dd>Overrides the public Robinhood Chain endpoint, the default claim chain.</dd></div><div><dt>QUORUM_CHAIN_ID</dt><dd>Which chain new claims go to: 4663 (default) or 8453.</dd></div><div><dt>BASE_RPC</dt><dd>Overrides the public Base endpoint, used to read the first claim.</dd></div></dl><p class="fine">Publishing also needs the claim fee in QUORUM on Robinhood Chain.</p><a class="more" href="../registry/#cost">What publishing costs</a></section></div><div class="band c-5-7"><section class="panel fetch" id="fetch" aria-labelledby="h-fetch"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-fetch">quorum fetch</h2><span class="aside">no API key needed</span></header><div class="copyable"><pre class="terminal" tabindex="0" aria-label="Fetch commands" data-copy=""><span class="cmt"># pull real verified source from Base mainnet (no API key needed)</span>
 <span class="prompt">$</span> .venv/bin/quorum fetch 0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4 \
                        0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43 \
-                       0x4200000000000000000000000000000000000006</pre></div></div></section>
-
-<section class="split wrap">
-  <div>
-    <h2>Every command</h2>
-    <dl class="rows cmds">
-      <div><dt><code>quorum fetch &lt;address&gt;</code></dt><dd>Download verified contract source from Base into <code>targets/</code>.</dd></div>
-      <div><dt><code>quorum run</code></dt><dd>Run the swarm over <code>targets/</code>. Add <code>--targets &lt;files&gt;</code> to point it somewhere else.</dd></div>
-      <div><dt><code>quorum run --no-memory</code></dt><dd>The deletion test: the identical swarm with a memory that forgets on write.</dd></div>
-      <div><dt><code>quorum swarm --workers 3</code></dt><dd>Three agent processes against one memory, no message bus between them.</dd></div>
-      <div><dt><code>quorum recall</code></dt><dd>What the swarm knows before it reads any code, and how it came to know it.</dd></div>
-      <div><dt><code>quorum recall --since &lt;iso&gt;</code></dt><dd>What it learned after a point in time.</dd></div>
-      <div><dt><code>quorum retire &lt;key&gt; --reason</code></dt><dd>A human overrules a finding. No later session reports that shape again.</dd></div>
-      <div><dt><code>quorum attest</code></dt><dd>Burn the claim fee, then publish confirmed findings to Robinhood Chain.</dd></div>
-      <div><dt><code>quorum verify &lt;tx&gt;</code></dt><dd>Check a published claim against memory, and its fee burn against the token.</dd></div>
-      <div><dt><code>quorum reveal &lt;key&gt;</code></dt><dd>Disclose the pattern behind a paid claim.</dd></div>
-      <div><dt><code>quorum import &lt;tx&gt;</code></dt><dd>Learn a revealed pattern, only if its claim fee was burned.</dd></div>
-      <div><dt><code>quorum status</code></dt><dd>Memory tier report.</dd></div>
-    </dl>
-  </div>
-  <div class="side sheet pinned">
-    <p class="cap">Environment</p>
-    <dl class="rows env">
-      <div><dt>DEPLOYER_PRIVATE_KEY</dt><dd>Signing key, read at call time, never logged or written to disk.</dd></div>
-      <div><dt>QUORUM_RPC</dt><dd>Overrides the public Robinhood Chain endpoint, the default claim chain.</dd></div>
-      <div><dt>QUORUM_CHAIN_ID</dt><dd>Which chain new claims go to: 4663 (default) or 8453.</dd></div>
-      <div><dt>BASE_RPC</dt><dd>Overrides the public Base endpoint, used to read the first claim.</dd></div>
-    </dl>
-    <p class="fine" style="margin-top:var(--sp-4)">Publishing also needs the claim fee in QUORUM on Robinhood Chain. <a href="../registry/#cost">What publishing costs &rarr;</a></p>
-  </div>
-</section>
-
-<section class="split wrap">
-  <div>
-    <h2>The tests</h2>
-    <p><code>.venv/bin/python -m pytest tests -q</code> runs 19 tests. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that <code>attest</code> burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move.</p>
-  </div>
-  <div class="side">
-    <p class="cap">Fixtures</p>
-    <p>The fixtures in <code>fixtures/</code> are vulnerable on purpose and are not deployed anywhere.</p>
-  </div>
-</section>
-<div class="prevnext wrap"><a href="../registry/"><span class="lbl">Previous</span>The registry</a><span></span></div>
+                       0x4200000000000000000000000000000000000006</pre></div></section><section class="panel raised commands" id="commands" aria-labelledby="h-commands"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-commands">Every command</h2></header><dl class="rows code"><div><dt><code>quorum fetch &lt;address&gt;</code></dt><dd>Download verified contract source from Base into <code>targets/</code>.</dd></div><div><dt><code>quorum run</code></dt><dd>Run the swarm over <code>targets/</code>. Add <code>--targets &lt;files&gt;</code> to point it somewhere else.</dd></div><div><dt><code>quorum run --no-memory</code></dt><dd>The deletion test: the identical swarm with a memory that forgets on write.</dd></div><div><dt><code>quorum swarm --workers 3</code></dt><dd>Three agent processes against one memory, no message bus between them.</dd></div><div><dt><code>quorum recall</code></dt><dd>What the swarm knows before it reads any code, and how it came to know it.</dd></div><div><dt><code>quorum recall --since &lt;iso&gt;</code></dt><dd>What it learned after a point in time.</dd></div><div><dt><code>quorum retire &lt;key&gt; --reason</code></dt><dd>A human overrules a finding. No later session reports that shape again.</dd></div><div><dt><code>quorum attest</code></dt><dd>Burn the claim fee, then publish confirmed findings to Robinhood Chain.</dd></div><div><dt><code>quorum verify &lt;tx&gt;</code></dt><dd>Check a published claim against memory, and its fee burn against the token.</dd></div><div><dt><code>quorum reveal &lt;key&gt;</code></dt><dd>Disclose the pattern behind a paid claim.</dd></div><div><dt><code>quorum import &lt;tx&gt;</code></dt><dd>Learn a revealed pattern, only if its claim fee was burned.</dd></div><div><dt><code>quorum status</code></dt><dd>Memory tier report.</dd></div></dl><p class="fine">Memory is a local file. Nothing is uploaded. Only <code>attest</code>, <code>verify</code>, <code>reveal</code> and <code>import</code> touch a network.</p></section></div><div class="band c-4-8"><section class="panel fixtures" id="fixtures" aria-labelledby="h-fixtures"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-fixtures">Fixtures</h2></header><p>The fixtures in <code>fixtures/</code> are vulnerable on purpose and are not deployed anywhere.</p></section><section class="panel tests" id="tests" aria-labelledby="h-tests"><header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-tests">The tests</h2></header><p><code>.venv/bin/python -m pytest tests -q</code> runs the tests. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that <code>attest</code> burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move.</p></section></div></div><div class="prevnext wrap"><a href="../registry/"><span class="lbl">Previous</span>The registry</a><span></span></div>
 </main>
 <footer class="foot wrap">
-  <span class="corner" aria-hidden="true"></span>
-  <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
-  <span class="links">
-    <a href="https://github.com/Yonkoo11/quorum">Code</a>
-    <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
-    <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
-    <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
-  </span>
+  <div class="slab"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><p class="sign display">The intersection is the finding.</p></div>
+  <div class="foottext">
+    <p class="links">
+      <a href="https://github.com/Yonkoo11/quorum">Code</a>
+      <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+      <a href="https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655">Claim</a>
+      <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
+    </p>
+    <p class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</p>
+  </div>
 </footer>
 </body>
 </html>
