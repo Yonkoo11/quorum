@@ -31,9 +31,9 @@ Built for the Sibyl Labs Hackathon.
 
 **[quorum-demo-v2.mp4](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4)** (release asset, 12 MB) · the demo is also live: [the deletion test switch on the front page](https://runquorum.site) and [the in-browser claim verifier](https://runquorum.site/registry/).
 
-| Two lenses, one finding | The deletion test | The fee is burned |
+| Turn the memory off. It finds nothing. | Same files. Same checkers. One difference. | No burn. No memory. |
 |---|---|---|
-| ![two lenses one finding](brand/post-first.png) | ![memory off](brand/post-memory-off.png) | ![the burn](brand/post-burn.png) |
+| ![Turn the memory off. It finds nothing.](brand/post-first.png) | ![Same files, same checkers, one difference: 2 confirmed with memory, 0 without](brand/post-memory-off.png) | ![No burn, no memory: 100,000 QUORUM per claim](brand/post-utility.png) |
 
 ---
 
@@ -149,24 +149,24 @@ Run Quorum against audited production contracts and it mostly holds its tongue. 
 ## Architecture
 
 ```mermaid
-flowchart LR
-  subgraph lenses["six lenses, separate processes, no messages between them"]
-    A[callorder-lens] & B[guard-lens] & C[modifier-lens] & D[sender-lens] & E[unchecked-lens] & F[precision-lens]
+flowchart TB
+  L["six lenses, separate processes, no messages between them<br/>callorder · guard · modifier · sender · unchecked · precision"]
+  subgraph M["one Sibyl Memory file: quorum/memory.py"]
+    direction TB
+    HOT["HOT · state/ · who claimed which unit"]
+    WARM["WARM · entities/ · sightings, and who agreed"]
+    REF["REFERENCE · reference/ · confirmed idioms"]
+    ARCH["ARCHIVE · archive/ · retired findings"]
+    COLD["COLD · journal · every event, auditable after the fact"]
   end
-  subgraph memory["one Sibyl Memory file (quorum/memory.py)"]
-    HOT["HOT state/ · who claimed which unit"]
-    WARM["WARM entities/ · sightings and who agreed"]
-    REF["REFERENCE reference/ · confirmed idioms"]
-    ARCH["ARCHIVE archive/ · retired findings"]
-    COLD["COLD journal · every event, auditable"]
-  end
-  lenses -- "claim_work / record_sighting" --> HOT & WARM
+  RH[("Robinhood Chain<br/>QUORUM2 claim · QUORUM3 reveal")]
+  L -- "claim_work" --> HOT
+  L -- "record_sighting" --> WARM
   WARM -- "two lenses, different evidence: promote" --> REF
-  REF -- "known_pattern: recognised on sight" --> lenses
-  ARCH -- "is_retired" --> lenses
-  memory --> COLD
-  REF -- "quorum attest: burn 100,000 QUORUM, then write the digest" --> RH[("Robinhood Chain\nQUORUM2 claim · QUORUM3 reveal")]
-  RH -- "quorum verify / import" --> memory
+  REF -- "known_pattern: recognised on sight" --> L
+  ARCH -- "is_retired" --> L
+  REF -- "quorum attest: burn 100,000 QUORUM, then write the digest" --> RH
+  RH -- "quorum verify · quorum import" --> REF
 ```
 
 Every Sibyl Memory read and write in this project is in one file, [`quorum/memory.py`](quorum/memory.py). The chain layer, [`quorum/chain.py`](quorum/chain.py), is the only module that knows the token exists; [`tests/test_token.py`](tests/test_token.py) asserts that the scanner modules never touch it.
