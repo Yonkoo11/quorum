@@ -193,9 +193,9 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/python -m pytest tests -q             # 16 tests
 ```
 
-`quorum attest` additionally needs `BASE_RPC` and `DEPLOYER_PRIVATE_KEY` in the environment.
+`quorum attest` additionally needs `BASE_RPC` and `DEPLOYER_PRIVATE_KEY` in the environment, plus the claim fee in QUORUM on Robinhood Chain. `QUORUM_TOKEN_RPC` overrides the default Robinhood Chain endpoint.
 
-Commands: `fetch`, `run`, `swarm`, `recall [--since]`, `retire <key> --reason`, `attest`, `status`.
+Commands: `fetch`, `run`, `swarm`, `recall [--since]`, `retire <key> --reason`, `attest`, `verify <tx>`, `reveal <key>`, `import <tx>`, `status`.
 
 ---
 

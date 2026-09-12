@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The lenses · Quorum</title>
+<meta name="description" content="Six readings, two per risk, each pair reasoning from different evidence.">
+<link rel="icon" href="../icon-256.png">
+<meta name="theme-color" content="#f3eee4">
+<meta property="og:title" content="The lenses · Quorum">
+<meta property="og:description" content="Six readings, two per risk, each pair reasoning from different evidence.">
+<meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../quorum.css">
+</head>
+<body>
+<div class="page">
+
+<div class="ears small">
+  <span>Open source &middot; MIT &middot; Solidity</span>
+  <span class="ed num">Vol. 0.1 &middot; Base mainnet &middot; block 51138878</span>
+</div>
+
+<div class="masthead-sm">
+  <a class="name" href="../">Quorum</a>
+  <span class="sec small">Page 2 &middot; The lenses</span>
+</div>
+<nav class="nav small" aria-label="Sections">
+  <ul><li><a href=".././">Front page</a></li><li><a href="../lenses/" aria-current="page">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul>
+  <span class="folio num">6 lenses &middot; 3 risks</span>
+</nav>
+
+<section class="grid sec-head">
+  <div class="t">
+    <p class="kicker small">The lenses</p>
+    <h2>Six readings.<br>Two per risk.</h2>
+    <p class="deck">A single detector that reports everything it sees is noise. Six of them are six times the noise. Quorum pairs its lenses two per risk, and each pair reasons from different evidence.</p>
+  </div>
+  <div class="aside">Agreement is signal. Disagreement is kept as a candidate and never published.</div>
+</section>
+
+<section class="grid row art">
+  <div class="col">
+    <h3>What a lens may not do</h3>
+    <p>No lens can publish a finding on its own. A lens records what it saw and reads nothing about
+      what its peers saw; the tally of who agreed lives on the finding in memory, not inside any
+      agent. A second lens that reaches the same (contract, function, risk) from a different reading
+      is what turns a sighting into a finding.</p>
+    <p>The lenses are deliberately simple. They are regex-and-brace-matching heuristics over source
+      text, not a compiler front end. The point of this project is the coordination and memory
+      layer; the lenses are the honest minimum needed to have something real to coordinate about.</p>
+  </div>
+  <aside class="rail">
+    <p class="kicker small">On audited production code</p>
+    <p>Run Quorum against audited production contracts and it mostly holds its tongue. On
+      Aerodrome&rsquo;s Router, WETH9 and a Compound proxy it confirms nothing and files eleven
+      candidates. That is the intended behaviour, not a failure to find bugs.</p>
+  </aside>
+</section>
+
+<section class="row">
+  <div class="risk"><h3>reentrancy</h3><span class="pair small">callorder-lens &middot; guard-lens</span></div>
+  <div class="entry">
+  <div><span class="n">callorder-lens</span><span class="cls">Evidence: call ordering</span></div>
+  <div><p>An external call precedes a state write in the same function.</p></div>
+</div>
+  <div class="entry">
+  <div><span class="n">guard-lens</span><span class="cls">Evidence: guard absence</span></div>
+  <div><p>The function moves value out and carries no reentrancy guard.</p></div>
+</div>
+
+  <div class="risk"><h3>unguarded-state-write</h3><span class="pair small">modifier-lens &middot; sender-lens</span></div>
+  <div class="entry">
+  <div><span class="n">modifier-lens</span><span class="cls">Evidence: declaration</span></div>
+  <div><p>Externally callable, writes storage, carries no modifier at all.</p></div>
+</div>
+  <div class="entry">
+  <div><span class="n">sender-lens</span><span class="cls">Evidence: reachability</span></div>
+  <div><p>Writes a privileged-looking variable with no <code>msg.sender</code> check anywhere on the path.</p></div>
+</div>
+
+  <div class="risk"><h3>unsafe-math</h3><span class="pair small">unchecked-lens &middot; precision-lens</span></div>
+  <div class="entry">
+  <div><span class="n">unchecked-lens</span><span class="cls">Evidence: block context</span></div>
+  <div><p>Arithmetic inside an <code>unchecked</code> block.</p></div>
+</div>
+  <div class="entry">
+  <div><span class="n">precision-lens</span><span class="cls">Evidence: operator order</span></div>
+  <div><p>A division evaluated before a multiplication.</p></div>
+</div>
+</section>
+
+<section class="grid row art">
+  <div class="col">
+    <h3>Not a vulnerability scanner that proves exploits</h3>
+    <p>Quorum publishes corroborated idioms worth review, not confirmed vulnerabilities. A quorum
+      means two independent lenses agreed on a shape, nothing more. The Friend.tech recall on the
+      front page is a pattern match on a call idiom, not an allegation about that contract.</p>
+    <p>The fixtures in <code>fixtures/</code> are vulnerable on purpose and are not deployed
+      anywhere.</p>
+  </div>
+  <aside class="rail">
+    <p class="kicker small">Where the count lives</p>
+    <p>Corroboration is accumulated across lenses, processes and sessions on the finding entity in
+      the WARM tier. A lens has no idea who else agreed with it; memory does.</p>
+    <p><a href="../memory/">The memory &rarr;</a></p>
+  </aside>
+</section>
+
+<div class="prev-next"><a href="../"><span class="lbl">Previous</span>Front page</a><a href="../memory/"><span class="lbl">Next</span>The memory</a></div>
+
+<nav class="colophon small" aria-label="Colophon">
+  <span class="corner" aria-hidden="true"></span>
+  <span>Built with Sibyl Memory &middot; Base mainnet &middot; MIT</span>
+  <span class="links">
+    <a href="https://github.com/Yonkoo11/quorum">Code</a>
+    <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+    <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim</a>
+    <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
+  </span>
+</nav>
+
+</div>
+</body>
+</html>

@@ -1,724 +1,166 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Quorum. Two lenses. One finding.</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quorum: a swarm that coordinates through memory</title>
+<meta name="description" content="Six security lenses that never talk to each other. Sibyl Memory is the only channel between them.">
 <link rel="icon" href="icon-256.png">
-<meta property="og:title" content="Quorum">
-<meta property="og:description" content="Six lenses. They never talk. Nothing publishes until two agree.">
-<meta property="og:image" content="post-2.png">
 <meta name="theme-color" content="#f3eee4">
-<!--
-UX ARCHITECTURE: proposal-1 "The deck"  (DNA F-H-F-D-C)
-
-ENTRY
-  A single URL. The page is a deck of seven full-viewport cards in the exact idiom of
-  brand/post-first.html. The reader scrolls (or presses space / arrow keys); the deck snaps
-  card to card. A fixed black corner block bottom-left carries the lens mark as the wordmark.
-  A fixed "index" button top-left opens an overlay listing the seven cards.
-
-SCREENS (cards, in order)
-  01 hero          TWO LENSES. ONE FINDING.           lens state: overlap, green (a finding)
-  02 why a quorum  six lenses, two per risk           lens state: two circles apart
-  03 deletion test the one large terminal, 2 vs 0     lens state: intersection as a black void
-  04 recall        learned on a fixture, recognised   lens state: overlap, green, cropped huge
-  05 the claim     51138878.                          lens state: mark with a serial/receipt
-  06 publishing    1,000 QUORUM.                      lens state: burn (void on black)
-  07 run it        install block + code/demo links    no mark; the footer line
-
-HAPPY PATH
-  Land on 01 -> scroll through 02..06 -> 07 -> copy the install block or follow code/demo/claim.
-
-STATES
-  n/a, static page. Two fallbacks:
-  - prefers-reduced-motion: scroll-snap is switched off, smooth scrolling is switched off,
-    hover transitions are removed.
-  - no JS: the index is a <details>/<summary>, so the overlay works without any script.
-    The only script on the page marks the current card in the index and is optional.
--->
-<style>
-  @font-face {
-    font-family: "Archivo Black";
-    src: url("fonts/ArchivoBlack-Regular.ttf") format("truetype");
-    font-weight: 400; font-style: normal; font-display: block;
-  }
-  @font-face {
-    font-family: "IBM Plex Sans";
-    src: url("fonts/IBMPlexSans-Medium.ttf") format("truetype");
-    font-weight: 500; font-style: normal; font-display: block;
-  }
-
-  :root {
-    --paper: #f3eee4;
-    --ink: #121212;
-    --black: #111111;
-    --green: #3fb950;
-    --green-ink: #24772f;
-    --muted: #6f6a5e;
-    --display: "Archivo Black", "Arial Black", sans-serif;
-    --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
-    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-    --gutter: clamp(20px, 5vw, 72px);
-    --card-h: 100vh;
-  }
-  @supports (height: 100svh) { :root { --card-h: 100svh; } }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html {
-    background: var(--paper);
-    color: var(--ink);
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
-    overflow-x: hidden;
-  }
-  body {
-    font-family: var(--sans);
-    font-weight: 500;
-    font-size: 17px;
-    line-height: 1.45;
-    background: var(--paper);
-    overflow-x: hidden;
-  }
-
-  a { color: inherit; }
-  a:focus-visible, summary:focus-visible, button:focus-visible {
-    outline: 3px solid var(--green-ink);
-    outline-offset: 3px;
-  }
-
-  /* ---------- the deck ---------- */
-  .card {
-    position: relative;
-    min-height: var(--card-h);
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    overflow: hidden;
-    padding: calc(var(--gutter) * 1.4) var(--gutter) calc(var(--gutter) * 1.4);
-  }
-  .card--ink { background: var(--black); color: var(--paper); }
-
-  .kicker {
-    font-size: 13px;
-    letter-spacing: .28em;
-    text-transform: uppercase;
-    color: var(--green-ink);
-    line-height: 1;
-  }
-  .kicker::before {
-    content: "";
-    display: block;
-    width: 32px; height: 3px;
-    background: var(--green-ink);
-    margin-bottom: 18px;
-  }
-  .card--ink .kicker { color: var(--green); }
-  .card--ink .kicker::before { background: var(--green); }
-
-  .folio {
-    position: absolute;
-    right: var(--gutter);
-    bottom: calc(var(--gutter) * 0.9);
-    font-family: var(--mono);
-    font-size: 13px;
-    letter-spacing: .2em;
-    color: var(--muted);
-    z-index: 5;
-  }
-
-  .display {
-    font-family: var(--display);
-    font-weight: 400;
-    line-height: .92;
-    letter-spacing: -.04em;
-    color: inherit;
-  }
-  .display.upper { text-transform: uppercase; }
-  .display .g { color: var(--green-ink); }
-  .card--ink .display .g { color: var(--green); }
-
-  .mono {
-    font-family: var(--mono);
-    font-size: 16px;
-    line-height: 1.55;
-  }
-  .measure { max-width: 34em; }
-  code { font-family: var(--mono); font-size: .94em; }
-
-  /* text links: 44px targets by padding, only opacity/transform move */
-  .lnk {
-    display: inline-block;
-    min-height: 44px;
-    padding: 11px 0;
-    text-decoration: none;
-    border-bottom: 3px solid currentColor;
-    line-height: 1.2;
-  }
-  .lnk.g { color: var(--green-ink); }
-  .card--ink .lnk.g { color: var(--green); }
-
-  @media (hover: hover) {
-    .lnk { transition: transform 180ms ease-out; }
-    .lnk:hover { transform: translateY(-2px); }
-    .bigl { transition: opacity 180ms ease-out; }
-    .bigl:hover { opacity: .72; }
-  }
-
-  /* ---------- fixed chrome ---------- */
-  .corner {
-    position: fixed;
-    left: 0; bottom: 0;
-    width: 68px; height: 68px;
-    background: var(--black);
-    z-index: 40;
-    display: grid; place-items: center;
-    text-decoration: none;
-  }
-  .corner svg { width: 40px; height: 40px; display: block; }
-
-  .index { position: fixed; top: 0; left: 0; z-index: 50; }
-  .index summary {
-    position: relative; z-index: 2;
-    list-style: none;
-    cursor: pointer;
-    display: inline-block;
-    min-width: 44px; min-height: 44px;
-    padding: 15px 18px;
-    background: var(--black);
-    color: var(--paper);
-    font-family: var(--mono);
-    font-size: 13px;
-    letter-spacing: .28em;
-    text-transform: uppercase;
-    line-height: 1;
-    user-select: none;
-  }
-  .index summary::-webkit-details-marker { display: none; }
-  .index[open] summary { color: var(--green); }
-  .index__sheet {
-    position: fixed;
-    inset: 0;
-    background: var(--black);
-    color: var(--paper);
-    padding: 96px var(--gutter) var(--gutter);
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  .index__sheet ol { list-style: none; }
-  .index__sheet a {
-    display: block;
-    text-decoration: none;
-    font-family: var(--display);
-    font-size: clamp(28px, 5.4vh, 64px);
-    line-height: 1.05;
-    letter-spacing: -.03em;
-    padding: 4px 0;
-    color: var(--paper);
-  }
-  .index__sheet a span {
-    font-family: var(--mono);
-    font-size: 13px;
-    letter-spacing: .28em;
-    color: var(--muted);
-    margin-right: 1em;
-    vertical-align: middle;
-  }
-  .index__sheet a[aria-current="true"] { color: var(--green); }
-  @media (hover: hover) {
-    .index__sheet a { transition: transform 200ms ease-out; }
-    .index__sheet a:hover { transform: translateX(12px); }
-  }
-
-  /* ---------- 01 hero: type left / art right ---------- */
-  .hero { display: grid; grid-template-columns: 1fr; padding-right: 0; }
-  .hero .copy { position: relative; z-index: 3; align-self: center; }
-  .hero .display { font-size: clamp(48px, 6.2vw, 96px); margin-top: 40px; }
-  .hero .display span { display: block; }
-  .hero .lede { margin-top: 28px; }
-  .hero .art {
-    position: absolute; right: 0; top: 0; height: 100%; width: 42%;
-    z-index: 1; pointer-events: none;
-  }
-  .hero .art svg { width: 100%; height: 100%; display: block; }
-  .hero .status { margin-top: 12px; font-size: 13px; letter-spacing: .34em; text-transform: uppercase; color: var(--muted); line-height: 1; }
-  .hero .actions { margin-top: 24px; display: flex; gap: 36px; flex-wrap: wrap; }
-
-  /* ---------- 02 why a quorum: type only, huge, a ledger ---------- */
-  .quorum { display: grid; align-content: center; }
-  .quorum .display { font-size: clamp(30px, 3.9vw, 60px); max-width: 17em; margin-top: 32px; }
-  .pairs { margin-top: 40px; border-top: 3px solid var(--ink); }
-  .pairs .row {
-    display: grid;
-    grid-template-columns: 11em 1fr 1fr;
-    gap: 32px;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--ink);
-  }
-  .pairs .risk { font-family: var(--mono); font-size: 16px; color: var(--green-ink); }
-  .pairs .lens b { display: block; font-family: var(--mono); font-weight: 500; font-size: 16px; margin-bottom: 4px; }
-  .quorum .apart {
-    position: absolute; top: var(--gutter); right: var(--gutter);
-    width: clamp(90px, 12vw, 172px); height: auto;
-  }
-
-  /* ---------- 03 deletion test: the terminal is the art ---------- */
-  .delete { display: grid; align-content: center; gap: 28px; }
-  .delete .display { font-size: clamp(28px, 3vw, 44px); max-width: 24em; letter-spacing: -.03em; line-height: 1; }
-  .termhead {
-    display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    background: var(--black); color: var(--paper);
-    padding: 8px 16px 0 36px;
-  }
-  .termhead .live { color: var(--green); }
-  .termhead[data-on="false"] .live { color: var(--paper); }
-  .switch { display: flex; border: 1px solid var(--paper); }
-  .switch button {
-    appearance: none; border: 0; background: transparent; color: var(--paper);
-    font-family: var(--sans); font-size: 13px; font-weight: 500;
-    min-height: 44px; min-width: 44px; padding: 0 14px; cursor: pointer;
-  }
-  .switch button[aria-pressed="true"] { background: var(--paper); color: var(--black); }
-  .switch button:active { opacity: .7; }
-  .term {
-    background: var(--black);
-    color: var(--paper);
-    padding: 20px 36px 28px;
-    overflow-x: auto;
-    font-family: var(--mono);
-    font-size: 16px;
-    line-height: 1.6;
-    tab-size: 4;
-    margin: 0;
-  }
-  .term[hidden] { display: none; }
-  .term .c { color: var(--muted); }
-  .term .p { color: var(--green); }
-  .term .hit { color: var(--green); }
-  .delete .void {
-    position: absolute; top: var(--gutter); right: var(--gutter);
-    width: clamp(90px, 12vw, 172px); height: auto;
-    z-index: 2;
-  }
-  .delete .void .vesica { fill: #3fb950; }
-  .delete[data-on="false"] .void .vesica { fill: #111111; }
-
-  /* ---------- 04 recall: art full-bleed, type in a corner ---------- */
-  .recall { display: grid; align-content: end; }
-  .recall .art {
-    position: absolute; inset: 0; z-index: 0; pointer-events: none;
-  }
-  .recall .art svg { position: absolute; right: -10vw; top: -54vh; width: 80vw; height: auto; }
-  .recall .copy { position: relative; z-index: 2; max-width: 40rem; }
-  .recall .display { font-size: clamp(32px, 3.6vw, 54px); margin-top: 28px; letter-spacing: -.035em; line-height: .96; }
-  .recall .idioms { margin-top: 36px; }
-  .recall .idioms div { padding: 6px 0; }
-  .recall .idioms .same { color: var(--green-ink); }
-  .recall .idioms .diff { color: var(--muted); text-decoration: line-through; }
-
-  /* ---------- 05 the claim: one number ---------- */
-  .claim { display: grid; align-content: center; justify-items: center; text-align: center; }
-  .claim .number {
-    font-family: var(--display);
-    font-size: clamp(64px, 13.4vw, 210px);
-    line-height: .9;
-    letter-spacing: -.05em;
-    margin-top: 32px;
-    font-variant-numeric: tabular-nums;
-  }
-  .claim .receipt {
-    margin-top: 44px;
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 24px;
-    align-items: center;
-    text-align: left;
-    border-top: 3px solid var(--ink);
-    border-bottom: 1px solid var(--ink);
-    padding: 18px 0;
-    max-width: 920px;
-    width: 100%;
-  }
-  .claim .receipt svg { width: 84px; height: 48px; display: block; }
-  .claim .receipt .mono { word-break: break-all; }
-  .claim .receipt .mono div { display: grid; grid-template-columns: 10em 1fr; gap: 12px; }
-  .claim .receipt .mono span { color: var(--muted); }
-  .claim .actions { margin-top: 28px; }
-
-  /* ---------- 06 publishing costs: type over art, on black ---------- */
-  .cost { display: grid; align-content: center; }
-  .cost .art { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-  .cost .art svg { position: absolute; right: 3vw; top: 6vh; width: clamp(240px, 30vw, 440px); height: auto; }
-  .cost .copy { position: relative; z-index: 2; }
-  .cost .display { font-size: clamp(56px, 8vw, 116px); margin-top: 32px; letter-spacing: -.05em; line-height: .88; }
-  .cost .display span { display: block; }
-  .cost .rules { margin-top: 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 48px; max-width: 56rem; }
-  .cost .rules p { padding-left: 0; }
-  .cost .rules p::before { content: ""; display: inline-block; width: 14px; height: 3px; background: var(--green); vertical-align: middle; margin-right: 12px; }
-  .cost .tok { margin-top: 28px; font-family: var(--mono); font-size: 16px; color: var(--muted); word-break: break-all; }
-  .cost .tok a { color: var(--paper); }
-
-  /* ---------- 07 run it ---------- */
-  .run { display: grid; grid-template-columns: 1fr; gap: 40px; align-content: center; }
-  .run .install {
-    background: var(--black); color: var(--paper);
-    padding: 30px 34px;
-    font-family: var(--mono); font-size: 15px; line-height: 1.6;
-    overflow-x: auto;
-  }
-  .run .install .c { color: var(--muted); }
-  .run .links { display: flex; flex-direction: column; justify-content: center; gap: 4px; }
-  .bigl {
-    font-family: var(--display);
-    font-size: clamp(44px, 6.4vw, 104px);
-    line-height: .96;
-    letter-spacing: -.04em;
-    text-decoration: none;
-    display: block;
-    color: var(--ink);
-    padding: 6px 0;
-  }
-  .bigl small {
-    display: block;
-    font-family: var(--mono);
-    font-size: 15px;
-    letter-spacing: .28em;
-    text-transform: uppercase;
-    color: var(--green-ink);
-    margin-bottom: 8px;
-  }
-  .run footer {
-    grid-column: 1 / -1;
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--muted);
-    letter-spacing: .04em;
-    padding-left: 88px;
-    line-height: 1.6;
-  }
-
-  /* ---------- wide ---------- */
-  @media (min-width: 900px) {
-    .hero { grid-template-columns: 52% 1fr; }
-    .run { grid-template-columns: 1.15fr 1fr; gap: 64px; }
-    .run footer { padding-left: 88px; }
-  }
-
-  /* ---------- narrow ---------- */
-  @media (max-width: 899px) {
-    .hero { padding-right: var(--gutter); }
-    .hero .art { position: relative; width: 100%; height: 38vh; order: -1; margin: -8px calc(var(--gutter) * -1) 0 auto; width: calc(100% + var(--gutter)); }
-    .hero .display { margin-top: 28px; }
-    .pairs .row { grid-template-columns: 1fr; gap: 10px; }
-    .quorum .apart, .delete .void { top: 20px; right: 20px; width: 72px; }
-    .term { padding: 18px 20px; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
-    .termhead { flex-wrap: wrap; padding: 8px 16px 0; }
-    .dna { display: none; }
-    .recall .art svg { right: -30vw; top: -14vh; width: 130vw; }
-    .claim .receipt { grid-template-columns: 1fr; }
-    .cost .art svg { right: -6vw; top: 14px; width: 38vw; }
-    .card { padding-bottom: 96px; }
-    .hero .actions, .run footer { padding-left: 76px; }
-    .cost .kicker { max-width: 58%; line-height: 1.5; }
-    html { scroll-snap-type: y proximity; }
-    .card { scroll-snap-stop: normal; }
-    .claim .receipt .mono div { grid-template-columns: 1fr; gap: 0; }
-    .claim .receipt .mono div + div { margin-top: 8px; }
-    .cost .rules { grid-template-columns: 1fr; }
-    .run footer { padding-left: 0; padding-bottom: 72px; }
-    .dna { display: none; }
-    .index__sheet a { font-size: clamp(24px, 4.2vh, 44px); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    html { scroll-snap-type: none; scroll-behavior: auto; }
-    .lnk, .bigl, .index__sheet a { transition: none; }
-  }
-</style>
+<meta property="og:title" content="Quorum: a swarm that coordinates through memory">
+<meta property="og:description" content="Six security lenses that never talk to each other. Sibyl Memory is the only channel between them.">
+<meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="quorum.css">
 </head>
 <body>
+<div class="page">
 
-<!-- fixed chrome -->
-<details class="index" id="index">
-  <summary aria-label="Open the index of cards">index</summary>
-  <div class="index__sheet">
-    <ol>
-      <li><a href="#c1"><span>01</span>Two lenses. One finding.</a></li>
-      <li><a href="#c2"><span>02</span>Why a quorum</a></li>
-      <li><a href="#c3"><span>03</span>The deletion test</a></li>
-      <li><a href="#c4"><span>04</span>Recall</a></li>
-      <li><a href="#c5"><span>05</span>The claim on Base</a></li>
-      <li><a href="#c6"><span>06</span>Publishing costs</a></li>
-      <li><a href="#c7"><span>07</span>Run it</a></li>
-    </ol>
+<div class="ears small">
+  <span>Open source &middot; MIT &middot; Solidity</span>
+  <span class="ed num">Vol. 0.1 &middot; Base mainnet &middot; block 51138878</span>
+</div>
+
+<header class="nameplate">
+  <div class="name">
+    <div class="greenrule" aria-hidden="true"></div>
+    <h1>Quorum</h1>
+    <p class="tag">A swarm of security lenses that never talk to each other. Sibyl Memory is the only
+      channel between them, and it is the only reason the swarm can agree on anything, recognise
+      anything, or forget anything.</p>
   </div>
-</details>
+  <div class="mark"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="mast-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
+<circle cx="196" cy="190" r="176" fill="#f3eee4"/><circle cx="364" cy="190" r="176" fill="#f3eee4"/>
+<g clip-path="url(#mast-l)"><circle cx="364" cy="190" r="176" fill="#3fb950"/></g>
+<circle cx="196" cy="190" r="176" fill="none" stroke="#111111" stroke-width="22"/>
+<circle cx="364" cy="190" r="176" fill="none" stroke="#111111" stroke-width="22"/></svg></div>
+</header>
 
-<a class="corner" href="#c1" aria-label="Quorum, back to the top">
-  <svg viewBox="0 0 512 512" aria-hidden="true">
-    <defs><clipPath id="q-left"><circle cx="196" cy="256" r="132"/></clipPath></defs>
-    <circle cx="196" cy="256" r="132" fill="none" stroke="#3fb950" stroke-opacity=".55" stroke-width="14"/>
-    <circle cx="316" cy="256" r="132" fill="none" stroke="#3fb950" stroke-opacity=".55" stroke-width="14"/>
-    <g clip-path="url(#q-left)"><circle cx="316" cy="256" r="132" fill="#3fb950"/></g>
-  </svg>
-</a>
+<nav class="nav small" aria-label="Sections">
+  <ul><li><a href="./" aria-current="page">Front page</a></li><li><a href="lenses/">Lenses</a></li><li><a href="memory/">Memory</a></li><li><a href="registry/">Registry</a></li><li><a href="start/">Run it</a></li></ul>
+  <span class="folio num">6 lenses &middot; 2 per risk &middot; 16 tests</span>
+</nav>
 
-<main>
-
-<!-- 01 HERO: type left / art right -->
-<section class="card hero" id="c1" aria-label="Two lenses. One finding.">
-  <div class="copy">
-    <div class="kicker">runquorum.site</div>
-    <div class="status">open source · solidity · MIT</div>
-    <h1 class="display upper"><span>Two lenses.</span><span>One finding.</span></h1>
-    <p class="lede measure">Six independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion, and the count of who agreed lives in memory, not in any agent's head.</p>
-    <div class="actions">
-      <a class="lnk" href="https://github.com/Yonkoo11/quorum">read the code</a>
-      <a class="lnk g" href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">the claim on Base</a>
+<section class="grid row lead">
+  <article class="story">
+    <h2><span>Two lenses.</span><span>One finding.</span></h2>
+    <p class="deck">No lens can publish a finding on its own. A finding becomes real only when two
+      lenses that work from different evidence arrive at the same conclusion, and the count of who
+      agreed lives in memory, not in any agent&rsquo;s head.</p>
+    <div class="standfirst">
+      <p>Six independent lenses read Solidity source. Once a pattern is confirmed, the swarm
+        recognises that idiom on sight in a completely different contract, in a completely different
+        session, from a single sighting.</p>
+      <p>Quorum pairs its lenses two per risk. For <code>reentrancy</code>,
+        <code>callorder-lens</code> sees an external call precede a state write, while
+        <code>guard-lens</code> sees a function that moves value out and carries no reentrancy
+        guard. Two readings, one conclusion.</p>
+      <p>Delete the memory layer and there is no swarm left. Just six programs that each shout once
+        and forget. Rather than assert that, Quorum ships it as a runtime flag, and the switch below
+        is that flag.</p>
     </div>
-  </div>
-  <div class="art" aria-hidden="true">
-    <svg viewBox="0 0 560 900" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg">
-      <defs><clipPath id="left-lens"><circle cx="196" cy="300" r="186"/></clipPath></defs>
-      <rect x="492" y="0" width="68" height="900" fill="#111111"/>
-      <rect x="280" y="0" width="280" height="40" fill="#111111"/>
-      <polygon points="400,900 560,706 560,900" fill="#111111"/>
-      <rect x="292" y="40" width="200" height="860" fill="#3fb950"/>
-      <circle cx="236" cy="900" r="156" fill="#f3eee4"/>
-      <circle cx="196" cy="300" r="186" fill="#f3eee4"/>
-      <circle cx="364" cy="300" r="186" fill="#f3eee4"/>
-      <g clip-path="url(#left-lens)"><circle cx="364" cy="300" r="186" fill="#3fb950"/></g>
-      <circle cx="196" cy="300" r="186" fill="none" stroke="#111111" stroke-width="22"/>
-      <circle cx="364" cy="300" r="186" fill="none" stroke="#111111" stroke-width="22"/>
-    </svg>
-  </div>
-  <div class="folio">01 / 07</div>
+  </article>
+
+  <aside class="side">
+    <p class="kicker small">Recall</p>
+    <h3>Learned on a teaching fixture. Recognised on Base from one sighting.</h3>
+    <p>The pattern was learned on a teaching fixture and recognised in production code deployed on
+      Base. <code>msg.sender.call{value: amount}("")</code> and
+      <code>protocolFeeDestination.call{value: protocolFee}("")</code> are the same idiom, so they
+      hash to the same signature. <code>weth.deposit{value: amountETH}()</code> is a different
+      idiom and does not.</p>
+    <dl>
+      <dt>Confirmed pattern</dt><dd class="mono">reentrancy:97d18d17cfa4494a</dd>
+      <dt>First confirmed on</dt><dd>VulnerableVault.sol by <code>callorder-lens</code>, <code>guard-lens</code></dd>
+      <dt>Recognised since on</dt><dd>FriendtechSharesV1.sol (1 sighting each, no quorum needed)</dd>
+    </dl>
+    <p class="note">The Friend.tech recall is a pattern match on a call idiom, not an allegation
+      about that contract. Quorum publishes corroborated idioms worth review, not confirmed
+      vulnerabilities.</p>
+  </aside>
 </section>
 
-<!-- 02 WHY A QUORUM: type only, a ledger of pairs -->
-<section class="card quorum" id="c2" aria-label="Why a quorum">
-  <svg class="apart" viewBox="0 0 200 100" aria-hidden="true">
-    <circle cx="46" cy="50" r="40" fill="none" stroke="#111111" stroke-width="10"/>
-    <circle cx="154" cy="50" r="40" fill="none" stroke="#111111" stroke-width="10"/>
-  </svg>
-  <div class="kicker">why a quorum</div>
-  <h2 class="display">a single detector that reports everything it sees is noise. six of them are six times the noise. <span class="g">quorum pairs its lenses two per risk, and each pair reasons from different evidence.</span></h2>
-  <div class="pairs" role="table" aria-label="Lens pairs">
-    <div class="row" role="row">
-      <div class="risk" role="cell">reentrancy</div>
-      <div class="lens" role="cell"><b>callorder-lens</b>an external call precedes a state write in the same function</div>
-      <div class="lens" role="cell"><b>guard-lens</b>the function moves value out and carries no reentrancy guard</div>
+<section class="grid row photo" aria-labelledby="deletion-h">
+  <div class="term">
+    <div class="switchbar">
+      <span class="lbl small" id="deletion-h">The deletion test</span>
+      <span class="switch" role="group" aria-label="Memory">
+        <button type="button" id="btn-on" aria-pressed="true" aria-controls="pane-on">Memory on</button>
+        <button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">--no-memory</button>
+      </span>
     </div>
-    <div class="row" role="row">
-      <div class="risk" role="cell">unguarded-state-write</div>
-      <div class="lens" role="cell"><b>modifier-lens</b>externally callable, writes storage, carries no modifier at all</div>
-      <div class="lens" role="cell"><b>sender-lens</b>writes a privileged-looking variable with no <code>msg.sender</code> check anywhere on the path</div>
-    </div>
-    <div class="row" role="row">
-      <div class="risk" role="cell">unsafe-math</div>
-      <div class="lens" role="cell"><b>unchecked-lens</b>arithmetic inside an <code>unchecked</code> block</div>
-      <div class="lens" role="cell"><b>precision-lens</b>a division evaluated before a multiplication</div>
-    </div>
-  </div>
-  <div class="folio">02 / 07</div>
-</section>
+    <div class="panes"><pre class="terminal" id="pane-on"><span class="prompt">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
+  <span class="hi">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
+  <span class="hi">QUORUM</span>    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
+scanned 12 lens-units | <span class="hi">confirmed 2</span> | <span class="hi">recalled 1</span> | candidates 5
 
-<!-- 03 THE DELETION TEST: the one large terminal -->
-<section class="card delete" id="c3" aria-label="The deletion test" data-on="true">
-  <svg class="void" viewBox="0 0 200 120" aria-hidden="true">
-    <defs><clipPath id="void-left"><circle cx="72" cy="60" r="52"/></clipPath></defs>
-    <g clip-path="url(#void-left)"><circle class="vesica" cx="128" cy="60" r="52" fill="#3fb950"/></g>
-    <circle cx="72" cy="60" r="52" fill="none" stroke="#111111" stroke-width="10"/>
-    <circle cx="128" cy="60" r="52" fill="none" stroke="#111111" stroke-width="10"/>
-  </svg>
-  <div>
-    <div class="kicker">the deletion test</div>
-    <h2 class="display">Delete the memory layer and there is no swarm left. Just six programs that each shout once and forget.</h2>
-  </div>
-  <div>
-    <div class="termhead" id="termhead" data-on="true">
-      <span>Same two files · <span class="live" id="live-count">confirmed 2</span></span>
-      <div class="switch" role="group" aria-label="Memory">
-        <button type="button" id="btn-on" aria-pressed="true">memory on</button>
-        <button type="button" id="btn-off" aria-pressed="false">--no-memory</button>
-      </div>
-    </div>
-<pre class="term" id="term-on" tabindex="0"><span class="p">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
-
-quorum [MEMORY ON]  quorum threshold: 2
-  <span class="hit">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
-  <span class="hit">QUORUM</span>    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
-scanned 12 lens-units | <span class="hit">confirmed 2</span> | recalled 1 | candidates 5</pre>
-<pre class="term" id="term-off" hidden tabindex="0"><span class="p">$</span> quorum run --no-memory --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
-
-quorum [MEMORY REMOVED]  quorum threshold: 2
-scanned 12 lens-units | confirmed 0 | recalled 0 | candidates 8
+<span class="cmt"># new process, new day, contracts it has never seen. Real verified Base mainnet source</span>
+<span class="prompt">$</span> quorum run
+recalled before reading any code: 2 confirmed pattern(s)
+  <span class="hi">RECALLED</span>  FriendtechSharesV1.sol:buyShares   reentrancy
+            first confirmed on VulnerableVault.sol   (1 sighting was enough)
+scanned 24 lens-units | confirmed 0 | <span class="hi">recalled 1</span> | candidates 11</pre><pre class="terminal" id="pane-off" hidden><span class="cmt"># same swarm, same contracts, memory removed</span>
+<span class="prompt">$</span> quorum run --no-memory
+scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 12
 nothing was confirmed, recalled or suppressed: without memory the swarm
-cannot corroborate, recognise or forget.</pre>
+cannot corroborate, recognise or forget.</pre></div>
   </div>
-  <div class="folio">03 / 07</div>
-</section>
-
-<!-- 04 RECALL: art full-bleed, type in the bottom-left corner -->
-<section class="card recall" id="c4" aria-label="Recall">
-  <div class="art" aria-hidden="true">
-    <svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
-      <defs><clipPath id="recall-left"><circle cx="196" cy="200" r="186"/></clipPath></defs>
-      <circle cx="196" cy="200" r="186" fill="#f3eee4"/>
-      <circle cx="364" cy="200" r="186" fill="#f3eee4"/>
-      <g clip-path="url(#recall-left)"><circle cx="364" cy="200" r="186" fill="#3fb950"/></g>
-      <circle cx="196" cy="200" r="186" fill="none" stroke="#111111" stroke-width="22"/>
-      <circle cx="364" cy="200" r="186" fill="none" stroke="#111111" stroke-width="22"/>
-    </svg>
-  </div>
-  <div class="copy">
-    <div class="kicker">recall</div>
-    <h2 class="display">The pattern was learned on a teaching fixture and recognised in production code deployed on Base. <span class="g">1 sighting was enough.</span></h2>
-    <div class="idioms mono" aria-label="Idioms">
-      <div class="same">msg.sender.call{value: amount}("")</div>
-      <div class="same">protocolFeeDestination.call{value: protocolFee}("")</div>
-      <div class="diff">weth.deposit{value: amountETH}()</div>
+  <figcaption class="cap">
+    <span class="cap-mark" aria-hidden="true"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="void-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
+<circle cx="196" cy="190" r="176" fill="#f3eee4"/><circle cx="364" cy="190" r="176" fill="#f3eee4"/>
+<g clip-path="url(#void-l)"><circle cx="364" cy="190" r="176" fill="#111111"/></g>
+<circle cx="196" cy="190" r="176" fill="none" stroke="#111111" stroke-width="22"/>
+<circle cx="364" cy="190" r="176" fill="none" stroke="#111111" stroke-width="22"/></svg></span>
+    <div>
+      <p>Same swarm, same contracts, memory removed. Every claim succeeds, so agents duplicate work.
+        Every sighting looks like the first, so corroboration never accumulates and quorum is never
+        reached. Retirements do not stick.</p>
+      <p>The same behaviour is asserted in <code>tests/test_quorum.py</code>.</p>
     </div>
-    <p class="measure" style="margin-top:22px">The first two are the same idiom, so they hash to the same signature. The third is a different idiom and does not. The Friend.tech recall is a pattern match on a call idiom, not an allegation about that contract.</p>
-  </div>
-  <div class="folio">04 / 07</div>
+  </figcaption>
 </section>
 
-<!-- 05 THE CLAIM: one number -->
-<section class="card claim" id="c5" aria-label="The claim on Base">
-  <div class="kicker">the claim on Base</div>
-  <div class="number">51138878.</div>
-  <p class="measure">When a finding reaches quorum it stops being a private opinion. <code>quorum attest</code> writes the claim digest to Base mainnet as a self-addressed 0-value transaction. The finding itself never leaves the machine.</p>
-  <div class="receipt" aria-label="Claim receipt">
-    <svg viewBox="0 0 168 96" aria-hidden="true">
-      <defs><clipPath id="rcpt-left"><circle cx="58" cy="48" r="40"/></clipPath></defs>
-      <g clip-path="url(#rcpt-left)"><circle cx="110" cy="48" r="40" fill="#3fb950"/></g>
-      <circle cx="58" cy="48" r="40" fill="none" stroke="#111111" stroke-width="8"/>
-      <circle cx="110" cy="48" r="40" fill="none" stroke="#111111" stroke-width="8"/>
-    </svg>
-    <div class="mono">
-      <div><span>claim</span>FriendtechSharesV1.sol:buyShares:reentrancy</div>
-      <div><span>block</span>51138878 · 2026-09-10T19:05:03+00:00</div>
-      <div><span>published by</span>0xf9946775891a24462cD4ec885d0D4E2675C84355</div>
-      <div><span>digest</span>0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721</div>
-      <div><span>corroborated by</span>guard-lens (recall)</div>
-    </div>
-  </div>
-  <div class="actions">
-    <a class="lnk g" href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">read it back on basescan</a>
-  </div>
-  <div class="folio">05 / 07</div>
+<section class="row contents">
+  <h3>Inside this issue</h3>
+  <ol>
+    <li><span class="pg">Page 2</span><a href="lenses/">The lenses</a><span class="ln">Six readings, two per risk, each pair reasoning from different evidence.</span></li>
+    <li><span class="pg">Page 3</span><a href="memory/">The memory</a><span class="ln">Four call sites carry the product, and the tier each one writes to.</span></li>
+    <li><span class="pg">Page 4</span><a href="registry/">The registry</a><span class="ln">Claims on Base, and what it costs to publish one.</span></li>
+    <li><span class="pg">Page 5</span><a href="start/">Run it</a><span class="ln">Install, every command, and what each one needs.</span></li>
+  </ol>
 </section>
-
-<!-- 06 PUBLISHING COSTS: type over art, on black -->
-<section class="card card--ink cost" id="c6" aria-label="Publishing costs">
-  <div class="art" aria-hidden="true">
-    <svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg">
-      <defs><clipPath id="burn-left"><circle cx="196" cy="200" r="186"/></clipPath></defs>
-      <circle cx="196" cy="200" r="186" fill="#f3eee4"/>
-      <circle cx="364" cy="200" r="186" fill="#f3eee4"/>
-      <g clip-path="url(#burn-left)"><circle cx="364" cy="200" r="186" fill="#111111"/></g>
-      <circle cx="196" cy="200" r="186" fill="none" stroke="#f3eee4" stroke-width="22"/>
-      <circle cx="364" cy="200" r="186" fill="none" stroke="#f3eee4" stroke-width="22"/>
-    </svg>
-  </div>
-  <div class="copy">
-    <div class="kicker">publishing costs. scanning does not.</div>
-    <h2 class="display upper"><span>1,000</span><span>Quorum.</span><span class="g">Burned.</span></h2>
-    <div class="rules">
-      <p>Scanning is free; publishing is not.</p>
-      <p>Each claim burns 1,000 QUORUM through the token contract's own <code>burn(uint256)</code> on Robinhood Chain before the Base claim is written.</p>
-      <p><code>quorum verify</code> checks both halves: the digest on Base, and that the burn it points at is a real burn of at least the fee by the same signer.</p>
-      <p>Once a claim is paid, its owner can <code>reveal</code> the pattern behind it, and any other swarm can <code>import</code> it.</p>
-      <p>Everything else, <code>run</code>, <code>swarm</code>, <code>recall</code>, <code>retire</code>, the memory tiers, the <code>--no-memory</code> test, has no token in it.</p>
-    </div>
-    <div class="tok">QUORUM on Robinhood Chain (chain id 4663) · <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">0xa6452Fd7134218f62056a304eaf501F8714A26b9</a></div>
-  </div>
-  <div class="folio">06 / 07</div>
-</section>
-
-<!-- 07 RUN IT -->
-<section class="card run" id="c7" aria-label="Run it">
-  <div>
-    <div class="kicker">run it</div>
-    <pre class="install" tabindex="0" aria-label="Install commands from the README" style="margin-top:28px">git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
-
-python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .   <span class="c"># or:</span>
-uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python -e .
-
-.venv/bin/quorum run --targets fixtures/*.sol   <span class="c"># the swarm learns</span>
-.venv/bin/quorum run                            <span class="c"># a fresh session recognises</span>
-.venv/bin/quorum recall                         <span class="c"># what it knows, and how it knows it</span>
-.venv/bin/quorum swarm --workers 3              <span class="c"># three processes, one memory</span>
-.venv/bin/quorum run --no-memory                <span class="c"># the deletion test</span>
-.venv/bin/python -m pytest tests -q             <span class="c"># 16 tests</span></pre>
-  </div>
-  <div class="links">
-    <a class="bigl" href="https://github.com/Yonkoo11/quorum"><small>github</small>code.</a>
-    <a class="bigl" href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4"><small>mp4</small>demo.</a>
-    <a class="bigl" href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713"><small>basescan</small>claim.</a>
-  </div>
-  <footer>Quorum · MIT · Sibyl Memory · Python 3.10 to 3.13</footer>
-  <div class="folio">07 / 07</div>
-</section>
-
-</main>
 
 <script>
-  // optional: mark the current card in the index and close the sheet after a jump
-  (function () {
-    var idx = document.getElementById('index');
-    if (!idx || !('IntersectionObserver' in window)) return;
-    var links = idx.querySelectorAll('a[href^="#"]');
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (!e.isIntersecting) return;
-        links.forEach(function (a) {
-          a.setAttribute('aria-current', a.getAttribute('href') === '#' + e.target.id ? 'true' : 'false');
-        });
-      });
-    }, { threshold: 0.6 });
-    document.querySelectorAll('.card').forEach(function (c) { io.observe(c); });
-    links.forEach(function (a) { a.addEventListener('click', function () { idx.removeAttribute('open'); }); });
-  })();
-  (function () {
-    var onBtn = document.getElementById("btn-on");
-    var offBtn = document.getElementById("btn-off");
-    var termOn = document.getElementById("term-on");
-    var termOff = document.getElementById("term-off");
-    var card = document.getElementById("c3");
-    var head = document.getElementById("termhead");
-    var count = document.getElementById("live-count");
-    if (!onBtn || !offBtn) return;
-    function setLive(live) {
-      onBtn.setAttribute("aria-pressed", live ? "true" : "false");
-      offBtn.setAttribute("aria-pressed", live ? "false" : "true");
-      termOn.hidden = !live;
-      termOff.hidden = live;
-      if (card) card.setAttribute("data-on", live ? "true" : "false");
-      if (head) head.setAttribute("data-on", live ? "true" : "false");
-      if (count) count.textContent = live ? "confirmed 2" : "confirmed 0";
-    }
-    onBtn.addEventListener("click", function () { setLive(true); });
-    offBtn.addEventListener("click", function () { setLive(false); });
-  })();
-  (function () {
-    var cards = [].slice.call(document.querySelectorAll(".card"));
-    function go(dir) {
-      var y = window.scrollY;
-      var i = 0, best = 0, dist = Infinity;
-      cards.forEach(function (c, n) {
-        var d = Math.abs(c.offsetTop - y);
-        if (d < dist) { dist = d; best = n; }
-      });
-      i = Math.max(0, Math.min(cards.length - 1, best + dir));
-      cards[i].scrollIntoView({ behavior: "smooth" });
-    }
-    document.addEventListener("keydown", function (e) {
-      if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
-      if (e.key === "ArrowDown" || e.key === " " || e.key === "PageDown") { e.preventDefault(); go(1); }
-      if (e.key === "ArrowUp" || e.key === "PageUp") { e.preventDefault(); go(-1); }
-    });
-  })();
+(function () {
+  var on = document.getElementById("pane-on"),
+      off = document.getElementById("pane-off"),
+      bOn = document.getElementById("btn-on"),
+      bOff = document.getElementById("btn-off");
+  if (!on || !off || !bOn || !bOff) return;
+  function show(memoryOn) {
+    on.hidden = !memoryOn; off.hidden = memoryOn;
+    bOn.setAttribute("aria-pressed", String(memoryOn));
+    bOff.setAttribute("aria-pressed", String(!memoryOn));
+  }
+  bOn.addEventListener("click", function () { show(true); });
+  bOff.addEventListener("click", function () { show(false); });
+})();
 </script>
+
+<nav class="colophon small" aria-label="Colophon">
+  <span class="corner" aria-hidden="true"></span>
+  <span>Built with Sibyl Memory &middot; Base mainnet &middot; MIT</span>
+  <span class="links">
+    <a href="https://github.com/Yonkoo11/quorum">Code</a>
+    <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+    <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim</a>
+    <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
+  </span>
+</nav>
+
+</div>
 </body>
 </html>

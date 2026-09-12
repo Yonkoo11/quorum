@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The memory · Quorum</title>
+<meta name="description" content="Four call sites carry the whole product, and the tiers each one writes to.">
+<link rel="icon" href="../icon-256.png">
+<meta name="theme-color" content="#f3eee4">
+<meta property="og:title" content="The memory · Quorum">
+<meta property="og:description" content="Four call sites carry the whole product, and the tiers each one writes to.">
+<meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../quorum.css">
+</head>
+<body>
+<div class="page">
+
+<div class="ears small">
+  <span>Open source &middot; MIT &middot; Solidity</span>
+  <span class="ed num">Vol. 0.1 &middot; Base mainnet &middot; block 51138878</span>
+</div>
+
+<div class="masthead-sm">
+  <a class="name" href="../">Quorum</a>
+  <span class="sec small">Page 3 &middot; The memory</span>
+</div>
+<nav class="nav small" aria-label="Sections">
+  <ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/" aria-current="page">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul>
+  <span class="folio num">5 tiers &middot; 4 call sites</span>
+</nav>
+
+<section class="grid sec-head">
+  <div class="t">
+    <p class="kicker small">The memory</p>
+    <h2>Four calls carry<br>the product.</h2>
+    <p class="deck">Every Sibyl Memory read and write in this project is in one file, <code>quorum/memory.py</code>. Four call sites carry the whole product.</p>
+  </div>
+  <div class="aside">Every sighting, promotion, suppression and on-chain claim is also appended to the COLD journal, which is what makes a published claim auditable after the fact.</div>
+</section>
+
+<section class="row">
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>What breaks without it</th><th>Written at</th><th>Read at</th><th>Tier</th></tr></thead>
+      <tbody>
+        <tr>
+          <td data-label="Breaks"><b>Agents duplicate each other&rsquo;s work.</b> A lens claims a (contract, lens) unit; a peer that finds it claimed does not scan it. This is the only coordination mechanism in the system.</td>
+          <td data-label="Written"><code>claim_work</code></td><td data-label="Read">same call</td><td data-label="Tier">HOT <code>state/</code></td>
+        </tr>
+        <tr>
+          <td data-label="Breaks"><b>Quorum can never be reached.</b> Corroboration is accumulated across lenses, processes and sessions on the finding entity. A lens has no idea who else agreed with it; memory does.</td>
+          <td data-label="Written"><code>record_sighting</code></td><td data-label="Read"><code>swarm.py:74</code></td><td data-label="Tier">WARM <code>entities/</code></td>
+        </tr>
+        <tr>
+          <td data-label="Breaks"><b>Nothing is ever recognised again.</b> A confirmed idiom becomes permanent swarm knowledge and is matched on sight in later sessions, on contracts the swarm has never read.</td>
+          <td data-label="Written"><code>promote</code></td><td data-label="Read"><code>known_pattern</code> &rarr; <code>swarm.py:79</code></td><td data-label="Tier">REFERENCE <code>reference/</code></td>
+        </tr>
+        <tr>
+          <td data-label="Breaks"><b>Human corrections evaporate.</b> Retire a finding once and no later session reports that shape again.</td>
+          <td data-label="Written"><code>retire</code></td><td data-label="Read"><code>is_retired</code> &rarr; <code>swarm.py:64</code></td><td data-label="Tier">ARCHIVE <code>archive/</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="grid row art">
+  <div class="col">
+    <h3>Coordination without a message bus</h3>
+    <p>Quorum&rsquo;s agents are separate operating-system processes. They share one memory file and
+      nothing else: no queue, no broker, no RPC between them.</p>
+    <p>Three processes, twenty-four units of work, each done exactly once. Claiming is optimistic
+      because a read-then-write across processes is not atomic: an agent writes its own id into the
+      claim, waits out the window in which a peer could be writing too, then reads the claim back and
+      stands down unless it sees itself. Take the HOT tier away and all three agents do all
+      twenty-four units.</p>
+  </div>
+  <aside class="rail">
+    <p class="kicker small">The deletion test</p>
+    <p>Rather than assert what happens without memory, <code>NoMemory</code> implements the identical
+      interface and forgets everything the instant it is written. Confirmed findings: 0. Recalled: 0.</p>
+    <p><a href="../">See the switch on the front page &rarr;</a></p>
+  </aside>
+</section>
+
+<section class="row"><pre class="terminal"><span class="prompt">$</span> quorum swarm --workers 3
+
+3 agent processes, one memory, no message bus
+  agent-1   scanned   9  stood down on  15 units a peer had already claimed
+  agent-2   scanned   7  stood down on  17 units a peer had already claimed
+  agent-3   scanned   8  stood down on  16 units a peer had already claimed
+
+  24 units scanned in total, 48 skipped, in 0.7s
+  no agent sent a message to any other agent. The HOT tier decided who did what.</pre></section>
+
+<section class="grid row art">
+  <div class="col">
+    <h3>What counts as the same idiom</h3>
+    <p>A signature hashes the idiom on a line, not the identifiers on it. That is what lets a pattern
+      the swarm confirmed on one contract be recognised in a completely different one. Receiver and
+      argument names collapse, the method name survives, and the target of a write keeps its class.</p>
+    <p><code>msg.sender.call{value: amount}("")</code> and
+      <code>protocolFeeDestination.call{value: protocolFee}("")</code> are the same idiom and hash
+      the same. <code>weth.deposit{value: amountETH}()</code> is a different idiom and does not.</p>
+  </div>
+  <aside class="rail">
+    <p class="kicker small">A pattern is confirmed once</p>
+    <p>Recognising it in a later contract adds to its provenance rather than rewriting it: the swarm
+      never loses the record of where it originally paid for this knowledge.</p>
+  </aside>
+</section>
+
+<div class="prev-next"><a href="../lenses/"><span class="lbl">Previous</span>The lenses</a><a href="../registry/"><span class="lbl">Next</span>The registry</a></div>
+
+<nav class="colophon small" aria-label="Colophon">
+  <span class="corner" aria-hidden="true"></span>
+  <span>Built with Sibyl Memory &middot; Base mainnet &middot; MIT</span>
+  <span class="links">
+    <a href="https://github.com/Yonkoo11/quorum">Code</a>
+    <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+    <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim</a>
+    <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
+  </span>
+</nav>
+
+</div>
+</body>
+</html>

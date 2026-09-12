@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The registry · Quorum</title>
+<meta name="description" content="Claims on Base, and what it costs to publish one.">
+<link rel="icon" href="../icon-256.png">
+<meta name="theme-color" content="#f3eee4">
+<meta property="og:title" content="The registry · Quorum">
+<meta property="og:description" content="Claims on Base, and what it costs to publish one.">
+<meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="../quorum.css">
+</head>
+<body>
+<div class="page">
+
+<div class="ears small">
+  <span>Open source &middot; MIT &middot; Solidity</span>
+  <span class="ed num">Vol. 0.1 &middot; Base mainnet &middot; block 51138878</span>
+</div>
+
+<div class="masthead-sm">
+  <a class="name" href="../">Quorum</a>
+  <span class="sec small">Page 4 &middot; The registry</span>
+</div>
+<nav class="nav small" aria-label="Sections">
+  <ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/" aria-current="page">Registry</a></li><li><a href="../start/">Run it</a></li></ul>
+  <span class="folio num">1 claim &middot; chain id 8453 &amp; 4663</span>
+</nav>
+
+<section class="grid sec-head">
+  <div class="t">
+    <p class="kicker small">The registry</p>
+    <h2>Knew this shape.<br>At this block.</h2>
+    <p class="deck">When a finding reaches quorum it stops being a private opinion. <code>quorum attest</code> writes the claim digest to Base mainnet as a self-addressed 0-value transaction. The finding itself never leaves the machine.</p>
+  </div>
+  <div class="aside">The signing key is read from the process environment at call time. It is never logged, printed or written to disk.</div>
+</section>
+
+<section class="grid row art">
+  <div class="col">
+    <h3>What goes on chain</h3>
+    <p>The digest commits to the risk, the idiom signature, the contract, the function and the exact
+      set of lenses that corroborated it. What goes on chain is a timestamped, verifiable claim that
+      this swarm knew this shape at this block, which is what a disclosure timeline actually needs.</p>
+    <p><code>quorum verify</code> reads the claim back and recomputes the digest from memory: the
+      claim is only meaningful if the evidence behind it is still there and still hashes the same.
+      The transaction hash is written back onto the finding in memory, so the claim and its evidence
+      stay joined.</p>
+  </div>
+  <aside class="rail notice">
+    <span class="claim-mark" aria-hidden="true"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="claim-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
+<circle cx="196" cy="190" r="176" fill="#f3eee4"/><circle cx="364" cy="190" r="176" fill="#f3eee4"/>
+<g clip-path="url(#claim-l)"><circle cx="364" cy="190" r="176" fill="#3fb950"/></g>
+<circle cx="196" cy="190" r="176" fill="none" stroke="#111111" stroke-width="22"/>
+<circle cx="364" cy="190" r="176" fill="none" stroke="#111111" stroke-width="22"/></svg></span>
+    <p class="kicker small">A live claim</p>
+    <dl class="facts">
+      <div><dt>Claimed</dt><dd>FriendtechSharesV1.sol:buyShares:reentrancy</dd></div>
+      <div><dt>Block</dt><dd class="num">51138878 &middot; 2026-09-10T19:05:03+00:00</dd></div>
+      <div><dt>Signer</dt><dd><code>0xf9946775891a24462cD4ec885d0D4E2675C84355</code></dd></div>
+      <div><dt>Digest</dt><dd><code>0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721</code></dd></div>
+    </dl>
+    <p><a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Read the transaction on Basescan</a></p>
+  </aside>
+</section>
+
+<section class="row"><pre class="terminal"><span class="prompt">$</span> quorum verify 0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713
+
+claim on Base  block 51138878  2026-09-10T19:05:03+00:00
+  published by 0xf9946775891a24462cD4ec885d0D4E2675C84355
+  digest       0xfd7d5ec6e350aa28f160c2d3cf60d3faf4b52d8f7280bfe9f665ce1809042721
+
+  <span class="hi">the evidence for this claim is still in memory</span>
+    FriendtechSharesV1.sol:buyShares:reentrancy
+    corroborated by guard-lens  (recall)
+  <span class="hi">digest recomputed from memory matches the chain</span></pre></section>
+
+<section class="grid row art">
+  <div class="col slab">
+    <span style="display:block;width:60px;margin-bottom:16px" aria-hidden="true"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="burn-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
+<circle cx="196" cy="190" r="176" fill="#111111"/><circle cx="364" cy="190" r="176" fill="#111111"/>
+<g clip-path="url(#burn-l)"><circle cx="364" cy="190" r="176" fill="#f3eee4"/></g>
+<circle cx="196" cy="190" r="176" fill="none" stroke="#f3eee4" stroke-width="22"/>
+<circle cx="364" cy="190" r="176" fill="none" stroke="#f3eee4" stroke-width="22"/></svg></span>
+    <h3>Publishing costs. Scanning does not.</h3>
+    <p>The claims above form a public registry of &ldquo;this swarm knew this bug shape at this
+      block&rdquo;. A public registry that is free to write to fills with junk, so writing to it has a
+      cost, and the cost is destroyed rather than paid to anyone.</p>
+    <p>Each claim burns <span class="fee">1,000 QUORUM</span> through the token contract&rsquo;s own
+      <code>burn(uint256)</code> on Robinhood Chain before the Base claim is written, and the
+      claim&rsquo;s calldata carries the burn&rsquo;s transaction hash.</p>
+    <p><code>quorum verify</code> checks both halves: the digest on Base, and that the burn it points
+      at is a real burn of at least the fee by the same signer. A claim whose fee was never burned
+      does not verify.</p>
+    <p class="fine">Everything else &mdash; <code>run</code>, <code>swarm</code>,
+      <code>recall</code>, <code>retire</code>, the memory tiers, the <code>--no-memory</code> test
+      &mdash; has no token in it, and <code>tests/test_token.py</code> asserts that the scanner
+      modules never touch it.</p>
+  </div>
+  <aside class="rail">
+    <p class="kicker small">The token</p>
+    <dl class="rows">
+      <div><dt>Contract</dt><dd><code>0xa6452Fd7134218f62056a304eaf501F8714A26b9</code></dd></div>
+      <div><dt>Chain</dt><dd>Robinhood Chain, id 4663</dd></div>
+      <div><dt>Fee</dt><dd class="num">1,000 QUORUM per published claim</dd></div>
+      <div><dt>Paid to</dt><dd>Nobody. Burned through <code>burn(uint256)</code>.</dd></div>
+      <div><dt>Claim shape</dt><dd><code>QUORUM2</code>: digest plus burn transaction hash</dd></div>
+    </dl>
+    <p class="fine">The first claim, block 51138878, predates the fee and reads back as a v1
+      claim with no burn to check.</p>
+  </aside>
+</section>
+
+<section class="grid row art">
+  <div class="col">
+    <h3>Reveal, and import</h3>
+    <p>Once a claim is paid, its owner can reveal the pattern behind it, and any other swarm can
+      import it. An import checks three things and refuses if any fails: the revealed fields hash to
+      the claim&rsquo;s digest, the reveal came from the claim&rsquo;s signer, and the claim&rsquo;s
+      fee was burned.</p>
+    <p>So a pattern nobody paid to publish never enters anyone&rsquo;s memory. That is the whole job
+      of the token: it is the cost of being listened to by other people&rsquo;s swarms.</p>
+  </div>
+  <aside class="rail">
+    <p class="kicker small">No second fee</p>
+    <p>The claim already burned it. What the reveal adds is checkability, since anyone can hash the
+      revealed fields and compare them to the claim.</p>
+  </aside>
+</section>
+
+<section class="row"><pre class="terminal"><span class="prompt">$</span> quorum reveal VulnerableVault.sol:withdraw:reentrancy      <span class="cmt"># discloses the claimed fields on Base (QUORUM3)</span>
+<span class="prompt">$</span> quorum import 0x&lt;reveal tx&gt;                                 <span class="cmt"># on someone else's machine</span>
+  <span class="hi">ok</span>  digest matches the claim
+  <span class="hi">ok</span>  revealed by the claim's signer
+  <span class="hi">ok</span>  claim fee of 1,000 QUORUM burned
+  imported into REFERENCE: the swarm will recognise this idiom on sight</pre></section>
+
+<div class="prev-next"><a href="../memory/"><span class="lbl">Previous</span>The memory</a><a href="../start/"><span class="lbl">Next</span>Run it</a></div>
+
+<nav class="colophon small" aria-label="Colophon">
+  <span class="corner" aria-hidden="true"></span>
+  <span>Built with Sibyl Memory &middot; Base mainnet &middot; MIT</span>
+  <span class="links">
+    <a href="https://github.com/Yonkoo11/quorum">Code</a>
+    <a href="https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4">Demo</a>
+    <a href="https://basescan.org/tx/0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713">Claim</a>
+    <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
+  </span>
+</nav>
+
+</div>
+</body>
+</html>
