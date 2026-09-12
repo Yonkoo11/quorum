@@ -91,6 +91,7 @@ pre code { background: none; padding: 0; }
 b { font-weight: inherit; color: var(--green-text); }
 p { max-width: 60ch; text-wrap: pretty; }
 .fine { color: var(--muted); }
+.fine code { color: var(--ink); }
 .g { color: var(--green-text); }
 
 /* ---------- links, controls, focus ---------- */
@@ -216,6 +217,7 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
 .rows.pairs dt { color: var(--ink); }
 .rows.pairs dd { color: var(--muted); }
 .rows.code > div { grid-template-columns: minmax(0, 17em) minmax(0, 1fr); }
+.lens .rows > div { grid-template-columns: minmax(0, 6em) minmax(0, 1fr); }
 .rows.code dt { font-size: var(--t-body); letter-spacing: 0; text-transform: none; color: var(--ink); padding-top: 0; line-height: 1.55; }
 .vstatus { color: var(--muted); }
 .vstatus:empty { display: none; }
