@@ -110,9 +110,9 @@ Agreement is signal. Disagreement is kept as a candidate and never published. Ru
 
 ---
 
-## Claims on Base
+## Claims on Robinhood Chain
 
-When a finding reaches quorum it stops being a private opinion. `quorum attest` writes the claim digest to Base mainnet as a self-addressed 0-value transaction with `QUORUM1`-prefixed calldata:
+When a finding reaches quorum it stops being a private opinion. `quorum attest` writes the claim digest to Robinhood Chain as a self-addressed 0-value transaction. The first claim was written to Base before the token existed, with `QUORUM1`-prefixed calldata:
 
 ```console
 $ quorum attest
@@ -142,11 +142,11 @@ The signing key is read from the process environment at call time. It is never l
 
 ### Publishing costs. Scanning does not.
 
-The claims above form a public registry of "this swarm knew this bug shape at this block". A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone: each claim burns **1,000 QUORUM** through the token contract's own `burn(uint256)` on Robinhood Chain before the Base claim is written, and the claim's calldata (`QUORUM2` shape) carries the burn's transaction hash. `quorum verify` checks both halves: the digest on Base, and that the burn it points at is a real burn of at least the fee by the same signer. A claim whose fee was never burned does not verify.
+The claims above form a public registry of "this swarm knew this bug shape at this block". A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone: each claim burns **1,000 QUORUM** through the token contract's own `burn(uint256)` on Robinhood Chain before the claim is written to the same chain, and the claim's calldata (`QUORUM2` shape) carries the burn's transaction hash. `quorum verify` checks both halves: the digest on chain, and that the burn it points at is a real burn of at least the fee by the same signer. Burn and claim share one chain, so one RPC verifies both. A claim whose fee was never burned does not verify.
 
 ```console
 $ quorum attest
-signer 0xf994...4355  0.000499 ETH on Base  0 QUORUM on Robinhood Chain
+signer 0xf994...4355  0.003483 ETH on Robinhood Chain  0 QUORUM on Robinhood Chain
 each claim burns 1,000 QUORUM before it is written. Scanning is free; publishing is not.
   not published VulnerableVault.sol:withdraw:reentrancy: publishing a claim burns 1,000 QUORUM; signer holds 0 on Robinhood Chain
 ```
@@ -154,7 +154,7 @@ each claim burns 1,000 QUORUM before it is written. Scanning is free; publishing
 Once a claim is paid, its owner can **reveal** the pattern behind it, and any other swarm can **import** it:
 
 ```console
-$ quorum reveal VulnerableVault.sol:withdraw:reentrancy      # discloses the claimed fields on Base (QUORUM3)
+$ quorum reveal VulnerableVault.sol:withdraw:reentrancy      # discloses the claimed fields on chain (QUORUM3)
 $ quorum import 0x<reveal tx>                                 # on someone else's machine
   ok  digest matches the claim
   ok  revealed by the claim's signer
@@ -164,7 +164,7 @@ $ quorum import 0x<reveal tx>                                 # on someone else'
 
 An import checks three things and refuses if any fails: the revealed fields hash to the claim's digest, the reveal came from the claim's signer, and the claim's fee was burned. So a pattern nobody paid to publish never enters anyone's memory. That is the whole job of the token: it is the cost of being listened to by other people's swarms. Everything else, `run`, `swarm`, `recall`, `retire`, the memory tiers, the `--no-memory` test, has no token in it, and [`tests/test_token.py`](tests/test_token.py) asserts that the scanner modules never touch it.
 
-Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f62056a304eaf501F8714A26b9`](https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9). The first claim (block 51138878) predates the fee and reads back as a v1 claim with no burn to check.
+Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f62056a304eaf501F8714A26b9`](https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9). The first claim (Base, block 51138878) predates the fee and the move to Robinhood Chain; `quorum verify` looks on Robinhood Chain first, then Base, and reads it back as a v1 claim with no burn to check. `QUORUM_CHAIN_ID` can point new claims at any chain in `chain.CHAINS`; the fee burn is always on Robinhood Chain, where the token is.
 
 ---
 
@@ -187,13 +187,13 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/quorum run                            # a fresh session recognises
 .venv/bin/quorum recall                         # what it knows, and how it knows it
 .venv/bin/quorum swarm --workers 3              # three processes, one memory
-.venv/bin/quorum verify <tx>                    # check a Base claim against memory
+.venv/bin/quorum verify <tx>                    # check a claim against memory
 .venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   # what it learned since
 .venv/bin/quorum run --no-memory                # the deletion test
 .venv/bin/python -m pytest tests -q             # 16 tests
 ```
 
-`quorum attest` additionally needs `BASE_RPC` and `DEPLOYER_PRIVATE_KEY` in the environment, plus the claim fee in QUORUM on Robinhood Chain. `QUORUM_TOKEN_RPC` overrides the default Robinhood Chain endpoint.
+`quorum attest` additionally needs `DEPLOYER_PRIVATE_KEY` in the environment, gas on Robinhood Chain, and the claim fee in QUORUM. `QUORUM_RPC` overrides the public Robinhood Chain endpoint; `BASE_RPC` overrides the public Base endpoint used only to read the first claim.
 
 Commands: `fetch`, `run`, `swarm`, `recall [--since]`, `retire <key> --reason`, `attest`, `verify <tx>`, `reveal <key>`, `import <tx>`, `status`.
 
@@ -207,4 +207,4 @@ Commands: `fetch`, `run`, `swarm`, `recall [--since]`, `retire <key> --reason`, 
 
 ## Built with
 
-[Sibyl Memory](https://github.com/Sibyl-Labs/Sibyl-Memory) (all five tiers, load-bearing) · Base mainnet (verified source via Blockscout, claims via `web3.py`) · MIT licensed.
+[Sibyl Memory](https://github.com/Sibyl-Labs/Sibyl-Memory) (all five tiers, load-bearing) · Base mainnet (verified target source via Blockscout) · Robinhood Chain (token, fee burn and claims via `web3.py`) · MIT licensed.

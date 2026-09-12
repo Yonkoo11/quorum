@@ -5,7 +5,7 @@
     quorum run --no-memory      the deletion test: same swarm, memory removed
     quorum recall               what the swarm knows before it reads any code
     quorum retire <key>         a human overrules a finding, permanently
-    quorum attest               burn the fee, publish confirmed findings to Base
+    quorum attest               burn the fee, publish confirmed findings to Robinhood Chain
     quorum verify <tx>          check a claim, its evidence in memory, and its fee burn
     quorum reveal <key>         disclose the pattern behind a paid claim
     quorum import <tx>          learn a revealed pattern, only if its claim fee was burned
@@ -156,7 +156,7 @@ def cmd_recall(args) -> int:
         mark = f"{GREEN}confirmed{RESET}" if f.get("status") == "confirmed" else f"{YELLOW}candidate{RESET}"
         tx = f.get("attested_tx")
         print(f"  {mark}  {f['key']}  seen by {', '.join(f.get('seen_by', []))}"
-              + (f"  {DIM}base:{tx[:14]}...{RESET}" if tx else ""))
+              + (f"  {DIM}claim:{tx[:14]}...{RESET}" if tx else ""))
 
     print(f"\n{BOLD}recent journal (COLD tier){RESET}")
     for e in memory.events(limit=6):
@@ -188,7 +188,7 @@ def cmd_attest(args) -> int:
 
     fee = chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS
     held = chain.token_balance() / 10**chain.TOKEN_DECIMALS
-    print(f"signer {chain.address()}  {chain.balance_wei()/1e18:.6f} ETH on Base  {held:,.0f} QUORUM on Robinhood Chain")
+    print(f"signer {chain.address()}  {chain.balance_wei()/1e18:.6f} ETH on {chain.chain_name()}  {held:,.0f} QUORUM on Robinhood Chain")
     print(f"each claim burns {fee:,} QUORUM before it is written. Scanning is free; publishing is not.")
     for f in pending[: args.limit]:
         try:
@@ -204,16 +204,17 @@ def cmd_attest(args) -> int:
         memory.log(evaluated={"key": f["key"]}, acted={"attested": result["tx"], "burned": burn["tx"]},
                    forward={"block": result["block"], "fee": fee})
         print(f"  {GREEN}burned {fee:,} QUORUM{RESET}\n    {burn['url']}")
-        print(f"  {GREEN}claimed on Base{RESET} {f['key']}\n    {result['url']}")
+        print(f"  {GREEN}claimed on {chain.chain_name()}{RESET} {f['key']}\n    {result['url']}")
     return 0
 
 
 def cmd_verify(args) -> int:
     """Re-derive a published claim from memory and check it against the chain.
 
-    This is the join between the two halves of the product: the claim on Base is
+    This is the join between the two halves of the product: the claim on chain is
     only meaningful if the evidence behind it is still in memory and still hashes
-    to the same digest.
+    to the same digest. The claim is looked up on Robinhood Chain first, then on
+    Base, where the first claim was written.
     """
     from . import chain
 
@@ -221,7 +222,7 @@ def cmd_verify(args) -> int:
     claim = chain.read_claim(args.tx)
     stamp = datetime.fromtimestamp(claim["timestamp"], tz=timezone.utc).isoformat(timespec="seconds")
 
-    print(f"\n{BOLD}claim on Base{RESET}  block {claim['block']}  {stamp}")
+    print(f"\n{BOLD}claim on {claim['chain']}{RESET}  block {claim['block']}  {stamp}")
     print(f"  published by {claim['from']}")
     print(f"  digest       {claim['digest']}")
 
@@ -263,7 +264,7 @@ def cmd_reveal(args) -> int:
     result = chain.reveal({**f, "key": args.key})
     memory.client.set_entity("finding", args.key, {**f, "revealed_tx": result["tx"]})
     memory.log(evaluated={"key": args.key}, acted={"revealed": result["tx"]}, forward={"claim_tx": f["attested_tx"]})
-    print(f"  {GREEN}revealed on Base{RESET} {args.key}\n    {result['url']}")
+    print(f"  {GREEN}revealed on {chain.chain_name()}{RESET} {args.key}\n    {result['url']}")
     return 0
 
 
@@ -329,12 +330,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--reason", required=True)
     p.set_defaults(func=cmd_retire, no_memory=False)
 
-    p = sub.add_parser("attest", help="publish confirmed findings to Base")
+    p = sub.add_parser("attest", help="publish confirmed findings to Robinhood Chain")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--limit", type=int, default=3)
     p.set_defaults(func=cmd_attest, no_memory=False)
 
-    p = sub.add_parser("verify", help="check a published Base claim against memory")
+    p = sub.add_parser("verify", help="check a published claim against memory")
     p.add_argument("tx")
     p.set_defaults(func=cmd_verify, no_memory=False)
 
@@ -343,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(func=cmd_reveal, no_memory=False)
 
     p = sub.add_parser("import", help="learn a revealed pattern whose claim fee was burned")
-    p.add_argument("tx", help="reveal transaction hash on Base")
+    p.add_argument("tx", help="reveal transaction hash")
     p.set_defaults(func=cmd_import, no_memory=False)
 
     p = sub.add_parser("status", help="memory tier report")

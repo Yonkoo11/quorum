@@ -9,6 +9,8 @@ import os
 import tempfile
 from unittest import mock
 
+from web3.exceptions import TransactionNotFound
+
 from quorum import chain
 from quorum.memory import NoMemory, SwarmMemory
 
@@ -102,3 +104,47 @@ def test_scanner_has_no_token_dependency():
         src = inspect.getsource(mod)
         assert "import chain" not in src and "chain." not in src
         assert "CLAIM_FEE" not in src and "burn(" not in src
+
+
+def test_claims_and_fee_share_one_chain_by_default():
+    """The token is on Robinhood Chain, so the claim goes there too: one RPC to verify both halves."""
+    assert chain.CHAIN_ID == chain.TOKEN_CHAIN_ID == 4663
+    assert chain.chain_name() == "Robinhood Chain"
+    assert chain.EXPLORER == chain.TOKEN_EXPLORER
+    with mock.patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("QUORUM_RPC", None); os.environ.pop("QUORUM_TOKEN_RPC", None)
+        assert chain._rpc(4663) == "https://rpc.mainnet.chain.robinhood.com"
+    with mock.patch.dict(os.environ, {"QUORUM_RPC": "http://node"}):
+        assert chain._rpc(4663) == "http://node"
+
+
+def _fake_chain(chain_id, tx=None, calldata=None):
+    w3 = mock.Mock()
+    w3.eth.chain_id = chain_id
+    if tx is None:
+        w3.eth.get_transaction.side_effect = TransactionNotFound("not here")
+    else:
+        w3.eth.get_transaction.return_value = {"from": tx, "input": calldata}
+        w3.eth.get_transaction_receipt.return_value = {"blockNumber": 51138878, "status": 1}
+        w3.eth.get_block.return_value = {"timestamp": 1_757_530_000}
+    return w3
+
+
+def test_first_claim_on_base_still_reads_after_the_move():
+    signer = "0xf9946775891a24462cD4ec885d0D4E2675C84355"
+    chains = {4663: _fake_chain(4663), 8453: _fake_chain(8453, signer, chain.PREFIX + DIGEST)}
+    with mock.patch.object(chain, "_w3", side_effect=lambda cid=None: chains[cid or chain.CHAIN_ID]):
+        claim = chain.read_claim("0x" + "a6" * 32)
+    assert claim["chain"] == "Base" and claim["chain_id"] == 8453
+    assert claim["version"] == 1 and claim["burn_tx"] is None
+    assert chains[4663].eth.get_transaction.called, "the claim chain is asked first"
+
+
+def test_a_missing_claim_is_reported_not_invented():
+    chains = {4663: _fake_chain(4663), 8453: _fake_chain(8453)}
+    with mock.patch.object(chain, "_w3", side_effect=lambda cid=None: chains[cid or chain.CHAIN_ID]):
+        try:
+            chain.read_claim("0x" + "00" * 32)
+            assert False, "should have raised"
+        except RuntimeError as exc:
+            assert "Robinhood Chain" in str(exc) and "Base" in str(exc)

@@ -1,18 +1,23 @@
-"""Base mainnet attestation.
+"""Claims on Robinhood Chain.
 
 When the swarm reaches quorum, the finding stops being a private opinion: its
-hash and the lenses that corroborated it are written to Base as a timestamped
-first-discovery claim. The claim is a self-addressed 0-value transaction whose
+hash and the lenses that corroborated it are written to Robinhood Chain as a
+timestamped first-discovery claim. The claim is a self-addressed 0-value transaction whose
 calldata is the claim digest, so anyone can verify what was known and when
 without the finding itself ever leaving the machine.
 
 Publishing a claim costs a fixed amount of QUORUM, burned through the token
-contract's own burn(uint256) on Robinhood Chain before the claim is written.
+contract's own burn(uint256) on the same chain before the claim is written.
 The claim carries the burn's transaction hash, so a verifier can check both
 halves: that the digest was published, and that the fee was really destroyed.
 The fee exists for one reason: a public registry of known bug patterns needs a
 cost to publish or it fills with junk. Nobody receives the fee. Scanning,
 memory and recall never touch the token; only publishing does.
+
+The token, and so the fee, lives on Robinhood Chain. Claims default to the same
+chain so a verifier needs one RPC, not two. The first claim (Base, block
+51138878) predates both the fee and the move; read_claim still finds it there,
+and QUORUM_CHAIN_ID can point new claims at any chain in CHAINS.
 
 The signing key is read from the process environment at call time and is never
 logged, printed or written to disk.
@@ -25,18 +30,30 @@ import os
 from typing import Any
 
 from web3 import Web3
+from web3.exceptions import TransactionNotFound
 
-CHAIN_ID = int(os.getenv("QUORUM_CHAIN_ID", "8453"))
-PREFIX = b"QUORUM1"  # v1 claim: digest only (the first claim, block 51138878, is this shape)
-PREFIX_V2 = b"QUORUM2"  # v2 claim: digest + fee burn tx hash
-EXPLORER = os.getenv("QUORUM_EXPLORER", "https://basescan.org/tx/")
-
-# The QUORUM token lives on Robinhood Chain, not Base.
+# Every chain a claim may live on. RPC comes from the first env var that is set,
+# else the public endpoint. The token is only ever on TOKEN_CHAIN_ID.
+CHAINS = {
+    4663: {"name": "Robinhood Chain", "rpc_env": ("QUORUM_RPC", "QUORUM_TOKEN_RPC"),
+           "rpc": "https://rpc.mainnet.chain.robinhood.com",
+           "explorer": "https://robinhoodchain.blockscout.com/tx/"},
+    8453: {"name": "Base", "rpc_env": ("BASE_RPC", "BASE_RPC_URL"),
+           "rpc": "https://mainnet.base.org",
+           "explorer": "https://basescan.org/tx/"},
+}
 TOKEN_CHAIN_ID = 4663
+CHAIN_ID = int(os.getenv("QUORUM_CHAIN_ID", str(TOKEN_CHAIN_ID)))
+if CHAIN_ID not in CHAINS:
+    raise RuntimeError(f"QUORUM_CHAIN_ID={CHAIN_ID} is not a chain Quorum claims on: {sorted(CHAINS)}")
+PREFIX = b"QUORUM1"  # v1 claim: digest only (the first claim, Base block 51138878, is this shape)
+PREFIX_V2 = b"QUORUM2"  # v2 claim: digest + fee burn tx hash
+EXPLORER = os.getenv("QUORUM_EXPLORER", CHAINS[CHAIN_ID]["explorer"])
+
 TOKEN = Web3.to_checksum_address("0xa6452Fd7134218f62056a304eaf501F8714A26b9")
 TOKEN_DECIMALS = 18
 CLAIM_FEE = 1_000 * 10**TOKEN_DECIMALS  # 1,000 QUORUM per published claim, burned
-TOKEN_EXPLORER = os.getenv("QUORUM_TOKEN_EXPLORER", "https://robinhoodchain.blockscout.com/tx/")
+TOKEN_EXPLORER = os.getenv("QUORUM_TOKEN_EXPLORER", CHAINS[TOKEN_CHAIN_ID]["explorer"])
 BURN_SELECTOR = Web3.keccak(text="burn(uint256)")[:4]
 _TOKEN_ABI = [
     {"name": "burn", "type": "function", "stateMutability": "nonpayable",
@@ -46,24 +63,43 @@ _TOKEN_ABI = [
 ]
 
 
+def chain_name(chain_id: int | None = None) -> str:
+    return CHAINS[chain_id or CHAIN_ID]["name"]
+
+
+def _rpc(chain_id: int) -> str:
+    spec = CHAINS[chain_id]
+    return next((os.environ[e] for e in spec["rpc_env"] if os.getenv(e)), spec["rpc"])
+
+
+def _w3(chain_id: int | None = None) -> Web3:
+    """A connection to the claim chain (default) or any chain in CHAINS, checked by id."""
+    chain_id = chain_id or CHAIN_ID
+    w3 = Web3(Web3.HTTPProvider(_rpc(chain_id), request_kwargs={"timeout": 30}))
+    if not w3.is_connected():
+        raise RuntimeError(f"{chain_name(chain_id)} RPC did not respond")
+    if w3.eth.chain_id != chain_id:
+        raise RuntimeError(f"RPC for {chain_name(chain_id)} answered as chain {w3.eth.chain_id}, expected {chain_id}")
+    return w3
+
+
 def _token_w3() -> Web3:
-    rpc = os.getenv("QUORUM_TOKEN_RPC", "https://rpc.mainnet.chain.robinhood.com")
-    w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 30}))
-    if not w3.is_connected():
-        raise RuntimeError("Robinhood Chain RPC did not respond")
-    if w3.eth.chain_id != TOKEN_CHAIN_ID:
-        raise RuntimeError(f"QUORUM_TOKEN_RPC is chain {w3.eth.chain_id}, expected {TOKEN_CHAIN_ID}")
-    return w3
+    return _w3(TOKEN_CHAIN_ID)
 
 
-def _w3() -> Web3:
-    rpc = os.getenv("QUORUM_RPC") or os.getenv("BASE_RPC") or os.getenv("BASE_RPC_URL")
-    if not rpc:
-        raise RuntimeError("BASE_RPC is not set in the environment")
-    w3 = Web3(Web3.HTTPProvider(rpc, request_kwargs={"timeout": 30}))
-    if not w3.is_connected():
-        raise RuntimeError("Base RPC did not respond")
-    return w3
+def _find_tx(tx_hash: str) -> tuple[int, Web3, Any]:
+    """Locate a claim or reveal: the claim chain first, then every other chain a claim has lived on.
+
+    Only "not on this chain" moves on to the next one. An RPC that is down raises,
+    so a verifier is never told a claim is missing when the truth is the node was.
+    """
+    for cid in [CHAIN_ID, *(c for c in CHAINS if c != CHAIN_ID)]:
+        w3 = _w3(cid)
+        try:
+            return cid, w3, w3.eth.get_transaction(tx_hash)
+        except TransactionNotFound:
+            continue
+    raise RuntimeError(f"{tx_hash} is not on any chain Quorum claims on ({', '.join(chain_name(c) for c in CHAINS)})")
 
 
 def _account(w3: Web3):
@@ -95,6 +131,7 @@ def address() -> str:
 
 
 def balance_wei() -> int:
+    """Gas held by the signer on the claim chain."""
     w3 = _w3()
     return w3.eth.get_balance(_account(w3).address)
 
@@ -218,8 +255,7 @@ def reveal(finding: dict[str, Any]) -> dict[str, Any]:
 
 def read_reveal(tx_hash: str) -> dict[str, Any]:
     """Read a reveal, its claim and the claim's fee burn. The three must agree."""
-    w3 = _w3()
-    tx = w3.eth.get_transaction(tx_hash)
+    _, _, tx = _find_tx(tx_hash)
     parsed = decode_reveal(bytes(tx["input"]))
     claim = read_claim(parsed["claim_tx"])
     f = parsed["fields"]
@@ -238,7 +274,7 @@ def read_reveal(tx_hash: str) -> dict[str, Any]:
 
 
 def attest(finding: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
-    """Burn the fee on Robinhood Chain, then publish the finding's digest to Base."""
+    """Burn the fee on Robinhood Chain, then publish the finding's digest to the claim chain."""
     w3 = _w3()
     acct = _account(w3)
     digest = claim_digest(finding)
@@ -261,13 +297,14 @@ def attest(finding: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
 
 
 def read_claim(tx_hash: str) -> dict[str, Any]:
-    """Read a published claim back off Base."""
-    w3 = _w3()
-    tx = w3.eth.get_transaction(tx_hash)
+    """Read a published claim back off whichever chain it was written to."""
+    cid, w3, tx = _find_tx(tx_hash)
     receipt = w3.eth.get_transaction_receipt(tx_hash)
     block = w3.eth.get_block(receipt["blockNumber"])
     parsed = decode_claim(bytes(tx["input"]))
     return {
+        "chain_id": cid,
+        "chain": chain_name(cid),
         "from": tx["from"],
         "block": receipt["blockNumber"],
         "timestamp": block["timestamp"],
