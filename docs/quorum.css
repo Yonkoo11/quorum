@@ -89,7 +89,7 @@ pre, .hash { font-family: var(--mono); font-size: var(--t-mono); }
 code { font-family: inherit; font-size: inherit; background: var(--tint); padding: 0 .3em; border-radius: var(--radius-sm); }
 pre code { background: none; padding: 0; }
 b { font-weight: inherit; color: var(--green-text); }
-p { max-width: 60ch; }
+p { max-width: 60ch; text-wrap: pretty; }
 .fine { color: var(--muted); }
 .g { color: var(--green-text); }
 
@@ -125,6 +125,7 @@ pre.terminal:focus-visible { box-shadow: inset 0 0 0 3px var(--green); }
 /* ---------- the lens mark: one instrument, two states ---------- */
 .mark { width: 30px; height: auto; flex: none; display: block; }
 .mark circle { fill: none; stroke: currentColor; stroke-width: 2.6; }
+.brand .mark circle { stroke-width: 3.4; }  /* matches the weight of Archivo Black beside it */
 .mark .vesica { fill: var(--green); stroke: none; opacity: 1; transition: opacity var(--dur) var(--ease); }
 [data-mark="void"] .vesica, .mark.void .vesica { opacity: 0; }
 
@@ -147,7 +148,12 @@ pre.terminal:focus-visible { box-shadow: inset 0 0 0 3px var(--green); }
 .statement { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sp-5) var(--sp-6);
   padding-block: clamp(40px, 6vw, 72px) clamp(20px, 3vw, 32px); }
 .statement h1 { grid-column: 1 / -1; font-size: var(--t-display); }
-.statement .lede { grid-column: 7 / -1; max-width: 58ch; }
+.statement .lede { grid-column: 1 / 7; max-width: 52ch; }
+/* the statement carries the test: the words on the left, the switch and its answer on the right */
+.statement .test { grid-column: 8 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-5); align-self: start; }
+.answer { display: flex; align-items: baseline; gap: var(--sp-2); margin: 0; }
+.answer .number { min-width: 1ch; font-variant-numeric: tabular-nums; }
+.answer-word { color: var(--muted); }
 
 /* ---------- the board: bands of unequal splits, panels aligned to their own height ---------- */
 .board { display: flex; flex-direction: column; gap: var(--sp-6); padding-block: var(--sp-6) var(--sp-9); }
@@ -181,6 +187,10 @@ pre.terminal .prompt, pre.terminal .cmt { color: var(--term-dim); }
 pre.terminal .hi { color: var(--green); }
 pre.terminal .nb { white-space: nowrap; }
 pre.terminal .url { overflow-wrap: anywhere; }
+/* the front terminal crossfades between its two runs; the black keeps the height of the taller one so nothing jumps */
+.panes { display: grid; background: var(--term-bg); margin-inline: calc(-1 * var(--pad)); }
+.panes pre.terminal { grid-area: 1 / 1; margin-inline: 0; transition: opacity var(--dur) var(--ease); }
+.panes pre.terminal[hidden] { display: block; opacity: 0; visibility: hidden; transition: opacity var(--dur) var(--ease), visibility 0s var(--dur); }
 .copyable { position: relative; margin-inline: calc(-1 * var(--pad)); }
 .copyable pre.terminal { margin-inline: 0; padding-top: calc(var(--tap) + var(--sp-5)); }
 .copy { position: absolute; top: var(--sp-3); right: var(--sp-3); z-index: 2; appearance: none; background: var(--term-bg); color: var(--term-fg);
@@ -259,7 +269,7 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
 
 /* ---------- widths ---------- */
 @media (max-width: 1100px) {
-  .statement .lede { grid-column: 1 / -1; }
+  .statement .lede, .statement .test { grid-column: 1 / -1; }
   .band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .band.c-1, .band.c-1-300 { grid-template-columns: minmax(0, 1fr); }
   .band.three > :last-child { grid-column: 1 / -1; }
@@ -276,12 +286,11 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
   .brand { order: 1; flex: 1 1 auto; }
   .bar .theme { order: 2; }
   .bar nav { order: 3; margin-left: 0; flex: 0 0 100%; min-width: 0; }
-  .bar nav ul { margin-inline: calc(-1 * var(--sp-2)); }
+  .bar nav ul { margin-inline: calc(-1 * var(--sp-2)); display: grid; grid-template-columns: repeat(3, max-content); justify-content: start; }
   .bar nav a { padding-inline: var(--sp-2); }
   .statement { padding-block: var(--sp-7) var(--sp-4); }
   .board { gap: var(--sp-5); padding-block: var(--sp-5) var(--sp-8); }
   .band, .stack { display: contents; }
-  .front .sw { order: 1; } .front .term { order: 2; } .front .claim { order: 3; } .front .supply { order: 4; } .front .lenses { order: 5; } .front .cost { order: 6; }
   pre.terminal { padding: var(--sp-4); overflow-wrap: anywhere; }
   .copyable pre.terminal { padding-top: calc(var(--tap) + var(--sp-4)); }
   .copy { top: var(--sp-2); right: var(--sp-2); }
@@ -302,7 +311,7 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
   .slab { padding: var(--sp-5); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mark .vesica { transition: none; }
+  .mark .vesica, .panes pre.terminal, .panes pre.terminal[hidden] { transition: none; }
 }
 @media print {
   .grain, .bar, .skip, .copy, .theme, .prevnext { display: none; }

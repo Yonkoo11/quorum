@@ -7,7 +7,7 @@
      A theme change is instant; never animated (hard rule 4). */
   var root = document.documentElement;
   var btn = document.getElementById("theme-toggle");
-  var LABEL = { light: "Light", dark: "Dark", system: "System" };
+  var LABEL = { light: "Light", dark: "Dark", system: "Auto" };
   var stored = null;
   try { stored = localStorage.getItem("quorum-theme"); } catch (e) {}
   var apply = function (mode) {
@@ -41,6 +41,9 @@
         swOn = document.getElementById("sw-on"),
         swOff = document.getElementById("sw-off"),
         state = document.getElementById("term-state"),
+        answer = document.getElementById("answer-n"),
+        /* the number beside the switch is read off the terminal it points at, never typed in here */
+        confirmedIn = function (pre) { var m = /confirmed (\d+)/.exec(pre.textContent); return m ? m[1] : ""; },
         /* the memory page keeps both panes in view; the switch then chooses which one is the record */
         keep = on.hasAttribute("data-keep");
     var show = function (memoryOn) {
@@ -51,6 +54,7 @@
       if (swOn) swOn.hidden = !memoryOn;
       if (swOff) swOff.hidden = memoryOn;
       if (state) state.textContent = memoryOn ? "Memory on" : "Memory off";
+      if (answer) answer.textContent = confirmedIn(memoryOn ? on : off);
       bOn.setAttribute("aria-pressed", String(memoryOn));
       bOff.setAttribute("aria-pressed", String(!memoryOn));
       document.body.setAttribute("data-memory", memoryOn ? "on" : "off");
