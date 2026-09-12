@@ -27,7 +27,7 @@
 <circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
 <circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
     <nav aria-label="Sections"><ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/" aria-current="page">Registry</a></li><li><a href="../start/">Run it</a></li></ul></nav>
-    <button type="button" class="theme" id="theme-toggle">Theme</button>
+    <button type="button" class="btn theme" id="theme-toggle">Theme</button>
   </div>
 </header>
 <main id="main">
@@ -54,7 +54,7 @@
   </div>
 </section>
 
-<section class="band"><div class="wrap"><div class="head"><span class="cap">quorum verify</span></div><pre class="terminal" tabindex="0"><span class="prompt">$</span> quorum verify 0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713
+<section class="band"><div class="wrap"><div class="head"><span class="cap">quorum verify</span></div><pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum verify 0xa648821d91093df770b72c60be56834d069c9355c785e6195183e911f00bf713
 
 claim on Base  block 51138878  2026-09-10T19:05:03+00:00
   published by 0xf9946775891a24462cD4ec885d0D4E2675C84355
@@ -132,7 +132,7 @@ claim on Base  block 51138878  2026-09-10T19:05:03+00:00
   </div>
 </section>
 
-<section class="band"><div class="wrap"><div class="head"><span class="cap">quorum reveal, quorum import</span></div><pre class="terminal" tabindex="0"><span class="prompt">$</span> quorum reveal VulnerableVault.sol:withdraw:reentrancy      <span class="cmt"># discloses the claimed fields on Base (QUORUM3)</span>
+<section class="band"><div class="wrap"><div class="head"><span class="cap">quorum reveal, quorum import</span></div><pre class="terminal" tabindex="0" aria-label="Terminal output"><span class="prompt">$</span> quorum reveal VulnerableVault.sol:withdraw:reentrancy      <span class="cmt"># discloses the claimed fields on Base (QUORUM3)</span>
 <span class="prompt">$</span> quorum import 0x&lt;reveal tx&gt;                                 <span class="cmt"># on someone else's machine</span>
   <span class="hi">ok</span>  digest matches the claim
   <span class="hi">ok</span>  revealed by the claim's signer

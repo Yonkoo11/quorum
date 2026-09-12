@@ -27,7 +27,7 @@
 <circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
 <circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
     <nav aria-label="Sections"><ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/" aria-current="page">Run it</a></li></ul></nav>
-    <button type="button" class="theme" id="theme-toggle">Theme</button>
+    <button type="button" class="btn theme" id="theme-toggle">Theme</button>
   </div>
 </header>
 <main id="main">
@@ -36,11 +36,11 @@
   <p class="aside">Memory is a local file. Nothing is uploaded. Only <code>attest</code>, <code>verify</code>, <code>reveal</code> and <code>import</code> touch a network.</p>
 </section>
 
-<section class="band"><div class="wrap"><div class="head"><span class="cap">Install</span></div><div class="copyable"><pre class="terminal" tabindex="0" data-copy=""><span class="prompt">$</span> git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
+<section class="band"><div class="wrap"><div class="head"><span class="cap">Install</span></div><div class="copyable"><pre class="terminal" tabindex="0" aria-label="Terminal output" data-copy=""><span class="prompt">$</span> git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
 
 <span class="prompt">$</span> python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .   <span class="cmt"># or:</span>
 <span class="prompt">$</span> uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python -e .</pre></div>
-  <div style="height:var(--sp-5)"></div><div class="copyable"><pre class="terminal" tabindex="0" data-copy=""><span class="cmt"># pull real verified source from Base mainnet (no API key needed)</span>
+  <div style="height:var(--sp-5)"></div><div class="copyable"><pre class="terminal" tabindex="0" aria-label="Terminal output" data-copy=""><span class="cmt"># pull real verified source from Base mainnet (no API key needed)</span>
 <span class="prompt">$</span> .venv/bin/quorum fetch 0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4 \
                        0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43 \
                        0x4200000000000000000000000000000000000006</pre></div></div></section>

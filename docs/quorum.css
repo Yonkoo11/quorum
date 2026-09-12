@@ -46,7 +46,7 @@
   --display: "Archivo Black", "Arial Black", Impact, sans-serif;
   --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --t-cap: 12px; --t-xs: 13px; --t-sm: 14px; --t-body: 16px; --t-md: 18px; --t-lg: 22px; --t-xl: 28px;
+  --t-cap: 12px; --t-sm: 14px; --t-body: 16px; --t-md: 18px; --t-lg: 22px; --t-xl: 28px;
   --t-stmt: clamp(34px, 4.6vw, 60px);
   --t-hero: clamp(48px, 7.2vw, 108px);
   --t-num: clamp(56px, 9vw, 132px);
@@ -89,6 +89,7 @@
 html { background: var(--ground); -webkit-text-size-adjust: 100%; }
 body { background: var(--ground); color: var(--ink); font-family: var(--sans); font-weight: 500;
   font-size: var(--t-body); line-height: 1.55; -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent; overflow-x: hidden; min-height: 100dvh; }
 body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: var(--z-grain);
   opacity: var(--grain); mix-blend-mode: multiply;
@@ -103,7 +104,7 @@ body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-i
 /* ---------- type ---------- */
 .cap { font-size: var(--t-cap); letter-spacing: .28em; text-transform: uppercase; line-height: 1.4; }
 .fine { font-size: var(--t-sm); line-height: 1.5; color: var(--muted); }
-.fine code { font-size: var(--t-xs); }
+.fine code { font-size: var(--t-sm); }
 h1, h2, h3 { font-family: var(--display); font-weight: 400; line-height: 1.1; letter-spacing: -.02em; }
 h2 { font-size: var(--t-lg); }
 h3 { font-size: var(--t-md); }
@@ -111,7 +112,7 @@ h3 { font-size: var(--t-md); }
   letter-spacing: -.035em; text-transform: uppercase; text-wrap: balance; }
 .stmt .g { color: var(--green-text); }
 code, pre, .mono { font-family: var(--mono); font-size: var(--t-sm); }
-.num { font-variant-numeric: tabular-nums; }
+.num, td, .vrows dd, .rows dd, .notes .big, pre.terminal, .pagehead .aside { font-variant-numeric: tabular-nums; }
 p { max-width: var(--measure); }
 
 /* ---------- links, focus, controls ---------- */
@@ -121,7 +122,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px soli
 
 .btn { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--tap); padding: 0 var(--sp-5);
   border: 2px solid var(--ink); border-radius: var(--radius-sm); background: var(--raised); color: var(--ink);
-  font-family: var(--mono); font-size: var(--t-xs); letter-spacing: .16em; text-transform: uppercase;
+  font-family: var(--mono); font-size: var(--t-sm); letter-spacing: .16em; text-transform: uppercase;
   text-decoration: none; cursor: pointer; box-shadow: var(--shadow-1); appearance: none; }
 .btn.primary { background: var(--ink); color: var(--ground); }
 .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
@@ -143,8 +144,8 @@ a.sheet:active { transform: translate(2px, 2px); box-shadow: var(--shadow-1); }
 .sheet .cap { color: var(--muted); margin-bottom: var(--sp-3); }
 .sheet h2, .sheet h3 { margin-bottom: var(--sp-3); }
 .sheet p + p { margin-top: var(--sp-3); }
-.sheet .more { display: inline-block; margin-top: var(--sp-4); font-family: var(--mono); font-size: var(--t-xs);
-  letter-spacing: .14em; text-transform: uppercase; text-decoration: none; border-bottom: 2px solid var(--green); padding-bottom: 2px; }
+.sheet .more { display: inline-block; margin-top: var(--sp-4); font-family: var(--mono); font-size: var(--t-sm);
+  letter-spacing: .14em; text-transform: uppercase; text-decoration: none; border-bottom: 2px solid var(--green); padding-bottom: var(--sp-1); }
 
 .slab { background: var(--slab-bg); color: var(--slab-fg); padding: var(--sp-6); border-radius: var(--radius-0);
   box-shadow: var(--shadow-3); }
@@ -166,7 +167,7 @@ pre.terminal:focus-visible { outline: 2px solid var(--green); outline-offset: -2
 .copyable { position: relative; }
 .copy { position: absolute; top: var(--sp-3); right: var(--sp-3); z-index: 2; appearance: none;
   background: transparent; color: var(--term-fg); border: 1px solid var(--term-rule); border-radius: var(--radius-sm);
-  font-family: var(--mono); font-size: var(--t-xs); letter-spacing: .14em; text-transform: uppercase;
+  font-family: var(--mono); font-size: var(--t-sm); letter-spacing: .14em; text-transform: uppercase;
   min-height: var(--tap); padding: 0 var(--sp-3); cursor: pointer; }
 .copy:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 .copy:active { transform: translate(1px, 1px); }
@@ -179,7 +180,7 @@ pre.terminal:focus-visible { outline: 2px solid var(--green); outline-offset: -2
 .switch { display: inline-flex; border: 2px solid var(--ink); border-radius: var(--radius-sm); background: var(--raised);
   box-shadow: var(--shadow-1); }
 .switch button { appearance: none; background: transparent; color: var(--ink); border: 0; border-left: 2px solid var(--ink);
-  font-family: var(--mono); font-size: var(--t-xs); letter-spacing: .18em; text-transform: uppercase;
+  font-family: var(--mono); font-size: var(--t-sm); letter-spacing: .18em; text-transform: uppercase;
   min-height: var(--tap); padding: 0 var(--sp-4); cursor: pointer; }
 .switch button:first-child { border-left: 0; }
 .switch button[aria-pressed="true"] { background: var(--ink); color: var(--ground); }
@@ -201,17 +202,17 @@ pre.terminal:focus-visible { outline: 2px solid var(--green); outline-offset: -2
 
 /* ---------- the bar ---------- */
 .skip { position: absolute; left: -9999px; top: 0; z-index: var(--z-skip); background: var(--ink); color: var(--ground);
-  padding: var(--sp-3) var(--sp-4); text-decoration: none; font-size: var(--t-cap); letter-spacing: .28em; text-transform: uppercase; }
+  display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-4); text-decoration: none; font-size: var(--t-cap); letter-spacing: .28em; text-transform: uppercase; }
 .skip:focus { left: var(--sp-4); top: var(--sp-2); }
 .bar { position: sticky; top: 0; z-index: var(--z-bar); background: var(--ground); border-bottom: 2px solid var(--ink); }
 .bar .wrap { display: flex; align-items: center; gap: var(--sp-5); min-height: 64px; }
-.bar .brand { display: inline-flex; align-items: center; gap: var(--sp-3); text-decoration: none;
+.bar .brand { display: inline-flex; align-items: center; gap: var(--sp-3); text-decoration: none; min-height: var(--tap);
   font-family: var(--display); font-size: var(--t-lg); letter-spacing: -.02em; text-transform: uppercase; }
 .bar .brand svg { width: 40px; height: auto; display: block; }
 .bar nav { margin-left: auto; }
 .bar nav ul { list-style: none; display: flex; gap: var(--sp-1); }
 .bar nav a { display: inline-flex; align-items: center; min-height: var(--tap); padding: 0 var(--sp-3); white-space: nowrap;
-  text-decoration: none; font-family: var(--mono); font-size: var(--t-xs); letter-spacing: .14em; text-transform: uppercase;
+  text-decoration: none; font-family: var(--mono); font-size: var(--t-sm); letter-spacing: .14em; text-transform: uppercase;
   position: relative; border-radius: var(--radius-sm); }
 .bar nav a[aria-current="page"]::after { content: ""; position: absolute; left: var(--sp-3); right: var(--sp-3); bottom: 6px;
   height: 3px; background: var(--green); }
@@ -219,11 +220,8 @@ pre.terminal:focus-visible { outline: 2px solid var(--green); outline-offset: -2
   .bar nav a { transition: transform 150ms ease-out; }
   .bar nav a:hover { transform: translateY(-1px); background: var(--tint); }
 }
-.theme { appearance: none; background: var(--raised); color: inherit; border: 2px solid var(--ink); border-radius: var(--radius-sm);
-  font-family: var(--mono); font-size: var(--t-xs); letter-spacing: .14em; text-transform: uppercase;
-  min-height: var(--tap); padding: 0 var(--sp-3); cursor: pointer; box-shadow: var(--shadow-1); }
-.theme:active { transform: translate(2px, 2px); box-shadow: none; }
-@media (hover: hover) { .theme:hover { transform: translate(-1px, -1px); box-shadow: var(--shadow-2); } }
+/* the theme control is a .btn; a theme change itself is never animated (his rule 4) */
+.theme { padding-inline: var(--sp-3); }
 
 /* ---------- the hero: the card at page scale ---------- */
 .hero { position: relative; overflow: hidden; padding-block: var(--sp-8) var(--sp-9); }
@@ -284,7 +282,7 @@ th, td { text-align: left; vertical-align: top; padding: var(--sp-3) var(--sp-4)
 thead th { border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); font-size: var(--t-cap); letter-spacing: .28em;
   text-transform: uppercase; color: var(--muted); font-weight: 500; }
 tbody tr:last-child td { border-bottom: 2px solid var(--ink); }
-td b { font-family: var(--display); font-weight: 400; letter-spacing: -.01em; display: block; margin-bottom: 2px; }
+td b { font-family: var(--display); font-weight: 400; letter-spacing: -.01em; display: block; margin-bottom: var(--sp-1); }
 @media (hover: hover) { tbody tr { transition: background-color 120ms ease-out; } tbody tr:hover { background: var(--tint); } }
 
 .rows { border-top: 2px solid var(--ink); }
@@ -295,7 +293,7 @@ td b { font-family: var(--display); font-weight: 400; letter-spacing: -.01em; di
 .rows dd { word-break: break-word; } .rows dd code { word-break: break-all; }
 .rows.cmds > div { grid-template-columns: minmax(0, 3fr) minmax(0, 5fr); }
 .rows.cmds dt { font-family: var(--mono); font-size: var(--t-sm); letter-spacing: 0; text-transform: none; color: var(--ink); white-space: nowrap; }
-.rows.env dt { font-family: var(--mono); font-size: var(--t-xs); letter-spacing: .04em; text-transform: none; }
+.rows.env dt { font-family: var(--mono); font-size: var(--t-sm); letter-spacing: .04em; text-transform: none; }
 .side .rows > div { grid-template-columns: 1fr; row-gap: var(--sp-1); }
 @media (hover: hover) { .rows > div { transition: background-color 120ms ease-out; } .rows > div:hover { background: var(--tint); } }
 
@@ -320,7 +318,7 @@ td b { font-family: var(--display); font-weight: 400; letter-spacing: -.01em; di
   column-gap: var(--sp-5); align-items: baseline; padding-block: var(--sp-4); }
 .contents li:last-child { border-bottom: 2px solid var(--ink); }
 .contents a { font-family: var(--display); font-weight: 400; font-size: var(--t-xl); line-height: 1.05; letter-spacing: -.025em;
-  text-transform: uppercase; text-decoration: none; display: inline-block; }
+  text-transform: uppercase; text-decoration: none; display: inline-flex; align-items: center; min-height: var(--tap); }
 @media (hover: hover) { .contents a { transition: transform 150ms ease-out; } .contents a:hover { transform: translateX(6px); } }
 .contents .ln { color: var(--muted); }
 
@@ -333,7 +331,7 @@ td b { font-family: var(--display); font-weight: 400; letter-spacing: -.01em; di
 .vrows > div { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 6fr); column-gap: var(--sp-5);
   padding-block: var(--sp-3); border-bottom: 1px solid var(--hair); }
 .vrows dt { font-size: var(--t-cap); letter-spacing: .28em; text-transform: uppercase; color: var(--muted); }
-.vrows dd { font-family: var(--mono); font-size: var(--t-xs); word-break: break-all; }
+.vrows dd { font-family: var(--mono); font-size: var(--t-sm); word-break: break-all; }
 .vrows dd.ok { font-family: var(--sans); font-size: var(--t-body); color: var(--green-text); }
 .vrows dd.bad { font-family: var(--sans); font-size: var(--t-body); color: var(--bad); }
 
@@ -342,7 +340,7 @@ td b { font-family: var(--display); font-weight: 400; letter-spacing: -.01em; di
 .foot { border-top: 2px solid var(--ink); padding-block: var(--sp-5) var(--sp-8); display: flex; flex-wrap: wrap;
   justify-content: space-between; align-items: center; gap: var(--sp-4) var(--sp-5); }
 .foot .corner { width: 44px; height: 44px; background: var(--ink); flex: none; box-shadow: var(--shadow-1); }
-.foot .links a { margin-right: var(--sp-4); font-family: var(--mono); font-size: var(--t-xs); letter-spacing: .14em; text-transform: uppercase; }
+.foot .links a { display: inline-flex; align-items: center; min-height: var(--tap); margin-right: var(--sp-4); font-family: var(--mono); font-size: var(--t-sm); letter-spacing: .14em; text-transform: uppercase; }
 .prevnext { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-4); padding-block: var(--sp-6) 0; }
 .prevnext a { text-decoration: none; font-family: var(--display); font-size: var(--t-lg); letter-spacing: -.02em; text-transform: uppercase; }
 .prevnext .lbl { display: block; font-family: var(--sans); font-size: var(--t-cap); letter-spacing: .28em; color: var(--muted); margin-bottom: var(--sp-1); }
@@ -391,5 +389,5 @@ td b { font-family: var(--display); font-weight: 400; letter-spacing: -.01em; di
   .sheet, .slab, .btn, .foot .corner { box-shadow: none; }
   pre.terminal, .band { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
   pre.terminal .hi { color: var(--ink); font-weight: 700; }
-  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: var(--t-xs); color: var(--muted); }
+  a[href^="http"]::after { content: " (" attr(href) ")"; font-size: var(--t-sm); color: var(--muted); }
 }

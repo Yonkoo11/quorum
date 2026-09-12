@@ -27,7 +27,7 @@
 <circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
 <circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
     <nav aria-label="Sections"><ul><li><a href="././" aria-current="page">Front page</a></li><li><a href="./lenses/">Lenses</a></li><li><a href="./memory/">Memory</a></li><li><a href="./registry/">Registry</a></li><li><a href="./start/">Run it</a></li></ul></nav>
-    <button type="button" class="theme" id="theme-toggle">Theme</button>
+    <button type="button" class="btn theme" id="theme-toggle">Theme</button>
   </div>
 </header>
 <main id="main">
@@ -64,11 +64,11 @@
       <span class="cap" id="deletion-h">The deletion test</span>
       <span class="switch" role="group" aria-label="Memory">
         <button type="button" id="btn-on" aria-pressed="true" aria-controls="pane-on">Memory on</button>
-        <button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">--no-memory</button>
+        <button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">Memory off</button>
       </span>
     </div>
     <figure>
-      <div class="panes"><pre class="terminal" id="pane-on" tabindex="0"><span class="prompt">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
+      <div class="panes"><pre class="terminal" id="pane-on" tabindex="0" aria-label="Terminal output, memory on"><span class="prompt">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
   <span class="hi">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
   <span class="hi">QUORUM</span>    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
 scanned 12 lens-units | <span class="hi">confirmed 2</span> | <span class="hi">recalled 1</span> | candidates 5
@@ -78,7 +78,7 @@ scanned 12 lens-units | <span class="hi">confirmed 2</span> | <span class="hi">r
 recalled before reading any code: 2 confirmed pattern(s)
   <span class="hi">RECALLED</span>  FriendtechSharesV1.sol:buyShares   reentrancy
             first confirmed on VulnerableVault.sol   (1 sighting was enough)
-scanned 24 lens-units | confirmed 0 | <span class="hi">recalled 1</span> | candidates 11</pre><pre class="terminal" id="pane-off" tabindex="0" hidden><span class="cmt"># same swarm, same contracts, memory removed</span>
+scanned 24 lens-units | confirmed 0 | <span class="hi">recalled 1</span> | candidates 11</pre><pre class="terminal" id="pane-off" tabindex="0" aria-label="Terminal output, memory off" hidden><span class="cmt"># same swarm, same contracts, memory removed</span>
 <span class="prompt">$</span> quorum run --no-memory
 scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 12
 nothing was confirmed, recalled or suppressed: without memory the swarm
