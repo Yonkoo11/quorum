@@ -125,7 +125,7 @@
     text-transform: uppercase;
   }
   .greenrule { width: 56px; height: 4px; background: var(--green); margin-bottom: 18px; }
-  .nameplate .tag { margin-top: 20px; max-width: 32em; color: var(--muted); font-size: 15px; line-height: 1.45; }
+  .nameplate .tag { margin-top: 18px; max-width: 34em; color: var(--ink); font-size: 18px; line-height: 1.4; }
   .nameplate .mark { grid-column: 9 / span 4; justify-self: end; align-self: end; width: 100%; max-width: 260px; }
   .nameplate .mark svg { width: 100%; height: auto; display: block; }
 
@@ -363,6 +363,7 @@
     line-height: 1; letter-spacing: -.035em; text-transform: uppercase; text-decoration: none;
   }
   .masthead-sm .sec { color: var(--muted); }
+  .colophon .fine { color: var(--muted); }
 
   /* section page header */
   .sec-head { border-top: none; padding-top: 52px; padding-bottom: 44px; }
@@ -468,7 +469,7 @@
   .contents h3 { margin-bottom: 22px; }
   .contents ol { list-style: none; border-top: var(--rule); }
   .contents li { border-bottom: var(--hair); display: grid;
-    grid-template-columns: 68px minmax(0, 4fr) minmax(0, 6fr);
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
     column-gap: var(--gutter); align-items: baseline; padding-block: 16px; }
   .contents li:last-child { border-bottom: var(--rule); }
   .contents .pg { font-family: var(--mono); font-size: 13px; color: var(--muted); }
@@ -476,8 +477,7 @@
     line-height: 1.05; letter-spacing: -.025em; text-transform: uppercase; text-decoration: none; }
   .contents .ln { color: var(--muted); }
   @media (max-width: 760px) {
-    .contents li { grid-template-columns: 44px 1fr; row-gap: 6px; }
-    .contents .ln { grid-column: 2; }
+    .contents li { grid-template-columns: 1fr; row-gap: 6px; }
   }
 
   /* ---- registry rail mark is a sign, not a poster ---- */
