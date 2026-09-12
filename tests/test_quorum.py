@@ -113,3 +113,48 @@ def test_pre_05_idioms_reach_quorum():
     seen = {s.lens for s in callorder_lens("Bank.sol", PRE_05_VAULT) + guard_lens("Bank.sol", PRE_05_VAULT)
             if s.function == "CashOut" and s.risk == "reentrancy"}
     assert seen == {"callorder-lens", "guard-lens"}
+
+
+PRE_05_FALLBACK = """pragma solidity ^0.4.19;
+contract Jar {
+    mapping(address => uint) public balances;
+    function () payable {
+        if (!msg.sender.call.value(balances[msg.sender])()) revert();
+        balances[msg.sender] = 0;
+    }
+}
+"""
+
+ALIASED_VAULT = """pragma solidity ^0.4.24;
+contract Bank {
+    struct Acc { uint balance; }
+    mapping(address => Acc) public Accounts;
+    function CashOut(uint amount) public {
+        var acc = Accounts[msg.sender];
+        if (!msg.sender.call.value(amount)()) revert();
+        acc.balance -= amount;
+    }
+}
+"""
+
+
+def _reentrancy_lenses_on(src: str, function: str) -> set[str]:
+    from quorum.agents import callorder_lens, guard_lens
+
+    return {s.lens for s in callorder_lens("X.sol", src) + guard_lens("X.sol", src)
+            if s.function == function and s.risk == "reentrancy"}
+
+
+def test_unnamed_fallback_is_a_function():
+    """A 0.4 fallback has no name. Before this the parser skipped it, so a labelled bug inside one
+    was silently dropped from the benchmark's targets, which flattered recall."""
+    from quorum.agents import parse_functions
+
+    assert [fn.name for fn in parse_functions(PRE_05_FALLBACK)] == ["fallback"]
+    assert _reentrancy_lenses_on(PRE_05_FALLBACK, "fallback") == {"callorder-lens", "guard-lens"}
+
+
+def test_callorder_lens_follows_a_storage_alias():
+    """`var acc = Accounts[msg.sender]; acc.balance -= x` writes storage through a local name.
+    The largest remaining reentrancy miss on SmartBugs-curated was this shape."""
+    assert _reentrancy_lenses_on(ALIASED_VAULT, "CashOut") == {"callorder-lens", "guard-lens"}

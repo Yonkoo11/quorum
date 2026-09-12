@@ -1,28 +1,38 @@
 # Benchmark — the six lenses on SmartBugs-curated
 
-Run 2026-09-12 · corpus commit `230e649` · 143 files scanned · 73 targets · quorum threshold 2 · `python bench/run.py <corpus>`
+Run 2026-09-12 · corpus commit `230e649` · 143 files · quorum threshold 2 · `python bench/run.py <corpus>`
 
-Unit: a (file, function, risk). A target is a labelled function whose bug maps to a risk Quorum covers. Precision counts every finding not on a target as false, including hits on files the corpus labels for some other bug.
+Unit: a (contract, function, risk). A target is a labelled line inside a parsed function whose category maps to a risk Quorum covers. Precision counts every finding not on a target as false, including hits on files the corpus labels for some other category.
 
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
-| reentrancy | 31 | 205 | 29 | 14% | 94% | **63** | 28 | **44%** | **90%** |
-| unguarded-state-write | 21 | 210 | 8 | 4% | 38% | **3** | 1 | **33%** | **5%** |
+| reentrancy | 31 | 200 | 29 | 14% | 94% | **54** | 21 | **39%** | **68%** |
+| unguarded-state-write | 19 | 206 | 8 | 4% | 42% | **3** | 1 | **33%** | **5%** |
 | unsafe-math | 21 | 5 | 0 | 0% | 0% | **0** | 0 | **n/a** | **0%** |
-| **all** | 73 | 420 | 37 | 9% | 51% | **66** | 29 | **44%** | **40%** |
+| **all** | 71 | 411 | 37 | 9% | 52% | **57** | 22 | **39%** | **31%** |
+
+## Labels the benchmark could not use
+
+| risk | labels | outside any parsed function |
+|---|---|---|
+| reentrancy | 32 | 0 |
+| unguarded-state-write | 24 | 2 |
+| unsafe-math | 23 | 0 |
+
+Unnamed 0.4-era fallback functions (`function () payable`) are not parsed by `FUNC`, so a label on one of them has no function to attach to and is dropped from the targets. That flatters recall.
 
 ## Per lens
 
 | lens | sightings | on a target |
 |---|---|---|
-| callorder-lens | 74 | 28 |
-| guard-lens | 194 | 29 |
-| modifier-lens | 203 | 8 |
+| callorder-lens | 65 | 21 |
+| guard-lens | 189 | 29 |
+| modifier-lens | 199 | 8 |
 | sender-lens | 10 | 1 |
 | unchecked-lens | 0 | 0 |
 | precision-lens | 5 | 0 |
 
-Candidates held back by the rule (one lens only): 354, of which on a target: 8.
+Candidates held back by the rule (one lens only): 354, of which on a target: 15.
 
 ## Confirmed findings that are not on a labelled target
 
@@ -47,7 +57,6 @@ Candidates held back by the rule (one lens only): 354, of which on a target: 8.
 - `etheraffle.sol` `buyTickets` reentrancy — callorder-lens, guard-lens
 - `etheraffle.sol` `endRaffle` reentrancy — callorder-lens, guard-lens
 - `etherpot_lotto.sol` `cash` reentrancy — callorder-lens, guard-lens
-- `etherpot_lotto.sol` `fallback` reentrancy — callorder-lens, guard-lens
 - `governmental_survey.sol` `resetInvestment` reentrancy — callorder-lens, guard-lens
 - `king_of_the_ether_throne.sol` `claimThrone` reentrancy — callorder-lens, guard-lens
 - `list_dos.sol` `lendGovernmentMoney` reentrancy — callorder-lens, guard-lens
@@ -59,15 +68,20 @@ Candidates held back by the rule (one lens only): 354, of which on a target: 8.
 - `rubixi.sol` `collectPercentOfFees` reentrancy — callorder-lens, guard-lens
 - `smart_billions.sol` `coldStore` reentrancy — callorder-lens, guard-lens
 - `smart_billions.sol` `invest` reentrancy — callorder-lens, guard-lens
-- `spank_chain_payment.sol` `byzantineCloseChannel` reentrancy — callorder-lens, guard-lens
 - `wallet_02_refund_nosub.sol` `withdraw` reentrancy — callorder-lens, guard-lens
 - `wallet_03_wrong_constructor.sol` `withdraw` reentrancy — callorder-lens, guard-lens
 - `wallet_04_confused_sign.sol` `withdraw` reentrancy — callorder-lens, guard-lens
 
 ## Targets the rule missed
 
+- `0x7541b76cb60f4c60af330c208b0623b7f54bf615.sol` `Collect` reentrancy — seen by guard-lens
+- `0x7b368c4e805c3870b6c49a3f1f49f69af8662cf3.sol` `Collect` reentrancy — seen by guard-lens
+- `0x93c32845fae42c83a70e5f06214c8433665c2ab5.sol` `Collect` reentrancy — seen by guard-lens
+- `0x96edbe868531bd23a6c05e9d0c424ea64fb1b78b.sol` `Collect` reentrancy — seen by guard-lens
+- `0xbe4041d55db380c5ae9d4a9b9703f1ed4e7e3888.sol` `Collect` reentrancy — seen by guard-lens
+- `0xcead721ef5b11f1a7b530171aab69b16c5e66b6e.sol` `Collect` reentrancy — seen by guard-lens
+- `0xf015c35649c82f5467c9c74b7f28ee67665aad68.sol` `Collect` reentrancy — seen by guard-lens
 - `BECToken.sol` `batchTransfer` unsafe-math — seen by no lens
-- `FibonacciBalance.sol` `fallback` unguarded-state-write — seen by no lens
 - `FibonacciBalance.sol` `withdraw` unguarded-state-write — seen by modifier-lens
 - `arbitrary_location_write_simple.sol` `PopBonusCode` unguarded-state-write — seen by no lens
 - `incorrect_constructor_name1.sol` `IamMissing` unguarded-state-write — seen by modifier-lens
@@ -93,7 +107,6 @@ Candidates held back by the rule (one lens only): 354, of which on a target: 8.
 - `overflow_single_tx.sol` `overflowmultostate` unsafe-math — seen by no lens
 - `overflow_single_tx.sol` `underflowlocalonly` unsafe-math — seen by no lens
 - `overflow_single_tx.sol` `underflowtostate` unsafe-math — seen by no lens
-- `parity_wallet_bug_1.sol` `fallback` unguarded-state-write — seen by no lens
 - `parity_wallet_bug_1.sol` `initWallet` unguarded-state-write — seen by no lens
 - `parity_wallet_bug_2.sol` `initWallet` unguarded-state-write — seen by no lens
 - `parity_wallet_bug_2.sol` `kill` unguarded-state-write — seen by no lens

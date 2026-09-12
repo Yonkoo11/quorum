@@ -17,7 +17,8 @@ from .memory import signature
 PRIVILEGED = re.compile(r"\b(owner|admin|treasury|fee|rate|price|oracle|paused|router|beneficiary)\w*\b", re.I)
 EXTERNAL_CALL = re.compile(r"\.(call|delegatecall|transfer|send)\s*[{(]|\.\w+\s*\{\s*value\s*:|\.(call|delegatecall|callcode)\.value\s*\(")
 STATE_WRITE = re.compile(r"^\s*([A-Za-z_]\w*)\s*(\[[^\]]*\]|\.\w+)*\s*(=|\+=|-=)[^=]")
-FUNC = re.compile(r"^\s*function\s+(\w+)\s*\(", re.M)
+FUNC = re.compile(r"^\s*function\s*(\w*)\s*\(", re.M)  # the name is empty for a 0.4 fallback: `function () payable`
+ALIAS = re.compile(r"^\s*(?:var|\w+(?:\.\w+)?\s+storage)\s+(\w+)\s*=\s*([A-Za-z_]\w*)")
 
 
 @dataclass(frozen=True)
@@ -70,7 +71,7 @@ def parse_functions(src: str) -> list[Function]:
             i += 1
         out.append(
             Function(
-                name=m.group(1),
+                name=m.group(1) or "fallback",  # what 0.6+ and Slither call the unnamed function
                 header=src[m.start():open_idx],
                 body=src[open_idx : i + 1],
                 start_line=src[: m.start()].count("\n") + 1,
@@ -106,19 +107,25 @@ def _lines(fn: Function) -> Iterator[tuple[int, str]]:
 
 # --------------------------- risk: reentrancy ---------------------------
 
+def _storage_aliases(fn: Function, svars: set[str]) -> set[str]:
+    """Local names that point into storage: `var acc = Acc[msg.sender]`, `Item storage it = items[id]`."""
+    return {m.group(1) for _, text in _lines(fn) for m in [ALIAS.match(text)] if m and m.group(2) in svars}
+
+
 def callorder_lens(contract: str, src: str) -> list[Sighting]:
     """Evidence: an external call happens before a state write in the same function."""
     out, svars = [], state_vars(src)
     for fn in parse_functions(src):
         if _is_readonly(fn):
             continue
+        writes_storage = svars | _storage_aliases(fn, svars)
         call_at = None
         for ln, text in _lines(fn):
             if call_at is None and EXTERNAL_CALL.search(text):
                 call_at = (ln, text)
                 continue
             m = STATE_WRITE.match(text)
-            if call_at and m and m.group(1) in svars:
+            if call_at and m and m.group(1) in writes_storage:
                 out.append(Sighting("callorder-lens", "reentrancy", contract, fn.name, call_at[0], call_at[1]))
                 break
     return out

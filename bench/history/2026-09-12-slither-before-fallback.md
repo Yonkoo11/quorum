@@ -1,15 +1,15 @@
 # Baseline — Slither 0.11.4 on SmartBugs-curated
 
-Run 2026-09-12 · corpus commit `230e649` · 143 files, 139 compiled · 73 targets · compilers: 0.4.24 ×1, 0.4.25 ×2, 0.4.26 ×135, 0.4.9 ×1 · `python bench/slither.py <corpus>`
+Run 2026-09-12 · corpus commit `230e649` · 143 files, 139 compiled · 71 targets · compilers: 0.4.24 ×1, 0.4.25 ×2, 0.4.26 ×135, 0.4.9 ×1 · `python bench/slither.py <corpus>`
 
 Same unit and same harsh rule as `bench/run.py`: a (file, function, risk); every finding that is not on a labelled function counts as false. A file Slither could not compile is a miss for every target in it.
 
 | risk | targets | **strict found** | true | **precision** | **recall** | loose found | true | precision | recall |
 |---|---|---|---|---|---|---|---|---|---|
 | reentrancy | 31 | **45** | 28 | **62%** | **90%** | 102 | 28 | 27% | 90% |
-| unguarded-state-write | 21 | **37** | 7 | **19%** | **33%** | 37 | 7 | 19% | 33% |
+| unguarded-state-write | 19 | **37** | 6 | **16%** | **32%** | 37 | 6 | 16% | 32% |
 | unsafe-math | 21 | **4** | 0 | **0%** | **0%** | 11 | 1 | 9% | 5% |
-| **all** | 73 | **86** | 35 | **41%** | **48%** | 150 | 36 | 24% | 49% |
+| **all** | 71 | **86** | 34 | **40%** | **48%** | 150 | 35 | 23% | 49% |
 
 Strict: the detectors Slither rates High or Medium for the risk. Loose: strict plus its Low and Informational detectors, the analogue of counting any single lens.
 
@@ -53,6 +53,7 @@ Strict: the detectors Slither rates High or Medium for the risk. Loose: strict p
 - `0xe82f0742a71a02b9e9ffc142fdcb6eb1ed06fb87.sol` `GetFreebie` unguarded-state-write
 - `0xec329ffc97d75fe03428ae155fc7793431487f63.sol` `run` reentrancy
 - `0xf70d589d76eebdd7c12cc5eec99f8f6fa4233b9e.sol` `GetFreebie` unguarded-state-write
+- `FibonacciBalance.sol` `fallback` unguarded-state-write
 - `FindThisHash.sol` `solve` unguarded-state-write
 - `ether_lotto.sol` `play` unguarded-state-write
 - `governmental_survey.sol` `resetInvestment` unguarded-state-write
@@ -99,7 +100,6 @@ Strict: the detectors Slither rates High or Medium for the risk. Loose: strict p
 - `overflow_single_tx.sol` `overflowmultostate` unsafe-math
 - `overflow_single_tx.sol` `underflowlocalonly` unsafe-math
 - `overflow_single_tx.sol` `underflowtostate` unsafe-math
-- `parity_wallet_bug_1.sol` `fallback` unguarded-state-write
 - `parity_wallet_bug_1.sol` `initWallet` unguarded-state-write
 - `parity_wallet_bug_2.sol` `initWallet` unguarded-state-write
 - `reentrancy_bonus.sol` `getFirstWithdrawalBonus` reentrancy

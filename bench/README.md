@@ -36,11 +36,13 @@ distinct lenses on one key.
 Two corpora:
 
 - **SmartBugs-curated** (143 files, 2017-era 0.4 Solidity, line-level labels shipped with the
-  corpus, 71 usable targets). Two lens fixes were made after looking at this corpus, so its
+  corpus, 73 usable targets). Four lens fixes were made after looking at this corpus, so its
   numbers are tuned.
 - **DeFiVulnLabs** (57 files, modern ^0.8 Foundry tests, one bug per file). Labels were written
   by hand at function level in [`labels/defivulnlabs.json`](labels/defivulnlabs.json) before the
-  lenses were run on it, and no lens has been changed after looking at it. Ten targets, so read
+  lenses were run on it. The two later lens fixes were made after looking at SmartBugs only, and
+  the held-out run repeated after them is identical to the one before
+  ([history](history/2026-09-12-heldout-before-fallback-and-alias.md)). Ten targets, so read
   its percentages as counts.
 
 `slither.py` scores Slither 0.11.4 with the same unit and the same harsh rule, using only the
@@ -50,20 +52,20 @@ analogue of counting any single lens.
 
 ## The numbers, 2026-09-12
 
-| | SmartBugs-curated (71 targets) | | DeFiVulnLabs, held out (10 targets) | |
+| | SmartBugs-curated (73 targets) | | DeFiVulnLabs, held out (10 targets) | |
 |---|---|---|---|---|
 | | recall | precision | recall | precision |
-| lenses, any single lens | 52% | 9% | 40% | 4% |
-| **lenses, two-witness rule** | **31%** | **39%** | **30%** | **60%** |
-| Slither, strict | 48% | 40% | 40% | 20% |
-| Slither, loose | 49% | 23% | 40% | 7% |
+| lenses, any single lens | 51% | 9% | 40% | 4% |
+| **lenses, two-witness rule** | **40%** | **44%** | **30%** | **60%** |
+| Slither, strict | 48% | 41% | 40% | 20% |
+| Slither, loose | 49% | 24% | 40% | 7% |
 
 Per risk, two-witness against Slither strict (recall / precision):
 
 | risk | two-witness, SmartBugs | Slither, SmartBugs | two-witness, held out | Slither, held out |
 |---|---|---|---|---|
-| reentrancy | 68% / 39% | 90% / 62% | 2 of 4, 50% | 2 of 4, 40% |
-| unguarded-state-write | 5% / 33% | 32% / 16% | 1 of 2, 100% | 1 of 2, 8% |
+| reentrancy | 90% / 44% | 90% / 62% | 2 of 4, 50% | 2 of 4, 40% |
+| unguarded-state-write | 5% / 33% | 33% / 19% | 1 of 2, 100% | 1 of 2, 8% |
 | unsafe-math | 0% | 0% | 0 of 4 | 1 of 4, 50% |
 
 Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLITHER.md),
@@ -75,18 +77,21 @@ Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLIT
 |---|---|---|---|---|---|
 | [2026-09-12 first](history/2026-09-12-before-call-value.md) | as shipped for the hackathon | 1% | 8% | 0% | 0% |
 | 2026-09-12 second | `EXTERNAL_CALL` learns the pre-0.5 idiom `.call.value(x)()`, which 29 of the 32 reentrancy files use | 23% | 43% | 48% | 43% |
-| [2026-09-12 third](BENCHMARK.md) | a function with no visibility keyword counts as callable, which is what it was before 0.5 | 31% | 39% | 68% | 39% |
+| [2026-09-12 third](history/2026-09-12-before-fallback-and-alias.md) | a function with no visibility keyword counts as callable, which is what it was before 0.5 | 31% | 39% | 68% | 39% |
+| [2026-09-12 fourth](BENCHMARK.md) | unnamed 0.4 fallback functions are parsed, so two labels on them become targets (71 → 73); `callorder-lens` follows a storage alias (`var acc = Acc[msg.sender]`) | 40% | 44% | 90% | 44% |
 
-Both fixes were made after looking at this corpus, so the third row is a tuned number. The
-held-out run above is the untuned one.
+All four fixes were made after looking at this corpus, so every row after the first is a tuned
+number. The held-out run above is the untuned one, and it did not move when the last two fixes
+landed.
 
 ## What the numbers say
 
 - The two-witness rule is a precision filter and it costs recall, on both corpora. SmartBugs
   reentrancy: the lenses alone reach 94% recall at 14% precision; the rule gives 39% precision at
-  68% recall. Held out: any lens 4% precision, the rule 60%.
-- On 2017 code Slither is the better tool, and on reentrancy it is not close: 90% / 62% against
-  68% / 39%. Slither follows calls and storage; the lenses read lines.
+  90% recall. Held out: any lens 4% precision, the rule 60%.
+- On 2017 code Slither is the better tool. On reentrancy the two now find the same 28 of 31
+  targets; Slither does it at 62% precision, the rule at 44%. Slither follows calls and storage;
+  the lenses read lines.
 - On the modern corpus the rule is the more precise of the two (60% against 20%) at lower recall
   (30% against 40%), on ten targets. Slither's precision there is spent on `arbitrary-send-eth`
   and `suicidal` firing inside attack contracts and test harnesses, which the harsh rule counts
@@ -101,10 +106,11 @@ held-out run above is the untuned one.
   it is the first thing the next lens change fixes.
 - Access control at 5% on SmartBugs: the corpus's shapes are arbitrary storage writes and
   misnamed constructors. The pair looks for a missing modifier on a privileged write. Different bug.
-- The largest remaining reentrancy miss on SmartBugs is a storage alias (`var acc =
-  Acc[msg.sender]` then `acc.balance -= x`): `callorder-lens` cannot see that the write touches
-  storage. Unnamed 0.4 fallback functions are not parsed at all, so labels on them are dropped,
-  which flatters recall; that is the other pending fix.
+- The fourth run fixed the two things the third exposed. Unnamed 0.4 fallback functions are
+  parsed now, so the two labels on them count as targets (both access control, both still
+  missed). The storage alias `var acc = Acc[msg.sender]; acc.balance -= x` is followed by
+  `callorder-lens`, which is where the reentrancy recall came from: 21 → 28 true on the same 63
+  confirmed.
 - Quorum keys a finding by file, function and risk, not by contract. In DeFiVulnLabs a vulnerable
   contract and its remediated twin often share a file and a function name, so they share a key.
   The labels file records where that happens.
