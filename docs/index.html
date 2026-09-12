@@ -5,92 +5,70 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Quorum: a swarm that coordinates through memory</title>
 <meta name="description" content="Six security lenses that never talk to each other. Sibyl Memory is the only channel between them.">
-<link rel="icon" href="icon-256.png">
+<link rel="icon" href="./icon-256.png">
 <meta name="theme-color" content="#f3eee4">
 <meta property="og:title" content="Quorum: a swarm that coordinates through memory">
 <meta property="og:description" content="Six security lenses that never talk to each other. Sibyl Memory is the only channel between them.">
 <meta property="og:image" content="https://yonkoo11.github.io/quorum/post-2.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="quorum.css">
+<link rel="stylesheet" href="./quorum.css">
 <script>try{var m=localStorage.getItem("quorum-theme");if(m==="light"||m==="dark")document.documentElement.setAttribute("data-theme",m);}catch(e){}</script>
-<script src="quorum.js" defer></script>
+<script src="./quorum.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="page">
-
-<header class="nameplate">
-  <div class="name">
-    <div class="greenrule" aria-hidden="true"></div>
-    <h1>Quorum</h1>
-    <p class="tag">A swarm of security lenses that never talk to each other. Sibyl Memory is the only
-      channel between them, and it is the only reason the swarm can agree on anything, recognise
-      anything, or forget anything.</p>
-  </div>
-  <div class="mark" data-mark="agreed"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-<defs><clipPath id="mast-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--paper)"/><circle cx="364" cy="190" r="176" fill="var(--paper)"/>
-<g clip-path="url(#mast-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="./"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="bar-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
+<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
+<g clip-path="url(#bar-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
 <circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
-<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg></div>
+<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
+    <nav aria-label="Sections"><ul><li><a href="././" aria-current="page">Front page</a></li><li><a href="./lenses/">Lenses</a></li><li><a href="./memory/">Memory</a></li><li><a href="./registry/">Registry</a></li><li><a href="./start/">Run it</a></li></ul></nav>
+    <button type="button" class="theme" id="theme-toggle">Theme</button>
+  </div>
 </header>
-
-<nav class="nav small" aria-label="Sections">
-  <ul><li><a href="./" aria-current="page">Front page</a></li><li><a href="lenses/">Lenses</a></li><li><a href="memory/">Memory</a></li><li><a href="registry/">Registry</a></li><li><a href="start/">Run it</a></li></ul>
-  <button type="button" class="theme" id="theme-toggle" aria-live="polite">Theme</button>
-</nav>
-
 <main id="main">
-<section class="grid row lead">
-  <article class="story">
-    <h2><span>Two lenses.</span><span>One finding.</span></h2>
-    <p class="deck">No lens can publish a finding on its own. A finding becomes real only when two
-      lenses that work from different evidence arrive at the same conclusion, and the count of who
-      agreed lives in memory, not in any agent&rsquo;s head.</p>
-    <div class="standfirst">
-      <p>Six independent lenses read Solidity source. Once a pattern is confirmed, the swarm
-        recognises that idiom on sight in a completely different contract, in a completely different
-        session, from a single sighting.</p>
-      <p>Quorum pairs its lenses two per risk. For <code>reentrancy</code>,
-        <code>callorder-lens</code> sees an external call precede a state write, while
-        <code>guard-lens</code> sees a function that moves value out and carries no reentrancy
-        guard. Two readings, one conclusion.</p>
-      <p>Delete the memory layer and there is no swarm left. Just six programs that each shout once
-        and forget. Rather than assert that, Quorum ships it as a runtime flag, and the switch below
-        is that flag.</p>
+<section class="hero">
+  <div class="wrap">
+    <div class="text">
+      <div class="rule" aria-hidden="true"></div>
+      <p class="kicker cap">A swarm that agrees through memory</p>
+      <h1><span>Two lenses.</span><span>One finding.</span></h1>
+      <p class="lead">Six security lenses read Solidity and never talk to each other. Sibyl Memory is the only
+        channel between them, and the only reason the swarm can agree on anything, recognise anything, or forget anything.</p>
+      <div class="acts">
+        <a class="btn primary" href="https://github.com/Yonkoo11/quorum">Read the code</a>
+        <a class="btn" href="start/">Run it</a>
+      </div>
     </div>
-  </article>
-
-  <aside class="side">
-    <p class="kicker small">Recall</p>
-    <h3>Learned on a teaching fixture. Recognised on Base from one sighting.</h3>
-    <p>The pattern was learned on a teaching fixture and recognised in production code deployed on
-      Base. <code>msg.sender.call{value: amount}("")</code> and
-      <code>protocolFeeDestination.call{value: protocolFee}("")</code> are the same idiom, so they
-      hash to the same signature. <code>weth.deposit{value: amountETH}()</code> is a different
-      idiom and does not.</p>
-    <dl>
-      <dt>Confirmed pattern</dt><dd class="mono">reentrancy:97d18d17cfa4494a</dd>
-      <dt>First confirmed on</dt><dd>VulnerableVault.sol by <code>callorder-lens</code>, <code>guard-lens</code></dd>
-      <dt>Recognised since on</dt><dd>FriendtechSharesV1.sol (1 sighting each, no quorum needed)</dd>
-    </dl>
-    <p class="note">The Friend.tech recall is a pattern match on a call idiom, not an allegation
-      about that contract. Quorum publishes corroborated idioms worth review, not confirmed
-      vulnerabilities.</p>
-  </aside>
+    <div class="art" data-mark="agreed"><svg viewBox="0 0 560 664" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="hero-lens"><circle cx="196" cy="176" r="186"/></clipPath></defs>
+<rect x="492" y="0" width="68" height="664" fill="var(--ink)"/>
+<rect x="280" y="0" width="280" height="40" fill="var(--ink)"/>
+<polygon points="400,664 560,470 560,664" fill="var(--ink)"/>
+<rect class="slabfill" x="292" y="40" width="200" height="624" fill="var(--green)"/>
+<circle cx="236" cy="664" r="156" fill="var(--ground)"/>
+<circle cx="196" cy="176" r="186" fill="var(--ground)"/><circle cx="364" cy="176" r="186" fill="var(--ground)"/>
+<g clip-path="url(#hero-lens)"><circle class="vesica" cx="364" cy="176" r="186" fill="var(--green)"/></g>
+<circle cx="196" cy="176" r="186" fill="none" stroke="var(--ink)" stroke-width="22"/>
+<circle cx="364" cy="176" r="186" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span class="lbl">The intersection is the finding</span></div>
+  </div>
 </section>
 
-<section class="grid row photo" aria-labelledby="deletion-h">
-  <figure class="term">
-    <div class="switchbar">
-      <span class="lbl small" id="deletion-h">The deletion test</span>
+<section class="band" aria-labelledby="deletion-h">
+  <div class="wrap">
+    <div class="head">
+      <span class="cap" id="deletion-h">The deletion test</span>
       <span class="switch" role="group" aria-label="Memory">
         <button type="button" id="btn-on" aria-pressed="true" aria-controls="pane-on">Memory on</button>
         <button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">--no-memory</button>
       </span>
     </div>
-    <div class="panes"><pre class="terminal" id="pane-on"><span class="prompt">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
+    <figure>
+      <div class="panes"><pre class="terminal" id="pane-on" tabindex="0"><span class="prompt">$</span> quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
   <span class="hi">QUORUM</span>    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
   <span class="hi">QUORUM</span>    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
 scanned 12 lens-units | <span class="hi">confirmed 2</span> | <span class="hi">recalled 1</span> | candidates 5
@@ -100,40 +78,66 @@ scanned 12 lens-units | <span class="hi">confirmed 2</span> | <span class="hi">r
 recalled before reading any code: 2 confirmed pattern(s)
   <span class="hi">RECALLED</span>  FriendtechSharesV1.sol:buyShares   reentrancy
             first confirmed on VulnerableVault.sol   (1 sighting was enough)
-scanned 24 lens-units | confirmed 0 | <span class="hi">recalled 1</span> | candidates 11</pre><pre class="terminal" id="pane-off" hidden><span class="cmt"># same swarm, same contracts, memory removed</span>
+scanned 24 lens-units | confirmed 0 | <span class="hi">recalled 1</span> | candidates 11</pre><pre class="terminal" id="pane-off" tabindex="0" hidden><span class="cmt"># same swarm, same contracts, memory removed</span>
 <span class="prompt">$</span> quorum run --no-memory
 scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 12
 nothing was confirmed, recalled or suppressed: without memory the swarm
 cannot corroborate, recognise or forget.</pre></div>
-  <figcaption class="cap">
-    <span class="cap-mark" data-mark="void" aria-hidden="true"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <figcaption class="cap-row">
+        <span data-mark="void" aria-hidden="true"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 <defs><clipPath id="void-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
-<circle cx="196" cy="190" r="176" fill="var(--paper)"/><circle cx="364" cy="190" r="176" fill="var(--paper)"/>
+<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
 <g clip-path="url(#void-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--ink)"/></g>
 <circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
 <circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg></span>
-    <div>
-      <p>Same swarm, same contracts, memory removed. Every claim succeeds, so agents duplicate work.
-        Every sighting looks like the first, so corroboration never accumulates and quorum is never
-        reached. Retirements do not stick.</p>
-      <p>The same behaviour is asserted in <code>tests/test_quorum.py</code>.</p>
-    </div>
-  </figcaption>
-  </figure>
+        <div>
+          <p>Same swarm, same contracts, memory removed. Every claim succeeds, so agents duplicate work. Every sighting
+            looks like the first, so corroboration never accumulates and quorum is never reached. Retirements do not stick.</p>
+          <p>The same behaviour is asserted in <code>tests/test_quorum.py</code>. Flip the switch: the lenses above lose their intersection.</p>
+        </div>
+      </figcaption>
+    </figure>
+  </div>
 </section>
 
-<section class="row contents">
-  <h3>Read next</h3>
+<section class="notes wrap" aria-label="Pinned">
+  <a class="sheet" href="memory/">
+    <p class="cap">Recall</p>
+    <h2>Learned on a teaching fixture. Recognised on Base from one sighting.</h2>
+    <p><code>msg.sender.call{value: amount}("")</code> and <code>protocolFeeDestination.call{value: protocolFee}("")</code>
+      are the same idiom, so they hash to the same signature. <code>weth.deposit{value: amountETH}()</code> is a different idiom and does not.</p>
+    <dl>
+      <dt>Confirmed pattern</dt><dd class="mono">reentrancy:97d18d17cfa4494a</dd>
+      <dt>Recognised since on</dt><dd>FriendtechSharesV1.sol (1 sighting each, no quorum needed)</dd>
+    </dl>
+    <span class="more">The memory</span>
+  </a>
+  <a class="sheet pinned" href="registry/">
+    <p class="cap">The first claim</p>
+    <p class="big num">51138878</p>
+    <p>When a finding reaches quorum it stops being a private opinion. The first claim digest is on Base at that block;
+      the finding itself never left the machine. New claims go to Robinhood Chain, where the token is.</p>
+    <span class="more">The registry</span>
+  </a>
+  <a class="sheet pinned" href="registry/#cost">
+    <p class="cap">Publishing costs</p>
+    <p class="big num">1,000</p>
+    <p>QUORUM burned per published claim. Scanning is free; publishing is not, and nobody receives the fee.</p>
+    <span class="more">What it costs</span>
+  </a>
+</section>
+
+<section class="contents wrap">
+  <h2>Read next</h2>
   <ol>
     <li><a href="lenses/">The lenses</a><span class="ln">Six readings, two per risk, each pair reasoning from different evidence.</span></li>
     <li><a href="memory/">The memory</a><span class="ln">Four call sites carry the product, and the tier each one writes to.</span></li>
-    <li><a href="registry/">The registry</a><span class="ln">Claims on Base, and what it costs to publish one.</span></li>
+    <li><a href="registry/">The registry</a><span class="ln">Claims on chain, and what it costs to publish one.</span></li>
     <li><a href="start/">Run it</a><span class="ln">Install, every command, and what each one needs.</span></li>
   </ol>
 </section>
 </main>
-
-<footer class="colophon small">
+<footer class="foot wrap">
   <span class="corner" aria-hidden="true"></span>
   <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
   <span class="links">
@@ -143,7 +147,5 @@ cannot corroborate, recognise or forget.</pre></div>
     <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
   </span>
 </footer>
-
-</div>
 </body>
 </html>

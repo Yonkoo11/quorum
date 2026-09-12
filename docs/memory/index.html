@@ -18,73 +18,36 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="page">
-
-<div class="masthead-sm">
-  <a class="name" href="../">Quorum</a>
-  <span class="sec small">The memory</span>
-</div>
-<nav class="nav small" aria-label="Sections">
-  <ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/" aria-current="page">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul>
-  <button type="button" class="theme" id="theme-toggle" aria-live="polite">Theme</button>
-</nav>
-
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="../"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="bar-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
+<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
+<g clip-path="url(#bar-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
+<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
+<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
+    <nav aria-label="Sections"><ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/" aria-current="page">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul></nav>
+    <button type="button" class="theme" id="theme-toggle">Theme</button>
+  </div>
+</header>
 <main id="main">
-<section class="grid sec-head">
-  <div class="t">
-    <p class="kicker small">The memory</p>
-    <h1>Four calls carry<br>the product.</h1>
-    <p class="deck">Every Sibyl Memory read and write in this project is in one file, <code>quorum/memory.py</code>. Four call sites carry the whole product.</p>
-  </div>
-  <div class="aside">Every sighting, promotion, suppression and on-chain claim is also appended to the COLD journal, which is what makes a published claim auditable after the fact.</div>
+<section class="pagehead wrap">
+  <div><p class="cap">The memory</p><h1 class="stmt">Four calls carry<br>the product.</h1><p class="deck">Every Sibyl Memory read and write in this project is in one file, <code>quorum/memory.py</code>. Four call sites carry the whole product.</p></div>
+  <p class="aside">Every sighting, promotion, suppression and on-chain claim is also appended to the COLD journal, which is what makes a published claim auditable after the fact.</p>
 </section>
 
-<section class="row">
-  <div class="tablewrap">
-    <table>
-      <thead><tr><th>What breaks without it</th><th>Written at</th><th>Read at</th><th>Tier</th></tr></thead>
-      <tbody>
-        <tr>
-          <td data-label="Breaks"><b>Agents duplicate each other&rsquo;s work.</b> A lens claims a (contract, lens) unit; a peer that finds it claimed does not scan it. This is the only coordination mechanism in the system.</td>
-          <td data-label="Written"><code>claim_work</code></td><td data-label="Read">same call</td><td data-label="Tier">HOT <code>state/</code></td>
-        </tr>
-        <tr>
-          <td data-label="Breaks"><b>Quorum can never be reached.</b> Corroboration is accumulated across lenses, processes and sessions on the finding entity. A lens has no idea who else agreed with it; memory does.</td>
-          <td data-label="Written"><code>record_sighting</code></td><td data-label="Read"><code>swarm.py:74</code></td><td data-label="Tier">WARM <code>entities/</code></td>
-        </tr>
-        <tr>
-          <td data-label="Breaks"><b>Nothing is ever recognised again.</b> A confirmed idiom becomes permanent swarm knowledge and is matched on sight in later sessions, on contracts the swarm has never read.</td>
-          <td data-label="Written"><code>promote</code></td><td data-label="Read"><code>known_pattern</code> &rarr; <code>swarm.py:79</code></td><td data-label="Tier">REFERENCE <code>reference/</code></td>
-        </tr>
-        <tr>
-          <td data-label="Breaks"><b>Human corrections evaporate.</b> Retire a finding once and no later session reports that shape again.</td>
-          <td data-label="Written"><code>retire</code></td><td data-label="Read"><code>is_retired</code> &rarr; <code>swarm.py:64</code></td><td data-label="Tier">ARCHIVE <code>archive/</code></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+<section class="ledger wrap"><div class="tablewrap"><table>
+  <thead><tr><th>What breaks without it</th><th>Written at</th><th>Read at</th><th>Tier</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Breaks"><b>Agents duplicate each other&rsquo;s work.</b> A lens claims a (contract, lens) unit; a peer that finds it claimed does not scan it. This is the only coordination mechanism in the system.</td><td data-label="Written"><code>claim_work</code></td><td data-label="Read">same call</td><td data-label="Tier">HOT <code>state/</code></td></tr>
+    <tr><td data-label="Breaks"><b>Quorum can never be reached.</b> Corroboration is accumulated across lenses, processes and sessions on the finding entity. A lens has no idea who else agreed with it; memory does.</td><td data-label="Written"><code>record_sighting</code></td><td data-label="Read"><code>swarm.py:74</code></td><td data-label="Tier">WARM <code>entities/</code></td></tr>
+    <tr><td data-label="Breaks"><b>Nothing is ever recognised again.</b> A confirmed idiom becomes permanent swarm knowledge and is matched on sight in later sessions, on contracts the swarm has never read.</td><td data-label="Written"><code>promote</code></td><td data-label="Read"><code>known_pattern</code> &rarr; <code>swarm.py:79</code></td><td data-label="Tier">REFERENCE <code>reference/</code></td></tr>
+    <tr><td data-label="Breaks"><b>Human corrections evaporate.</b> Retire a finding once and no later session reports that shape again.</td><td data-label="Written"><code>retire</code></td><td data-label="Read"><code>is_retired</code> &rarr; <code>swarm.py:64</code></td><td data-label="Tier">ARCHIVE <code>archive/</code></td></tr>
+  </tbody></table></div></section>
 
-<section class="grid row art">
-  <div class="col">
-    <h2>Coordination without a message bus</h2>
-    <p>Quorum&rsquo;s agents are separate operating-system processes. They share one memory file and
-      nothing else: no queue, no broker, no RPC between them.</p>
-    <p>Three processes, twenty-four units of work, each done exactly once. Claiming is optimistic
-      because a read-then-write across processes is not atomic: an agent writes its own id into the
-      claim, waits out the window in which a peer could be writing too, then reads the claim back and
-      stands down unless it sees itself. Take the HOT tier away and all three agents do all
-      twenty-four units.</p>
-  </div>
-  <aside class="rail">
-    <p class="kicker small">The deletion test</p>
-    <p>Rather than assert what happens without memory, <code>NoMemory</code> implements the identical
-      interface and forgets everything the instant it is written. Confirmed findings: 0. Recalled: 0.</p>
-    <p><a href="../">See the switch on the front page &rarr;</a></p>
-  </aside>
-</section>
-
-<section class="row"><pre class="terminal"><span class="prompt">$</span> quorum swarm --workers 3
+<section class="band"><div class="wrap">
+  <div class="head"><span class="cap">Coordination without a message bus</span></div>
+  <pre class="terminal" tabindex="0"><span class="prompt">$</span> quorum swarm --workers 3
 
 3 agent processes, one memory, no message bus
   agent-1   scanned   9  stood down on  15 units a peer had already claimed
@@ -92,29 +55,33 @@
   agent-3   scanned   8  stood down on  16 units a peer had already claimed
 
   24 units scanned in total, 48 skipped, in 0.7s
-  no agent sent a message to any other agent. The HOT tier decided who did what.</pre></section>
+  no agent sent a message to any other agent. The HOT tier decided who did what.</pre>
+  <div class="cap-row"><span aria-hidden="true"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="swarm-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
+<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
+<g clip-path="url(#swarm-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
+<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
+<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg></span><div>
+    <p>Quorum&rsquo;s agents are separate operating-system processes. They share one memory file and nothing else: no queue, no broker, no RPC between them. Three processes, twenty-four units of work, each done exactly once.</p>
+    <p>Claiming is optimistic because a read-then-write across processes is not atomic: an agent writes its own id into the claim, waits out the window in which a peer could be writing too, then reads the claim back and stands down unless it sees itself. Take the HOT tier away and all three agents do all twenty-four units.</p>
+  </div></div>
+</div></section>
 
-<section class="grid row art">
-  <div class="col">
+<section class="split wrap">
+  <div>
     <h2>What counts as the same idiom</h2>
-    <p>A signature hashes the idiom on a line, not the identifiers on it. That is what lets a pattern
-      the swarm confirmed on one contract be recognised in a completely different one. Receiver and
-      argument names collapse, the method name survives, and the target of a write keeps its class.</p>
-    <p><code>msg.sender.call{value: amount}("")</code> and
-      <code>protocolFeeDestination.call{value: protocolFee}("")</code> are the same idiom and hash
-      the same. <code>weth.deposit{value: amountETH}()</code> is a different idiom and does not.</p>
+    <p>A signature hashes the idiom on a line, not the identifiers on it. That is what lets a pattern the swarm confirmed on one contract be recognised in a completely different one. Receiver and argument names collapse, the method name survives, and the target of a write keeps its class.</p>
+    <p><code>msg.sender.call{value: amount}("")</code> and <code>protocolFeeDestination.call{value: protocolFee}("")</code> are the same idiom and hash the same. <code>weth.deposit{value: amountETH}()</code> is a different idiom and does not.</p>
   </div>
-  <aside class="rail">
-    <p class="kicker small">A pattern is confirmed once</p>
-    <p>Recognising it in a later contract adds to its provenance rather than rewriting it: the swarm
-      never loses the record of where it originally paid for this knowledge.</p>
-  </aside>
+  <div class="side sheet pinned">
+    <p class="cap">A pattern is confirmed once</p>
+    <p>Recognising it in a later contract adds to its provenance rather than rewriting it: the swarm never loses the record of where it originally paid for this knowledge.</p>
+    <p class="fine">The deletion test on the front page shows the other half: with <code>NoMemory</code>, confirmed findings are 0 and recalled is 0.</p>
+  </div>
 </section>
-
+<div class="prevnext wrap"><a href="../lenses/"><span class="lbl">Previous</span>The lenses</a><a href="../registry/"><span class="lbl">Next</span>The registry</a></div>
 </main>
-<div class="prev-next"><a href="../lenses/"><span class="lbl">Previous</span>The lenses</a><a href="../registry/"><span class="lbl">Next</span>The registry</a></div>
-
-<footer class="colophon small">
+<footer class="foot wrap">
   <span class="corner" aria-hidden="true"></span>
   <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
   <span class="links">
@@ -124,7 +91,5 @@
     <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
   </span>
 </footer>
-
-</div>
 </body>
 </html>

@@ -18,99 +18,72 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="page">
-
-<div class="masthead-sm">
-  <a class="name" href="../">Quorum</a>
-  <span class="sec small">The lenses</span>
-</div>
-<nav class="nav small" aria-label="Sections">
-  <ul><li><a href=".././">Front page</a></li><li><a href="../lenses/" aria-current="page">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul>
-  <button type="button" class="theme" id="theme-toggle" aria-live="polite">Theme</button>
-</nav>
-
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="../"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="bar-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
+<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
+<g clip-path="url(#bar-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
+<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
+<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
+    <nav aria-label="Sections"><ul><li><a href=".././">Front page</a></li><li><a href="../lenses/" aria-current="page">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/">Run it</a></li></ul></nav>
+    <button type="button" class="theme" id="theme-toggle">Theme</button>
+  </div>
+</header>
 <main id="main">
-<section class="grid sec-head">
-  <div class="t">
-    <p class="kicker small">The lenses</p>
-    <h1>Six readings.<br>Two per risk.</h1>
-    <p class="deck">A single detector that reports everything it sees is noise. Six of them are six times the noise. Quorum pairs its lenses two per risk, and each pair reasons from different evidence.</p>
-  </div>
-  <div class="aside">Agreement is signal. Disagreement is kept as a candidate and never published.</div>
+<section class="pagehead wrap">
+  <div><p class="cap">The lenses</p><h1 class="stmt">Six readings.<br>Two per risk.</h1><p class="deck">A single detector that reports everything it sees is noise. Six of them are six times the noise. Quorum pairs its lenses two per risk, and each pair reasons from different evidence.</p></div>
+  <p class="aside">Agreement is signal. Disagreement is kept as a candidate and never published.</p>
 </section>
 
-<section class="grid row art">
-  <div class="col">
+<section class="ledger wrap">
+  <div class="risk"><h2>reentrancy</h2><span class="pair cap">callorder-lens &middot; guard-lens</span></div>
+  <div class="entry"><div><span class="n">callorder-lens</span><span class="cls">Evidence: call ordering</span></div><p>An external call precedes a state write in the same function.</p></div>
+  <div class="entry"><div><span class="n">guard-lens</span><span class="cls">Evidence: guard absence</span></div><p>The function moves value out and carries no reentrancy guard.</p></div>
+  <div class="risk"><h2>unguarded-state-write</h2><span class="pair cap">modifier-lens &middot; sender-lens</span></div>
+  <div class="entry"><div><span class="n">modifier-lens</span><span class="cls">Evidence: declaration</span></div><p>Externally callable, writes storage, carries no modifier at all.</p></div>
+  <div class="entry"><div><span class="n">sender-lens</span><span class="cls">Evidence: reachability</span></div><p>Writes a privileged-looking variable with no <code>msg.sender</code> check anywhere on the path.</p></div>
+  <div class="risk"><h2>unsafe-math</h2><span class="pair cap">unchecked-lens &middot; precision-lens</span></div>
+  <div class="entry"><div><span class="n">unchecked-lens</span><span class="cls">Evidence: block context</span></div><p>Arithmetic inside an <code>unchecked</code> block.</p></div>
+  <div class="entry"><div><span class="n">precision-lens</span><span class="cls">Evidence: operator order</span></div><p>A division evaluated before a multiplication.</p></div>
+</section>
+
+<section class="statement wrap"><p class="stmt">Agreement is <span class="g">signal.</span></p></section>
+
+<section class="split wrap">
+  <div>
     <h2>What a lens may not do</h2>
-    <p>No lens can publish a finding on its own. A lens records what it saw and reads nothing about
-      what its peers saw; the tally of who agreed lives on the finding in memory, not inside any
-      agent. A second lens that reaches the same (contract, function, risk) from a different reading
-      is what turns a sighting into a finding.</p>
-    <p>The lenses are deliberately simple. They are regex-and-brace-matching heuristics over source
-      text, not a compiler front end. The point of this project is the coordination and memory
-      layer; the lenses are the honest minimum needed to have something real to coordinate about.</p>
+    <p>No lens can publish a finding on its own. A lens records what it saw and reads nothing about what its peers saw;
+      the tally of who agreed lives on the finding in memory, not inside any agent. A second lens that reaches the same
+      (contract, function, risk) from a different reading is what turns a sighting into a finding.</p>
+    <p>The lenses are deliberately simple. They are regex-and-brace-matching heuristics over source text, not a compiler
+      front end. The point of this project is the coordination and memory layer; the lenses are the honest minimum needed
+      to have something real to coordinate about.</p>
   </div>
-  <aside class="rail">
-    <p class="kicker small">On audited production code</p>
-    <p>Run Quorum against audited production contracts and it mostly holds its tongue. On
-      Aerodrome&rsquo;s Router, WETH9 and a Compound proxy it confirms nothing and files eleven
-      candidates. That is the intended behaviour, not a failure to find bugs.</p>
-  </aside>
+  <div class="side sheet pinned">
+    <p class="cap">On audited production code</p>
+    <p>Run Quorum against audited production contracts and it mostly holds its tongue. On Aerodrome&rsquo;s Router, WETH9 and
+      a Compound proxy it confirms nothing and files eleven candidates. That is the intended behaviour, not a failure to find bugs.</p>
+  </div>
 </section>
 
-<section class="row">
-  <div class="risk"><h2>reentrancy</h2><span class="pair small">callorder-lens &middot; guard-lens</span></div>
-  <div class="entry">
-  <div><span class="n">callorder-lens</span><span class="cls">Evidence: call ordering</span></div>
-  <div><p>An external call precedes a state write in the same function.</p></div>
-</div>
-  <div class="entry">
-  <div><span class="n">guard-lens</span><span class="cls">Evidence: guard absence</span></div>
-  <div><p>The function moves value out and carries no reentrancy guard.</p></div>
-</div>
-
-  <div class="risk"><h2>unguarded-state-write</h2><span class="pair small">modifier-lens &middot; sender-lens</span></div>
-  <div class="entry">
-  <div><span class="n">modifier-lens</span><span class="cls">Evidence: declaration</span></div>
-  <div><p>Externally callable, writes storage, carries no modifier at all.</p></div>
-</div>
-  <div class="entry">
-  <div><span class="n">sender-lens</span><span class="cls">Evidence: reachability</span></div>
-  <div><p>Writes a privileged-looking variable with no <code>msg.sender</code> check anywhere on the path.</p></div>
-</div>
-
-  <div class="risk"><h2>unsafe-math</h2><span class="pair small">unchecked-lens &middot; precision-lens</span></div>
-  <div class="entry">
-  <div><span class="n">unchecked-lens</span><span class="cls">Evidence: block context</span></div>
-  <div><p>Arithmetic inside an <code>unchecked</code> block.</p></div>
-</div>
-  <div class="entry">
-  <div><span class="n">precision-lens</span><span class="cls">Evidence: operator order</span></div>
-  <div><p>A division evaluated before a multiplication.</p></div>
-</div>
-</section>
-
-<section class="grid row art">
-  <div class="col">
+<section class="split wrap">
+  <div>
     <h2>Not a vulnerability scanner that proves exploits</h2>
-    <p>Quorum publishes corroborated idioms worth review, not confirmed vulnerabilities. A quorum
-      means two independent lenses agreed on a shape, nothing more. The Friend.tech recall on the
-      front page is a pattern match on a call idiom, not an allegation about that contract.</p>
-    <p>The fixtures in <code>fixtures/</code> are vulnerable on purpose and are not deployed
-      anywhere.</p>
+    <p>Quorum publishes corroborated idioms worth review, not confirmed vulnerabilities. A quorum means two independent lenses
+      agreed on a shape, nothing more. The Friend.tech recall on the front page is a pattern match on a call idiom, not an
+      allegation about that contract.</p>
+    <p>The fixtures in <code>fixtures/</code> are vulnerable on purpose and are not deployed anywhere.</p>
   </div>
-  <aside class="rail">
-    <p class="kicker small">Where the count lives</p>
-    <p>Corroboration is accumulated across lenses, processes and sessions on the finding entity in
-      the WARM tier. A lens has no idea who else agreed with it; memory does.</p>
-    <p><a href="../memory/">The memory &rarr;</a></p>
-  </aside>
+  <div class="side">
+    <p class="cap">Where the count lives</p>
+    <p>Corroboration is accumulated across lenses, processes and sessions on the finding entity in the WARM tier. A lens has no
+      idea who else agreed with it; memory does. <a href="../memory/">The memory &rarr;</a></p>
+  </div>
 </section>
-
+<div class="prevnext wrap"><a href="../"><span class="lbl">Previous</span>Front page</a><a href="../memory/"><span class="lbl">Next</span>The memory</a></div>
 </main>
-<div class="prev-next"><a href="../"><span class="lbl">Previous</span>Front page</a><a href="../memory/"><span class="lbl">Next</span>The memory</a></div>
-
-<footer class="colophon small">
+<footer class="foot wrap">
   <span class="corner" aria-hidden="true"></span>
   <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
   <span class="links">
@@ -120,7 +93,5 @@
     <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
   </span>
 </footer>
-
-</div>
 </body>
 </html>

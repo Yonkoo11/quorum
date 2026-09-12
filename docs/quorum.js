@@ -76,7 +76,11 @@
   if (v) {
     var TX = v.getAttribute("data-tx"),
         EXPECT = v.getAttribute("data-digest").toLowerCase(),
-        RPCS = ["https://mainnet.base.org", "https://base-rpc.publicnode.com"],
+        /* the same order quorum verify uses: the claim chain first, then every chain a claim has lived on */
+        CHAINS = [
+          { name: "Robinhood Chain", rpcs: ["https://rpc.mainnet.chain.robinhood.com"] },
+          { name: "Base", rpcs: ["https://mainnet.base.org", "https://base-rpc.publicnode.com"] }
+        ],
         btn = document.getElementById("verify-btn"),
         out = document.getElementById("verify-out"),
         status = document.getElementById("verify-status");
@@ -94,8 +98,26 @@
         return j.result;
       });
     };
-    var anyRpc = function (method, params) {
-      return call(RPCS[0], method, params).catch(function () { return call(RPCS[1], method, params); });
+    var onChain = function (chain, method, params) {
+      var p = Promise.reject(new Error("no rpc"));
+      chain.rpcs.forEach(function (rpc) { p = p.catch(function () { return call(rpc, method, params); }); });
+      return p;
+    };
+    /* find the transaction: only "not on this chain" moves on; a node that is down is reported, not skipped */
+    var findTx = function (hash) {
+      var p = Promise.resolve(null);
+      CHAINS.forEach(function (chain) {
+        p = p.then(function (found) {
+          if (found) return found;
+          return onChain(chain, "eth_getTransactionByHash", [hash]).then(function (tx) {
+            return tx ? { chain: chain, tx: tx } : null;
+          });
+        });
+      });
+      return p.then(function (found) {
+        if (!found) throw new Error("transaction not found on Robinhood Chain or Base");
+        return found;
+      });
     };
     var hexToAscii = function (hex) {
       var s = "";
@@ -115,12 +137,13 @@
     btn.addEventListener("click", function () {
       btn.disabled = true;
       status.textContent = "Reading Base…";
-      Promise.all([
-        anyRpc("eth_getTransactionByHash", [TX]),
-        anyRpc("eth_blockNumber", [])
-      ]).then(function (res) {
-        var tx = res[0], head = parseInt(res[1], 16);
-        if (!tx) throw new Error("transaction not found");
+      findTx(TX).then(function (found) {
+        return onChain(found.chain, "eth_blockNumber", []).then(function (h) {
+          return { tx: found.tx, chain: found.chain, head: parseInt(h, 16) };
+        });
+      }).then(function (res) {
+        var tx = res.tx, head = res.head;
+        set("v-chain", res.chain.name);
         var block = parseInt(tx.blockNumber, 16);
         var data = tx.input.slice(2);
         var prefix = hexToAscii(data);
@@ -142,11 +165,11 @@
         set("v-match", match
               ? "matches the digest printed on this page"
               : "does NOT match the digest printed on this page", match ? "ok" : "bad");
-        status.textContent = "Read from Base just now, in your browser. Nothing was sent anywhere.";
+        status.textContent = "Read from " + res.chain.name + " just now, in your browser. Nothing was sent anywhere.";
         btn.disabled = false;
         btn.textContent = "Read it again";
       }).catch(function (e) {
-        status.textContent = "Could not reach Base from this browser (" + e.message +
+        status.textContent = "Could not read the claim from this browser (" + e.message +
           "). The facts above come from the transaction itself and are unchanged.";
         btn.disabled = false;
       });

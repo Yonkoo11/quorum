@@ -18,38 +18,35 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="page">
-
-<div class="masthead-sm">
-  <a class="name" href="../">Quorum</a>
-  <span class="sec small">Run it</span>
-</div>
-<nav class="nav small" aria-label="Sections">
-  <ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/" aria-current="page">Run it</a></li></ul>
-  <button type="button" class="theme" id="theme-toggle" aria-live="polite">Theme</button>
-</nav>
-
-<main id="main">
-<section class="grid sec-head">
-  <div class="t">
-    <p class="kicker small">Run it</p>
-    <h1>On your own<br>machine.</h1>
-    <p class="deck">Python 3.10 to 3.13. If <code>python3 -m venv</code> fails on your machine, the <code>uv</code> path avoids it entirely. No API key is needed to pull verified source from Base.</p>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="../"><svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs><clipPath id="bar-l"><circle cx="196" cy="190" r="176"/></clipPath></defs>
+<circle cx="196" cy="190" r="176" fill="var(--ground)"/><circle cx="364" cy="190" r="176" fill="var(--ground)"/>
+<g clip-path="url(#bar-l)"><circle class="vesica" cx="364" cy="190" r="176" fill="var(--green)"/></g>
+<circle cx="196" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/>
+<circle cx="364" cy="190" r="176" fill="none" stroke="var(--ink)" stroke-width="22"/></svg><span>Quorum</span></a>
+    <nav aria-label="Sections"><ul><li><a href=".././">Front page</a></li><li><a href="../lenses/">Lenses</a></li><li><a href="../memory/">Memory</a></li><li><a href="../registry/">Registry</a></li><li><a href="../start/" aria-current="page">Run it</a></li></ul></nav>
+    <button type="button" class="theme" id="theme-toggle">Theme</button>
   </div>
-  <div class="aside">Memory is a local file. Nothing is uploaded. Only <code>attest</code>, <code>verify</code>, <code>reveal</code> and <code>import</code> touch a network.</div>
+</header>
+<main id="main">
+<section class="pagehead wrap">
+  <div><p class="cap">Run it</p><h1 class="stmt">On your own<br>machine.</h1><p class="deck">Python 3.10 to 3.13. If <code>python3 -m venv</code> fails on your machine, the <code>uv</code> path avoids it entirely. No API key is needed to pull verified source from Base.</p></div>
+  <p class="aside">Memory is a local file. Nothing is uploaded. Only <code>attest</code>, <code>verify</code>, <code>reveal</code> and <code>import</code> touch a network.</p>
 </section>
 
-<section class="row"><div class="copyable"><pre class="terminal" data-copy=""><span class="prompt">$</span> git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
+<section class="band"><div class="wrap"><div class="head"><span class="cap">Install</span></div><div class="copyable"><pre class="terminal" tabindex="0" data-copy=""><span class="prompt">$</span> git clone https://github.com/Yonkoo11/quorum &amp;&amp; cd quorum
 
 <span class="prompt">$</span> python3 -m venv .venv &amp;&amp; .venv/bin/pip install -e .   <span class="cmt"># or:</span>
-<span class="prompt">$</span> uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python -e .</pre></div></section>
-<section class="row"><div class="copyable"><pre class="terminal" data-copy=""><span class="cmt"># pull real verified source from Base mainnet (no API key needed)</span>
+<span class="prompt">$</span> uv venv --python 3.12 .venv &amp;&amp; uv pip install --python .venv/bin/python -e .</pre></div>
+  <div style="height:var(--sp-5)"></div><div class="copyable"><pre class="terminal" tabindex="0" data-copy=""><span class="cmt"># pull real verified source from Base mainnet (no API key needed)</span>
 <span class="prompt">$</span> .venv/bin/quorum fetch 0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4 \
                        0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43 \
-                       0x4200000000000000000000000000000000000006</pre></div></section>
+                       0x4200000000000000000000000000000000000006</pre></div></div></section>
 
-<section class="grid row art">
-  <div class="col">
+<section class="split wrap">
+  <div>
     <h2>Every command</h2>
     <dl class="rows cmds">
       <div><dt><code>quorum fetch &lt;address&gt;</code></dt><dd>Download verified contract source from Base into <code>targets/</code>.</dd></div>
@@ -59,45 +56,38 @@
       <div><dt><code>quorum recall</code></dt><dd>What the swarm knows before it reads any code, and how it came to know it.</dd></div>
       <div><dt><code>quorum recall --since &lt;iso&gt;</code></dt><dd>What it learned after a point in time.</dd></div>
       <div><dt><code>quorum retire &lt;key&gt; --reason</code></dt><dd>A human overrules a finding. No later session reports that shape again.</dd></div>
-      <div><dt><code>quorum attest</code></dt><dd>Burn the claim fee, then publish confirmed findings to Base.</dd></div>
+      <div><dt><code>quorum attest</code></dt><dd>Burn the claim fee, then publish confirmed findings to Robinhood Chain.</dd></div>
       <div><dt><code>quorum verify &lt;tx&gt;</code></dt><dd>Check a published claim against memory, and its fee burn against the token.</dd></div>
       <div><dt><code>quorum reveal &lt;key&gt;</code></dt><dd>Disclose the pattern behind a paid claim.</dd></div>
       <div><dt><code>quorum import &lt;tx&gt;</code></dt><dd>Learn a revealed pattern, only if its claim fee was burned.</dd></div>
       <div><dt><code>quorum status</code></dt><dd>Memory tier report.</dd></div>
     </dl>
   </div>
-  <aside class="rail">
-    <p class="kicker small">Environment</p>
+  <div class="side sheet pinned">
+    <p class="cap">Environment</p>
     <dl class="rows env">
-      <div><dt>BASE_RPC</dt><dd>Base mainnet endpoint. Needed by <code>attest</code> and <code>verify</code>.</dd></div>
       <div><dt>DEPLOYER_PRIVATE_KEY</dt><dd>Signing key, read at call time, never logged or written to disk.</dd></div>
-      <div><dt>QUORUM_TOKEN_RPC</dt><dd>Overrides the default Robinhood Chain endpoint.</dd></div>
+      <div><dt>QUORUM_RPC</dt><dd>Overrides the public Robinhood Chain endpoint, the default claim chain.</dd></div>
+      <div><dt>QUORUM_CHAIN_ID</dt><dd>Which chain new claims go to: 4663 (default) or 8453.</dd></div>
+      <div><dt>BASE_RPC</dt><dd>Overrides the public Base endpoint, used to read the first claim.</dd></div>
     </dl>
-    <p class="fine">Publishing also needs the claim fee in QUORUM on Robinhood Chain.
-      <a href="../registry/">What publishing costs &rarr;</a></p>
-  </aside>
-</section>
-
-<section class="grid row art">
-  <div class="col">
-    <h2>The tests</h2>
-    <p><code>.venv/bin/python -m pytest tests -q</code> runs 16 tests. They cover the idiom signature
-      matching across contracts, that one lens never confirms, that two lenses reach quorum, that the
-      deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is
-      only valid for the fee on the token, that <code>attest</code> burns before it claims, and that
-      the scanner modules never touch the token.</p>
+    <p class="fine" style="margin-top:var(--sp-4)">Publishing also needs the claim fee in QUORUM on Robinhood Chain. <a href="../registry/#cost">What publishing costs &rarr;</a></p>
   </div>
-  <aside class="rail">
-    <p class="kicker small">Fixtures</p>
-    <p>The fixtures in <code>fixtures/</code> are vulnerable on purpose and are not deployed
-      anywhere.</p>
-  </aside>
 </section>
 
+<section class="split wrap">
+  <div>
+    <h2>The tests</h2>
+    <p><code>.venv/bin/python -m pytest tests -q</code> runs 19 tests. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that <code>attest</code> burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move.</p>
+  </div>
+  <div class="side">
+    <p class="cap">Fixtures</p>
+    <p>The fixtures in <code>fixtures/</code> are vulnerable on purpose and are not deployed anywhere.</p>
+  </div>
+</section>
+<div class="prevnext wrap"><a href="../registry/"><span class="lbl">Previous</span>The registry</a><span></span></div>
 </main>
-<div class="prev-next"><a href="../registry/"><span class="lbl">Previous</span>The registry</a><span></span></div>
-
-<footer class="colophon small">
+<footer class="foot wrap">
   <span class="corner" aria-hidden="true"></span>
   <span class="fine">MIT licensed. Memory is a local file; nothing is uploaded.</span>
   <span class="links">
@@ -107,7 +97,5 @@
     <a href="https://robinhoodchain.blockscout.com/address/0xa6452Fd7134218f62056a304eaf501F8714A26b9">Token</a>
   </span>
 </footer>
-
-</div>
 </body>
 </html>
