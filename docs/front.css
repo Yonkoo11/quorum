@@ -1,4 +1,4 @@
-/* Quorum, the next front page. One screen, two states, one video.
+/* Quorum, the front page. One screen, two states, one video.
    Geometry is in artboard units (1606 wide, 1095 tall under the 66px bar) times one scale --u, so the
    composition holds at any desktop size. Every colour, face, shadow and radius is a token from quorum.css.
    The morph's spine is the clip-path on .wash: the black slab that was the right column becomes the stage. */
