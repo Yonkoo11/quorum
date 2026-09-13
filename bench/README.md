@@ -55,8 +55,8 @@ analogue of counting any single lens.
 | | SmartBugs-curated (73 targets) | | DeFiVulnLabs, held out (10 targets) | |
 |---|---|---|---|---|
 | | recall | precision | recall | precision |
-| lenses, any single lens | 78% | 10% | 50% | 4% |
-| **lenses, two-witness rule** | **62%** | **36%** | **40%** | **44%** |
+| lenses, any single lens | 78% | 12% | 50% | 5% |
+| **lenses, two-witness rule** | **63%** | **51%** | **50%** | **62%** |
 | Slither, strict | 48% | 41% | 40% | 20% |
 | Slither, loose | 49% | 24% | 40% | 7% |
 
@@ -64,9 +64,9 @@ Per risk, two-witness against Slither strict (recall / precision):
 
 | risk | two-witness, SmartBugs | Slither, SmartBugs | two-witness, held out | Slither, held out |
 |---|---|---|---|---|
-| reentrancy | 90% / 44% | 90% / 62% | 2 of 4, 50% | 2 of 4, 40% |
-| unguarded-state-write | 5% / 33% | 33% / 19% | 1 of 2, 100% | 1 of 2, 8% |
-| unsafe-math | 76% / 27% | 0% | 1 of 4, 25% | 1 of 4, 50% |
+| reentrancy | 94% / 69% | 90% / 62% | 2 of 4, 67% | 2 of 4, 40% |
+| unguarded-state-write | 5% / 100% | 33% / 19% | 1 of 2, 100% | 1 of 2, 8% |
+| unsafe-math | 76% / 33% | 0% | 2 of 4, 50% | 1 of 4, 50% |
 
 Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLITHER.md),
 [SLITHER-HELDOUT.md](SLITHER-HELDOUT.md).
@@ -79,24 +79,30 @@ Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLIT
 | 2026-09-12 second | `EXTERNAL_CALL` learns the pre-0.5 idiom `.call.value(x)()`, which 29 of the 32 reentrancy files use | 23% | 43% | 48% | 43% |
 | [2026-09-12 third](history/2026-09-12-before-fallback-and-alias.md) | a function with no visibility keyword counts as callable, which is what it was before 0.5 | 31% | 39% | 68% | 39% |
 | [2026-09-12 fourth](history/2026-09-13-before-wrap-bound.md) | unnamed 0.4 fallback functions are parsed, so two labels on them become targets (71 → 73); `callorder-lens` follows a storage alias (`var acc = Acc[msg.sender]`) | 40% | 44% | 90% | 44% |
-| [2026-09-13 fifth](BENCHMARK.md) | the arithmetic pair rebuilt as two readings of one bug: `wrap-lens` (the compiler lets it wrap) and `bound-lens` (nothing bounds the operands). The first cut scored 81% / 19% on arithmetic and confirmed WETH9's `deposit` on the production targets, so operands the chain itself bounds (`msg.value`, `block.number`, small constants) now count as bounded | 62% | 36% | 90% | 44% |
+| [2026-09-13 fifth](history/2026-09-13-before-precision.md) | the arithmetic pair rebuilt as two readings of one bug: `wrap-lens` (the compiler lets it wrap) and `bound-lens` (nothing bounds the operands). The first cut scored 81% / 19% on arithmetic and confirmed WETH9's `deposit` on the production targets, so operands the chain itself bounds (`msg.value`, `block.number`, small constants) now count as bounded | 62% | 36% | 90% | 44% |
+| [2026-09-13 sixth](BENCHMARK.md) | 2300-gas `transfer`/`send` no longer count as external calls (token `transfer(to, amt)` still does); comments stripped before brace matching; evidence lines counted from the brace; `constant` is read-only; 0.4 constructors skipped by the access pair; `delete` is a state write; chain-bounded operands matched as dotted names and `==` accepted as a bound. False positives 81 → 45, true positives 45 → 46 | 63% | 51% | 94% | 69% |
 
-All five changes were made after looking at this corpus, so every row after the first is a tuned
+All six changes were made after looking at this corpus, so every row after the first is a tuned
 number. The held-out run above is the untuned one. It did not move for the third and fourth
 changes; the fifth moved it from 30% / 60% to 40% / 44%, because the old arithmetic pair
-could not confirm anything there and the new one confirms four (one true).
+could not confirm anything there and the new one confirms four; the sixth moved it to 50% / 62%
+(one more true positive, two fewer false).
 
 ## What the numbers say
 
 - The two-witness rule is a precision filter and it costs recall, on both corpora. SmartBugs
-  reentrancy: the lenses alone reach 94% recall at 14% precision; the rule gives 44% precision at
-  90% recall. Arithmetic: 95% at 11% alone, 76% at 27% with the rule. Held out: any lens 4%
-  precision, the rule 44%.
-- On 2017 code Slither is the better tool. On reentrancy the two now find the same 28 of 31
-  targets; Slither does it at 62% precision, the rule at 44%. Slither follows calls and storage;
-  the lenses read lines.
-- On the modern corpus the rule is the more precise of the two (44% against 20%) at equal recall
-  (4 of 10 each), on ten targets. Slither's precision there is spent on `arbitrary-send-eth`
+  reentrancy: the lenses alone reach 94% recall at 27% precision; the rule gives 69% precision at
+  the same 94% recall. Arithmetic: 95% at 12% alone, 76% at 33% with the rule. Held out: any lens
+  5% precision, the rule 62%.
+- The sixth run changed the comparison with Slither. Until then Slither was more precise on
+  reentrancy (62% against 44%); the difference was one rule Slither has always applied, that a
+  2300-gas `transfer`/`send` cannot re-enter. With the same rule the two-witness pair finds 29 of
+  31 at 69% against Slither's 28 at 62%. Slither still finds far more access-control bugs on this
+  corpus (33% against 5%) and follows calls and storage, which the lenses do not: a call inside a
+  modifier, a write reached through an internal call, and a guard in the caller are all invisible
+  to them.
+- On the modern corpus the rule is the more precise of the two (62% against 20%) at higher recall
+  (5 of 10 against 4), on ten targets. Slither's precision there is spent on `arbitrary-send-eth`
   and `suicidal` firing inside attack contracts and test harnesses, which the harsh rule counts
   against it exactly as it counts the lenses' hits on the same files.
 - Slither has no detector for a public setter with no owner check. `Visibility.sol:changeOwner`
@@ -108,14 +114,14 @@ could not confirm anything there and the new one confirms four (one true).
   `unchecked` block) and from the code's side (`bound-lens`: no `require`, `assert` or `if` with a
   comparison on the operands before the write). Checked arithmetic with no guard is a candidate;
   unchecked arithmetic behind a guard is a candidate; only both together confirm. 76% recall at
-  27% precision on 2017 code, where Slither has no overflow detector at all. Division before
+  33% precision on 2017 code, where Slither has no overflow detector at all. Division before
   multiplication is no longer covered by any lens; `Divmultiply.sol` and `Precision-loss.sol` are
   now honest misses.
 - What the arithmetic pair still misses: `BECToken.sol:batchTransfer` computes `cnt * _value`
   into a local before the SafeMath call; `token.sol:transfer` is guarded by a check that is itself
   wrong (`balances[msg.sender] - _value >= 0` is always true on unsigned); `Overflow2.sol:_transfer`
-  is guarded in the caller, not in the function. Half of the 44 arithmetic false positives are
-  `-=` on a balance that a check in a modifier or a caller already bounds.
+  is guarded in the caller, not in the function. Of the 32 arithmetic false positives left, most are a local temporary or a value
+  derived one step from a bounded one; following that one step is the next lens change.
 - Access control at 5% on SmartBugs: the corpus's shapes are arbitrary storage writes and
   misnamed constructors. The pair looks for a missing modifier on a privileged write. Different bug.
 - The fourth run fixed the two things the third exposed. Unnamed 0.4 fallback functions are

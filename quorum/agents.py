@@ -15,7 +15,12 @@ from typing import Iterator
 from .memory import signature
 
 PRIVILEGED = re.compile(r"\b(owner|admin|treasury|fee|rate|price|oracle|paused|router|beneficiary)\w*\b", re.I)
-EXTERNAL_CALL = re.compile(r"\.(call|delegatecall|transfer|send)\s*[{(]|\.\w+\s*\{\s*value\s*:|\.(call|delegatecall|callcode)\.value\s*\(")
+# `addr.transfer(x)` and `addr.send(x)` forward 2300 gas and cannot re-enter, so they are not external
+# calls for the reentrancy pair (Slither draws the same line). `token.transfer(to, amt)` is: an ERC777
+# hook runs inside it.
+EXTERNAL_CALL = re.compile(r"\.(call|delegatecall)\s*[{(]|\.\w+\s*\{\s*value\s*:|\.(call|delegatecall|callcode)\.value\s*\(|\.(transfer|send)\s*\([^()]*,")
+DELETE = re.compile(r"^\s*delete\s+([A-Za-z_]\w*)")
+CONTRACT = re.compile(r"^\s*(?:abstract\s+)?(?:contract|library)\s+(\w+)", re.M)
 STATE_WRITE = re.compile(r"^\s*([A-Za-z_]\w*)\s*(\[[^\]]*\]|\.\w+)*\s*(=|\+=|-=)[^=]")
 FUNC = re.compile(r"^\s*function\s*(\w*)\s*\(", re.M)  # the name is empty for a 0.4 fallback: `function () payable`
 ALIAS = re.compile(r"^\s*(?:var|\w+(?:\.\w+)?\s+storage)\s+(\w+)\s*=\s*([A-Za-z_]\w*)")
@@ -49,12 +54,40 @@ class Function:
     name: str
     header: str
     body: str
-    start_line: int
+    start_line: int        # the `function` keyword
+    body_line: int = 0     # the opening brace; evidence lines are counted from here
+    contract: str = ""     # the enclosing contract, so a 0.4 constructor (same name) can be told apart
+
+
+def _strip_comments(src: str) -> str:
+    """Comments replaced by spaces, newlines kept, so braces and calls inside them are not parsed
+    and every line number survives."""
+    out, i, n = [], 0, len(src)
+    while i < n:
+        two = src[i:i + 2]
+        if two == "//":
+            j = src.find("\n", i)
+            j = n if j == -1 else j
+            out.append(" " * (j - i)); i = j
+        elif two == "/*":
+            j = src.find("*/", i + 2)
+            j = n if j == -1 else j + 2
+            out.append("".join("\n" if c == "\n" else " " for c in src[i:j])); i = j
+        elif src[i] == '"' or src[i] == "'":
+            q = src[i]; j = i + 1
+            while j < n and src[j] != q and src[j] != "\n":
+                j += 2 if src[j] == "\\" else 1
+            out.append(src[i:j + 1]); i = j + 1
+        else:
+            out.append(src[i]); i += 1
+    return "".join(out)
 
 
 def parse_functions(src: str) -> list[Function]:
     """Split a Solidity file into functions by brace matching."""
     out: list[Function] = []
+    src = _strip_comments(src)
+    contracts = [(c.start(), c.group(1)) for c in CONTRACT.finditer(src)]
     for m in FUNC.finditer(src):
         open_idx = src.find("{", m.end())
         semi = src.find(";", m.end())
@@ -75,6 +108,8 @@ def parse_functions(src: str) -> list[Function]:
                 header=src[m.start():open_idx],
                 body=src[open_idx : i + 1],
                 start_line=src[: m.start()].count("\n") + 1,
+                body_line=src[:open_idx].count("\n") + 1,
+                contract=next((name for start, name in reversed(contracts) if start < m.start()), ""),
             )
         )
     return out
@@ -82,7 +117,7 @@ def parse_functions(src: str) -> list[Function]:
 
 def state_vars(src: str) -> set[str]:
     """Contract-scope variable names (crude but honest: declarations outside functions)."""
-    stripped = src
+    stripped = _strip_comments(src)
     for fn in parse_functions(src):
         stripped = stripped.replace(fn.body, "")
     pat = re.compile(r"^\s*(?:mapping\s*\([^)]*\)|address|uint\d*|int\d*|bool|bytes\d*|string)\s+"
@@ -97,12 +132,17 @@ def _is_external(fn: Function) -> bool:
 
 
 def _is_readonly(fn: Function) -> bool:
-    return bool(re.search(r"\b(view|pure)\b", fn.header))
+    return bool(re.search(r"\b(view|pure|constant)\b", fn.header))
+
+
+def _is_constructor(fn: Function) -> bool:
+    """Before 0.5 the constructor was a function with the contract's own name, callable once at deploy."""
+    return bool(fn.contract) and fn.name == fn.contract
 
 
 def _lines(fn: Function) -> Iterator[tuple[int, str]]:
     for off, raw in enumerate(fn.body.splitlines()):
-        yield fn.start_line + off, raw.strip().lstrip("{").strip()
+        yield (fn.body_line or fn.start_line) + off, raw.strip().lstrip("{").strip()
 
 
 # --------------------------- risk: reentrancy ---------------------------
@@ -124,7 +164,7 @@ def callorder_lens(contract: str, src: str) -> list[Sighting]:
             if call_at is None and EXTERNAL_CALL.search(text):
                 call_at = (ln, text)
                 continue
-            m = STATE_WRITE.match(text)
+            m = STATE_WRITE.match(text) or DELETE.match(text)
             if call_at and m and m.group(1) in writes_storage:
                 out.append(Sighting("callorder-lens", "reentrancy", contract, fn.name, call_at[0], call_at[1]))
                 break
@@ -155,7 +195,7 @@ def modifier_lens(contract: str, src: str) -> list[Sighting]:
     out, svars = [], state_vars(src)
     known = {"external", "public", "payable", "returns", "virtual", "override", "memory", "calldata", "storage"}
     for fn in parse_functions(src):
-        if _is_readonly(fn) or not _is_external(fn):
+        if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
             continue
         tail = fn.header.split(")", 1)[-1]
         mods = {w for w in re.findall(r"\b[a-zA-Z_]\w*\b", tail)} - known
@@ -173,7 +213,7 @@ def sender_lens(contract: str, src: str) -> list[Sighting]:
     """Evidence: writes a privileged-looking variable with no msg.sender check anywhere."""
     out, svars = [], state_vars(src)
     for fn in parse_functions(src):
-        if _is_readonly(fn) or not _is_external(fn):
+        if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
             continue
         if re.search(r"msg\.sender|_checkOwner|onlyOwner|hasRole|_msgSender", fn.body + fn.header):
             continue
@@ -197,9 +237,10 @@ ARITH = re.compile(r"^\s*(?:(?:uint|int)\d*\s+)?([A-Za-z_]\w*)\s*((?:\[[^\]]*\]|
 RAW_OP = re.compile(r"[\w)\]]\s*[+*-]\s*[\w(]")
 SAFE_MATH = re.compile(r"\.(add|sub|mul|div)\s*\(")
 PRAGMA = re.compile(r"pragma\s+solidity\s*([^;]+);")
-BOUND = re.compile(r"\b(require|assert|if)\s*\(.*(<=|>=|<|>)")
+BOUND = re.compile(r"\b(require|assert|if)\s*\(.*(<=|>=|<|>|==)")
 # Operands a 256-bit number cannot be wrapped by: what the chain itself bounds, and small constants.
-CHAIN_BOUNDED = {"msg", "value", "block", "number", "timestamp", "now", "length", "sender"}
+CHAIN_BOUNDED = re.compile(r"\bmsg\.(value|sender)\b|\bblock\.(number|timestamp)\b|\bnow\b|\.length\b|\btx\.\w+")
+UNITS = {"wei", "gwei", "ether", "seconds", "minutes", "hours", "days", "weeks", "uint", "int"}
 
 
 def _min_pragma(src: str) -> tuple[int, int] | None:
@@ -266,9 +307,10 @@ def bound_lens(contract: str, src: str) -> list[Sighting]:
         if _is_readonly(fn):
             continue
         for ln, text, target, rhs in _storage_arithmetic(fn, svars):
-            rhs_names = set(re.findall(r"[A-Za-z_]\w*", rhs)) - {target}
-            if not rhs_names - CHAIN_BOUNDED - set(re.findall(r"\b(?:uint|int)\d*\b", rhs)):
-                continue  # `+= msg.value`, `+= 1`, `= block.number + 1`: nothing here can wrap a uint256
+            free = CHAIN_BOUNDED.sub("", rhs)
+            rhs_names = set(re.findall(r"[A-Za-z_]\w*", free)) - {target} - UNITS - set(re.findall(r"\b(?:uint|int)\d*\b", free))
+            if not rhs_names:
+                continue  # `+= msg.value`, `+= 1`, `= now + 1 weeks`: nothing here can wrap a uint256
             operands = {target} | rhs_names
             before = [t for l, t in _lines(fn) if l < ln]
             guarded = any(BOUND.search(t) and any(re.search(rf"\b{re.escape(o)}\b", t) for o in operands) for t in before)

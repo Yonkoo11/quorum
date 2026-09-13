@@ -300,3 +300,82 @@ def test_sarif_message_cannot_carry_a_link_and_is_bounded():
     text = sarif._message(f)
     assert "[view report](" not in text and "\\[view report\\]" in text
     assert len(text) < 700
+
+
+def test_stipend_transfer_is_not_an_external_call_but_a_token_transfer_is():
+    """`addr.transfer(x)` forwards 2300 gas and cannot re-enter. `token.transfer(to, amt)` can:
+    an ERC777 hook runs inside it (DeFiVulnLabs ERC777-reentrancy.sol:claim)."""
+    src = """pragma solidity ^0.4.24;
+contract A {
+    mapping(address => uint) public balances;
+    function payout() public {
+        msg.sender.transfer(balances[msg.sender]);
+        balances[msg.sender] = 0;
+    }
+    function claim(address to, uint amt) public {
+        token.transfer(to, amt);
+        balances[to] += amt;
+    }
+}
+"""
+    assert _reentrancy_lenses_on(src, "payout") == set()
+    assert _reentrancy_lenses_on(src, "claim") == {"callorder-lens", "guard-lens"}
+
+
+def test_parser_ignores_braces_in_comments_and_counts_lines_from_the_brace():
+    from quorum.agents import parse_functions
+
+    src = """pragma solidity ^0.4.24;
+contract A {
+    function a() public {
+        // if (x) {
+        y = 1;
+    }
+    function b(uint p,
+               uint q) public {
+        z = p + q;
+    }
+}
+"""
+    fns = {f.name: f for f in parse_functions(src)}
+    assert set(fns) == {"a", "b"}, "the commented brace must not swallow b"
+    assert fns["b"].body_line == 8 and fns["b"].contract == "A"
+    from quorum.agents import _lines
+    assert dict(_lines(fns["b"]))[9].startswith("z = p + q")
+
+
+def test_old_constructor_and_constant_function_are_not_unguarded_writes():
+    from quorum.agents import modifier_lens, sender_lens
+
+    src = """pragma solidity ^0.4.24;
+contract Sale {
+    address public owner;
+    uint public price;
+    function Sale(address _owner) public { owner = _owner; }
+    function quote() public constant returns (uint) { return price * 2; }
+    function setPrice(uint p) public { price = p; }
+}
+"""
+    hits = {s.function for s in modifier_lens("S.sol", src) + sender_lens("S.sol", src)}
+    assert hits == {"setPrice"}
+
+
+def test_bound_lens_reads_dotted_chain_values_and_equality_bounds():
+    src = """pragma solidity ^0.4.24;
+contract T {
+    uint public total;
+    uint public lockTime;
+    uint public sellerBalance;
+    function a() public payable { total += msg.value; }
+    function b() public { lockTime = now + 1 weeks; }
+    function c(uint value) public { sellerBalance += value; }
+    function d(uint n) public payable {
+        require(msg.value == n);
+        total += n;
+    }
+}
+"""
+    assert _math_lenses_on(src, "a") == {"wrap-lens"}
+    assert _math_lenses_on(src, "b") == {"wrap-lens"}
+    assert _math_lenses_on(src, "c") == {"wrap-lens", "bound-lens"}, "a parameter named `value` is not msg.value"
+    assert _math_lenses_on(src, "d") == {"wrap-lens"}, "an equality check bounds n"

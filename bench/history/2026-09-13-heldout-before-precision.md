@@ -6,33 +6,36 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
-| reentrancy | 4 | 43 | 2 | 5% | 50% | **3** | 2 | **67%** | **50%** |
-| unguarded-state-write | 2 | 36 | 1 | 3% | 50% | **1** | 1 | **100%** | **50%** |
-| unsafe-math | 4 | 19 | 2 | 11% | 50% | **4** | 2 | **50%** | **50%** |
-| **all** | 10 | 98 | 5 | 5% | 50% | **8** | 5 | **62%** | **50%** |
+| reentrancy | 4 | 60 | 2 | 3% | 50% | **4** | 2 | **50%** | **50%** |
+| unguarded-state-write | 2 | 37 | 1 | 3% | 50% | **1** | 1 | **100%** | **50%** |
+| unsafe-math | 4 | 18 | 2 | 11% | 50% | **4** | 1 | **25%** | **25%** |
+| **all** | 10 | 115 | 5 | 4% | 50% | **9** | 4 | **44%** | **40%** |
 
 ## Per lens
 
 | lens | sightings | on a target |
 |---|---|---|
-| callorder-lens | 3 | 2 |
-| guard-lens | 43 | 2 |
-| modifier-lens | 36 | 1 |
+| callorder-lens | 4 | 2 |
+| guard-lens | 60 | 2 |
+| modifier-lens | 37 | 1 |
 | sender-lens | 1 | 1 |
-| wrap-lens | 6 | 2 |
-| bound-lens | 17 | 2 |
+| wrap-lens | 7 | 2 |
+| bound-lens | 15 | 1 |
 
-Candidates held back by the rule (one lens only): 90, of which on a target: 0.
+Candidates held back by the rule (one lens only): 106, of which on a target: 1.
 
 ## Confirmed findings that are not on a labelled target
 
 - `DOS.sol` `claimThrone` reentrancy — callorder-lens, guard-lens
 - `Invariant.sol` `withdrawMoney` unsafe-math — bound-lens, wrap-lens
+- `Overflow.sol` `deposit` unsafe-math — bound-lens, wrap-lens
+- `self-transfer.sol` `testSelfTransfer` reentrancy — callorder-lens, guard-lens
 - `self-transfer.sol` `transfer` unsafe-math — bound-lens, wrap-lens
 
 ## Targets the rule missed
 
 - `Divmultiply.sol` `price` unsafe-math — seen by no lens
+- `Overflow2.sol` `_transfer` unsafe-math — seen by wrap-lens
 - `Precision-loss.sol` `getCurrentReward` unsafe-math — seen by no lens
 - `ReadOnlyReentrancy.sol` `getReward` reentrancy — seen by no lens
 - `Unprotected-callback.sol` `mint` reentrancy — seen by no lens
