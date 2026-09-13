@@ -1,0 +1,228 @@
+/* Quorum, the next front page. One screen, two states, one video.
+   Geometry is in artboard units (1606 wide, 1095 tall under the 66px bar) times one scale --u, so the
+   composition holds at any desktop size. Every colour, face, shadow and radius is a token from quorum.css.
+   The morph's spine is the clip-path on .wash: the black slab that was the right column becomes the stage. */
+
+:root {
+  --ab-w: 1606; --ab-h: 1095;
+  --bar-h: 66px;
+  --u-max: 1.35px;
+  --u: min(calc((100svh - var(--bar-h)) / var(--ab-h)), calc(100vw / var(--ab-w)), var(--u-max));
+  --col-panel: 569;
+  --split: calc(var(--col-panel) / var(--ab-w));
+  --w: min(100vw - 2 * var(--sp-7), 1280px);
+  --edge: calc((100vw - var(--w)) / 2);
+  --panel-w: calc(var(--split) * var(--w));
+  --panel-pad: calc(28 * var(--u));
+  --morph-dur: 1000ms; --morph-ease: cubic-bezier(.33, 0, .2, 1);
+  --t-hero: calc(96 * var(--u));
+  --t-numbers: calc(56 * var(--u));
+  --t-big: calc(128 * var(--u));
+  --slab: var(--term-bg);
+}
+/* in the dark theme the slab is a raised step, not a black hole next to a near-black ground */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --slab: var(--raised); } }
+:root[data-theme="dark"] { --slab: var(--raised); }
+
+/* ---------- one screen ---------- */
+html, body { height: 100%; overflow: hidden; }
+body { min-height: 0; }
+.bar { position: absolute; top: 0; left: 0; right: 0; }
+.page { position: relative; height: 100svh; overflow: hidden; }
+.stage { position: absolute; top: var(--bar-h); left: 0; right: 0; bottom: 0; }
+.screen { position: absolute; inset: 0; }
+.page[data-screen="hero"] .screen--numbers { visibility: hidden; }
+.page[data-screen="numbers"] .screen--hero { visibility: hidden; }
+.page.is-morphing .screen { visibility: visible; }
+
+/* ---------- the wash: one video, one slab, one clip ---------- */
+.wash { position: absolute; inset: 0; z-index: 0; visibility: visible; background: var(--slab); overflow: hidden;
+  clip-path: inset(0 var(--edge) 0 calc(var(--edge) + var(--w) - var(--panel-w)));
+  transition: clip-path var(--morph-dur) var(--morph-ease); }
+.wash__video, .wash__poster { position: absolute; left: calc(var(--edge) + var(--w) - var(--panel-w) + var(--panel-pad));
+  width: calc(var(--panel-w) - 2 * var(--panel-pad)); height: auto; aspect-ratio: 1056 / 928; top: 50%; translate: 0 -50%;
+  display: block; pointer-events: none; }
+.wash__poster { display: none; }
+.wash::after { content: ""; position: absolute; inset: 0; background: var(--ground); opacity: 0;
+  transition: opacity var(--morph-dur) var(--morph-ease); }
+.page[data-screen="numbers"] .wash { clip-path: inset(0); }
+.page[data-screen="numbers"] .wash::after { opacity: .9; }
+
+/* ---------- screen A: the statement ---------- */
+/* .hero is not positioned: the wash inside it must measure against the whole stage */
+.hero { height: 100%; display: grid; column-gap: calc(48 * var(--u));
+  grid-template-columns: minmax(0, 1fr) var(--panel-w); }
+.hero__content { position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: center; gap: calc(28 * var(--u)); min-width: 0;
+  padding-block: calc(40 * var(--u)) calc(72 * var(--u)); }
+.hero__content .display { font-size: var(--t-hero); }
+.hero__content .display .line { display: block; }
+.hero .lede { font-size: max(15px, calc(18 * var(--u))); max-width: 46ch; }
+.hero .test { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-5); }
+.measured { border-top: 2px solid var(--ink); padding-top: var(--sp-3); display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: var(--sp-2) var(--sp-5); max-width: none; }
+.measured .label { color: var(--muted); }
+.measured ul { list-style: none; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); }
+.measured li { white-space: nowrap; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-5); max-width: none; }
+.textlink { display: inline-flex; align-items: center; min-height: var(--tap); text-decoration-thickness: 2px; }
+
+/* the right column reads as the site's black slab; the wash paints it, the panel holds its words */
+.hero__panel { position: static; display: flex; flex-direction: column; justify-content: space-between; min-width: 0;
+  padding: var(--panel-pad); color: var(--term-fg); }
+.hero__panel > .slab__label, .hero__panel > .slab__caption { position: relative; z-index: 2; }
+.slab__label { border-bottom-color: var(--term-rule); }
+.slab__label h2 { color: var(--term-fg); }
+.slab__label .mark circle { stroke: var(--term-fg); }
+.slab__label .aside { color: var(--term-dim); }
+.slab__caption { color: var(--term-dim); font-size: max(14px, calc(16 * var(--u))); max-width: 36ch; }
+/* the two terminal runs stay in the document so the switch can read its number from them and a screen reader can read them */
+.panes-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- screen B: the numbers ---------- */
+.screen--numbers { z-index: 2; }
+/* the bottom padding is the cue's lane: its box, its label, and the air under it */
+.numbers { display: flex; flex-direction: column; height: 100%; gap: calc(24 * var(--u));
+  padding-block: calc(28 * var(--u)) calc(24 * var(--u) + 20px + var(--tap) + var(--sp-4)); }
+.numbers__head { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--sp-4) var(--sp-6); align-items: end; }
+/* text that sits on the washed ground, not on a panel, is ink: the wash costs the muted tone its contrast */
+.numbers__head .label { color: var(--ink); margin-bottom: var(--sp-3); }
+.numbers__head .display { font-size: var(--t-numbers); }
+.numbers__head .display .line { display: inline-block; }
+.numbers__head .intro { font-size: max(14px, calc(16 * var(--u))); max-width: 44ch; }
+.numbers .band { flex: 1 1 auto; min-height: 0; align-items: stretch;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3fr); }
+.numbers .panel { gap: var(--sp-2); }
+.numbers .panel > p { max-width: 40ch; }
+.numbers .panel .more { min-height: 32px; margin-top: auto; }
+/* the sign-off sits at the stage's bottom right, level with the cue, outside the panels' flow */
+.numbers__foot { position: absolute; right: var(--edge); bottom: calc(24 * var(--u)); max-width: none; text-align: right; color: var(--ink); }
+
+/* panel 1: the big number over a two-bar comparison */
+.big { font-size: var(--t-big); line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: var(--green-text); }
+.bars { border-top: 2px solid var(--ink); }
+.bars > div { display: grid; grid-template-columns: minmax(0, 9em) minmax(0, 1fr); column-gap: var(--sp-3); align-items: center;
+  padding-block: var(--sp-2); border-bottom: 1px solid var(--hair); }
+.bars dt { color: var(--muted); font-size: var(--t-label); letter-spacing: .2em; text-transform: uppercase; line-height: 1.4; }
+.bars dd { display: grid; grid-template-columns: minmax(0, 1fr) 3.2em; align-items: center; column-gap: var(--sp-3); }
+.bar-track { display: block; height: calc(14 * var(--u)); min-height: 8px; background: var(--tint); position: relative; }
+.bar-fill { position: absolute; inset: 0; width: calc(var(--v) * 1%); background: var(--ink); transform-origin: left center; }
+.bars .win .bar-fill { background: var(--green); }
+.bars .win dt { color: var(--ink); }
+.bar-n { text-align: right; font-variant-numeric: tabular-nums; }
+.bars .win .bar-n { color: var(--green-text); }
+
+/* panel 2: a stepped line, six runs, endpoints labelled in type */
+.chart__ends { display: flex; justify-content: space-between; align-items: baseline; max-width: none;
+  font-size: max(20px, calc(30 * var(--u))); line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.chart__from { color: var(--muted); }
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart__area { fill: var(--tint); }
+.chart__line { fill: none; stroke: var(--ink); stroke-width: 2.6; stroke-linejoin: miter; stroke-linecap: square; }
+.chart__dot { fill: var(--green); }
+.chart__axis { display: flex; justify-content: space-between; color: var(--muted); max-width: none; }
+
+/* panel 3: three rows, the winner of each in green, including the row we lose */
+.vs { width: 100%; border-collapse: collapse; }
+.vs th, .vs td { text-align: left; vertical-align: baseline; padding: var(--sp-2) var(--sp-2) var(--sp-2) 0; border-top: 1px solid var(--hair); }
+.vs thead th { border-top: 0; border-bottom: 2px solid var(--ink); padding-top: 0; color: var(--muted);
+  font-size: var(--t-label); letter-spacing: .2em; text-transform: uppercase; line-height: 1.4; font-weight: 500; }
+.vs tbody th { font-weight: 500; color: var(--muted); }
+.vs td { font-variant-numeric: tabular-nums; font-size: max(16px, calc(20 * var(--u))); }
+.vs td:last-child, .vs th:last-child { padding-right: 0; }
+.vs tbody tr:last-child th, .vs tbody tr:last-child td { border-bottom: 2px solid var(--ink); }
+
+/* ---------- the cue ---------- */
+.morph-cue { position: absolute; bottom: calc(24 * var(--u) + 20px); left: 50%; translate: -50% 0; z-index: 6; appearance: none;
+  width: var(--tap); height: var(--tap); display: grid; place-items: center; cursor: pointer; padding: 0;
+  border: 2px solid var(--ink); border-radius: var(--radius-sm); background: var(--raised); color: var(--ink); box-shadow: var(--shadow-1); }
+.morph-cue svg { width: 14px; height: 14px; display: block; transition: rotate .4s var(--ease); }
+.page[data-screen="numbers"] .morph-cue svg { rotate: 180deg; }
+.morph-cue__text { position: absolute; top: calc(100% + var(--sp-2)); left: 50%; translate: -50% 0; white-space: nowrap; color: var(--ink); }
+.morph-cue:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.morph-cue:focus-visible { box-shadow: var(--shadow-1), var(--ring); }
+
+/* ---------- the morph: what moves, all on one clock ---------- */
+.hero__content, .hero__panel > .slab__label, .hero__panel > .slab__caption { transition: opacity var(--morph-dur) var(--morph-ease), translate var(--morph-dur) var(--morph-ease); }
+.page[data-screen="numbers"] .hero__content { opacity: 0; translate: 0 calc(-40 * var(--u)); }
+.page[data-screen="numbers"] .hero__panel > .slab__label, .page[data-screen="numbers"] .hero__panel > .slab__caption { opacity: 0; }
+.numbers__head, .numbers .panel, .numbers__foot { opacity: 0; translate: 0 calc(60 * var(--u));
+  transition: opacity var(--morph-dur) var(--morph-ease), translate var(--morph-dur) var(--morph-ease); }
+.page[data-screen="numbers"] .numbers__head, .page[data-screen="numbers"] .numbers .panel, .page[data-screen="numbers"] .numbers__foot { opacity: 1; translate: none; }
+/* an eased stagger on the way in only; on the way out the three leave together */
+.page[data-screen="numbers"] .numbers .panel:nth-child(2) { transition-delay: 120ms; }
+.page[data-screen="numbers"] .numbers .panel:nth-child(3) { transition-delay: 260ms; }
+.page[data-screen="numbers"] .numbers__foot { transition-delay: 380ms; }
+
+/* ---------- motion that only runs when it is welcome ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  /* load reveal: a linear opacity ramp, each element on its own delay */
+  .js [data-reveal]:not(.is-revealed) { opacity: 0; }
+  .js.is-ready [data-reveal]:not(.is-revealed) { animation: reveal var(--rv-dur, 600ms) linear var(--rv-delay, 0ms) both; }
+  @keyframes reveal { from { opacity: 0; } to { opacity: 1; } }
+
+  /* screen B entrance, the first time only: the heading uncovers, the bars grow, the line draws, the rows rise */
+  .entrance-active .numbers__head .line { animation: uncover .84s cubic-bezier(.16, 1, .3, 1) .08s both; }
+  .entrance-active .numbers__head .line:nth-child(2) { animation-delay: .17s; }
+  .entrance-active .intro { animation: rise .72s cubic-bezier(.22, 1, .36, 1) .25s both; }
+  .entrance-active .numbers .panel { --ed: .46s; }
+  .entrance-active .numbers .panel:nth-child(2) { --ed: .58s; }
+  .entrance-active .numbers .panel:nth-child(3) { --ed: .7s; }
+  .entrance-active .big { animation: settle .66s cubic-bezier(.16, 1, .3, 1) calc(var(--ed) + .3s) both; }
+  .entrance-active .bar-fill { animation: grow .8s var(--ease) calc(var(--ed) + .42s) both; }
+  .entrance-active .chart__line { stroke-dasharray: 1; animation: draw 1s var(--ease) calc(var(--ed) + .3s) both; }
+  .entrance-active .chart__area, .entrance-active .chart__dot { animation: reveal .5s linear calc(var(--ed) + 1.1s) both; }
+  .entrance-active .vs tbody tr { animation: rise .5s cubic-bezier(.22, 1, .36, 1) calc(var(--ed) + .3s) both; }
+  .entrance-active .vs tbody tr:nth-child(2) { animation-delay: calc(var(--ed) + .4s); }
+  .entrance-active .vs tbody tr:nth-child(3) { animation-delay: calc(var(--ed) + .54s); }
+  @keyframes uncover { from { opacity: 0; translate: 0 .4em; clip-path: inset(0 0 56% 0); } to { opacity: 1; translate: none; clip-path: inset(-8% -2% -8% -2%); } }
+  @keyframes rise { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: none; } }
+  @keyframes settle { from { opacity: 0; translate: 0 7px; filter: blur(2.5px); } to { opacity: 1; translate: none; filter: none; } }
+  @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --morph-dur: 1ms; }
+  .wash__video { display: none; }
+  .wash__poster { display: block; }
+  .morph-cue svg { transition: none; }
+}
+
+/* ---------- a phone or a portrait tablet: the two screens stack and the page scrolls ---------- */
+@media (max-width: 760px), (max-aspect-ratio: 6/7) {
+  :root { --u: min(calc(100vw / 430), var(--u-max)); }
+  html, body { height: auto; overflow: visible; }
+  body { min-height: 100dvh; }
+  .bar { position: static; }
+  .page { height: auto; overflow: visible; }
+  .stage { position: static; }
+  .screen { position: relative; inset: auto; }
+  .page[data-screen] .screen { visibility: visible; }
+  .hero { grid-template-columns: minmax(0, 1fr); height: auto; row-gap: var(--sp-6); padding-block: var(--sp-7) var(--sp-6); }
+  .hero__content { padding-block: 0; gap: var(--sp-5); }
+  .hero__content .display { font-size: var(--t-display); }
+  .hero__panel { position: relative; background: var(--slab); box-shadow: var(--shadow-2); padding: var(--sp-5); gap: var(--sp-4); }
+  .wash { position: relative; inset: auto; clip-path: none; background: none; overflow: visible; transition: none; order: 2; }
+  .wash::after { display: none; }
+  .wash__video, .wash__poster { position: static; left: auto; width: 100%; translate: none; }
+  .slab__label { order: 1; }
+  .slab__caption { order: 3; }
+  .hero__content, .hero__panel > .slab__label, .hero__panel > .slab__caption { transition: none; }
+  .page[data-screen="numbers"] .hero__content { opacity: 1; translate: none; }
+  .page[data-screen="numbers"] .hero__panel > .slab__label, .page[data-screen="numbers"] .hero__panel > .slab__caption { opacity: 1; }
+  .numbers { height: auto; padding-block: var(--sp-7) var(--sp-6); gap: var(--sp-6); }
+  .numbers__foot { position: static; text-align: left; padding-bottom: var(--sp-9); }
+  .numbers__head { grid-template-columns: minmax(0, 1fr); }
+  .numbers__head .display { font-size: var(--t-md); }
+  .numbers__head .display .line { display: block; }
+  .numbers .band { display: flex; flex-direction: column; gap: var(--sp-5); }
+  .numbers__head, .numbers .panel, .numbers__foot { opacity: 1; translate: none; transition: none; }
+  .big { font-size: clamp(64px, 22vw, 96px); }
+  .morph-cue { position: fixed; bottom: var(--sp-4); }
+  .morph-cue[hidden] { display: none; }
+  .page[data-screen="numbers"] .morph-cue svg { rotate: none; }
+}
+@media (max-width: 760px) {
+  .bars > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--sp-1); }
+  .measured ul { gap: var(--sp-1) var(--sp-3); }
+}
