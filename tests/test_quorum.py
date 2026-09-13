@@ -186,3 +186,49 @@ def test_sarif_names_both_witnesses_and_no_candidates(tmp_path):
     for r in results:
         assert r["locations"][0]["physicalLocation"]["artifactLocation"]["uri"] in fixtures
         assert r["partialFingerprints"]["quorum/idiom/v1"].startswith(r["ruleId"] + ":")
+
+
+OLD_COUNTER = """pragma solidity ^0.4.24;
+contract Counter {
+    uint256 public count = 1;
+    function run(uint256 input) public {
+        count += input;
+    }
+    function safe(uint256 input) public {
+        require(input < 1000);
+        count += input;
+    }
+}
+"""
+
+CHECKED_COUNTER = OLD_COUNTER.replace("^0.4.24", "^0.8.20")
+
+
+def _math_lenses_on(src: str, function: str) -> set[str]:
+    from quorum.agents import bound_lens, wrap_lens
+
+    return {s.lens for s in wrap_lens("C.sol", src) + bound_lens("C.sol", src)
+            if s.function == function and s.risk == "unsafe-math"}
+
+
+def test_arithmetic_pair_reads_one_bug_from_two_sides():
+    """wrap-lens reads the compiler (can it wrap?), bound-lens reads the code (is it bounded?).
+    Both fire only on the same storage arithmetic, so they can actually agree, which the old
+    pair (unchecked blocks vs divide-before-multiply) never could."""
+    assert _math_lenses_on(OLD_COUNTER, "run") == {"wrap-lens", "bound-lens"}
+    assert _math_lenses_on(OLD_COUNTER, "safe") == {"wrap-lens"}          # bounded: one witness only
+    assert _math_lenses_on(CHECKED_COUNTER, "run") == {"bound-lens"}      # 0.8 checks it: one witness only
+
+
+def test_unchecked_block_on_modern_code_is_wrapping():
+    src = """pragma solidity ^0.8.20;
+contract Tally {
+    uint256 public total;
+    function bump(uint256 by) external {
+        unchecked {
+            total += by;
+        }
+    }
+}
+"""
+    assert _math_lenses_on(src, "bump") == {"wrap-lens", "bound-lens"}

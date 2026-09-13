@@ -184,34 +184,94 @@ def sender_lens(contract: str, src: str) -> list[Sighting]:
 
 
 # --------------------------- risk: unsafe-math ---------------------------
+#
+# One bug, two readings. The bug is storage arithmetic that can wrap round. wrap-lens reads the
+# compiler's side: is wrapping even possible here (a pre-0.8 pragma, or an `unchecked` block)?
+# bound-lens reads the code's side: does anything in the function bound the operands before the
+# write? Neither reading alone is a finding. Checked arithmetic with no guard is a candidate;
+# unchecked arithmetic behind a require is a candidate; only both together reach quorum.
 
-def unchecked_lens(contract: str, src: str) -> list[Sighting]:
-    """Evidence: arithmetic inside an unchecked block."""
-    out = []
-    for fn in parse_functions(src):
-        depth, inside = 0, False
-        for ln, text in _lines(fn):
-            if "unchecked" in text:
-                inside, depth = True, 0
-            if inside:
-                depth += text.count("{") - text.count("}")
-                if re.search(r"[+\-*]=|[^/+\-*]\s[+\-*]\s", text) and "unchecked" not in text:
-                    out.append(Sighting("unchecked-lens", "unsafe-math", contract, fn.name, ln, text))
-                    break
-                if depth <= 0 and "{" in fn.body:
-                    inside = False
+ARITH = re.compile(r"^\s*(?:(?:uint|int)\d*\s+)?([A-Za-z_]\w*)\s*((?:\[[^\]]*\]|\.\w+)*)\s*(\+=|-=|\*=|=(?!=))\s*(.+?);")
+RAW_OP = re.compile(r"[\w)\]]\s*[+*-]\s*[\w(]")
+SAFE_MATH = re.compile(r"\.(add|sub|mul|div)\s*\(")
+PRAGMA = re.compile(r"pragma\s+solidity\s*([^;]+);")
+BOUND = re.compile(r"\b(require|assert|if)\s*\(.*(<=|>=|<|>)")
+# Operands a 256-bit number cannot be wrapped by: what the chain itself bounds, and small constants.
+CHAIN_BOUNDED = {"msg", "value", "block", "number", "timestamp", "now", "length", "sender"}
+
+
+def _min_pragma(src: str) -> tuple[int, int] | None:
+    """The lowest compiler version the file admits, as (major, minor). None if it names none."""
+    versions = [tuple(int(x) for x in v.split(".")[:2])
+                for m in PRAGMA.finditer(src) for v in re.findall(r"\d+\.\d+(?:\.\d+)?", m.group(1))]
+    return min(versions) if versions else None
+
+
+def _wrapping_lines(fn: Function, wraps_everywhere: bool) -> set[int]:
+    """Lines where the compiler will let arithmetic wrap: every line before 0.8, else only `unchecked` blocks."""
+    if wraps_everywhere:
+        return {ln for ln, _ in _lines(fn)}
+    out, depth = set(), 0
+    for ln, text in _lines(fn):
+        if depth == 0 and "unchecked" in text:
+            depth = 0
+        elif depth == 0:
+            continue
+        depth += text.count("{") - text.count("}")
+        out.add(ln)
+        if depth <= 0:
+            depth = 0
     return out
 
 
-def precision_lens(contract: str, src: str) -> list[Sighting]:
-    """Evidence: a division evaluated before a multiplication in the same expression."""
-    out = []
+def _storage_arithmetic(fn: Function, svars: set[str]) -> Iterator[tuple[int, str, str, str]]:
+    """(line, text, target, rhs) for every raw + - * that writes storage or reads it into a local."""
+    names = svars | _storage_aliases(fn, svars)
+    for ln, text in _lines(fn):
+        if text.startswith("//") or text.startswith("*"):
+            continue
+        m = ARITH.match(text)
+        if not m:
+            continue
+        target, op, rhs = m.group(1), m.group(3), m.group(4)
+        if SAFE_MATH.search(rhs) or (op == "=" and not RAW_OP.search(rhs)):
+            continue
+        touches_storage = target in names or any(re.search(rf"\b{re.escape(v)}\b", rhs) for v in names)
+        if touches_storage:
+            yield ln, text, target, rhs
+
+
+def wrap_lens(contract: str, src: str) -> list[Sighting]:
+    """Evidence: the compiler lets this storage arithmetic wrap (a pre-0.8 pragma, or an unchecked block)."""
+    out, svars = [], state_vars(src)
+    pragma = _min_pragma(src)
+    wraps_everywhere = pragma is not None and pragma < (0, 8)
     for fn in parse_functions(src):
-        for ln, text in _lines(fn):
-            if text.startswith("//") or text.startswith("*"):
-                continue
-            if re.search(r"/\s*[\w.()\[\]]+\s*\*", text):
-                out.append(Sighting("precision-lens", "unsafe-math", contract, fn.name, ln, text))
+        if _is_readonly(fn):
+            continue
+        allowed = _wrapping_lines(fn, wraps_everywhere)
+        for ln, text, _, _ in _storage_arithmetic(fn, svars):
+            if ln in allowed:
+                out.append(Sighting("wrap-lens", "unsafe-math", contract, fn.name, ln, text))
+                break
+    return out
+
+
+def bound_lens(contract: str, src: str) -> list[Sighting]:
+    """Evidence: nothing in the function bounds the operands before the storage arithmetic."""
+    out, svars = [], state_vars(src)
+    for fn in parse_functions(src):
+        if _is_readonly(fn):
+            continue
+        for ln, text, target, rhs in _storage_arithmetic(fn, svars):
+            rhs_names = set(re.findall(r"[A-Za-z_]\w*", rhs)) - {target}
+            if not rhs_names - CHAIN_BOUNDED - set(re.findall(r"\b(?:uint|int)\d*\b", rhs)):
+                continue  # `+= msg.value`, `+= 1`, `= block.number + 1`: nothing here can wrap a uint256
+            operands = {target} | rhs_names
+            before = [t for l, t in _lines(fn) if l < ln]
+            guarded = any(BOUND.search(t) and any(re.search(rf"\b{re.escape(o)}\b", t) for o in operands) for t in before)
+            if not guarded:
+                out.append(Sighting("bound-lens", "unsafe-math", contract, fn.name, ln, text))
                 break
     return out
 
@@ -221,6 +281,6 @@ LENSES = {
     "guard-lens": guard_lens,
     "modifier-lens": modifier_lens,
     "sender-lens": sender_lens,
-    "unchecked-lens": unchecked_lens,
-    "precision-lens": precision_lens,
+    "wrap-lens": wrap_lens,
+    "bound-lens": bound_lens,
 }

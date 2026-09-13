@@ -18,7 +18,7 @@ VERSION = "0.1.0"
 RULES = {
     "reentrancy": "An external call is made before the state it depends on is written, in a function with no guard.",
     "unguarded-state-write": "Storage that looks privileged is written by a function anyone can call.",
-    "unsafe-math": "Arithmetic that can wrap or lose precision.",
+    "unsafe-math": "Storage arithmetic the compiler will let wrap, with nothing in the function bounding the operands.",
 }
 NOTICE = "Not a vulnerability claim: two independent readings agreed on a shape worth review."
 
