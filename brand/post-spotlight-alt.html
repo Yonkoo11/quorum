@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Quorum: the switch</title>
+<style>
+  @font-face {
+    font-family: "Archivo Black";
+    src: url("fonts/ArchivoBlack-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "IBM Plex Sans";
+    src: url("fonts/IBMPlexSans-Medium.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: block;
+  }
+
+  :root {
+    --ground: #f3eee4;
+    --raised: #fffdf7;
+    --ink: #121212;
+    --muted: #6f6a5e;
+    --green: #3fb950;
+    --green-text: #24772f;
+    --hair: rgba(18,18,18,.22);
+    --shadow: 3px 3px 0 #121212;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 1280px;
+    height: 720px;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 500;
+    overflow: hidden;
+  }
+
+  .page {
+    width: 1280px;
+    height: 720px;
+    padding: 40px 56px 36px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 28px;
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: "Archivo Black", sans-serif;
+    font-size: 22px;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+
+  .mark { width: 42px; height: 28px; display: block; }
+  .mark circle { fill: none; stroke: currentColor; stroke-width: 3.4; }
+  .mark .vesica { fill: var(--green); stroke: none; }
+  .mark.void .vesica { fill: none; }
+
+  .url {
+    font-size: 13px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    min-height: 0;
+  }
+
+  .panel {
+    background: var(--raised);
+    border: 2px solid var(--ink);
+    box-shadow: var(--shadow);
+    padding: 28px 32px 24px;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 18px;
+    min-height: 0;
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .head .mark { width: 36px; height: 24px; }
+
+  .switch {
+    display: inline-flex;
+    width: max-content;
+    border: 2px solid var(--ink);
+    background: var(--raised);
+    box-shadow: var(--shadow);
+    justify-self: start;
+  }
+
+  .switch span {
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    line-height: 1;
+    min-height: 40px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .switch span + span { border-left: 2px solid var(--ink); }
+  .switch .on { background: var(--ink); color: var(--ground); }
+
+  .answer {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .n {
+    font-family: "Archivo Black", sans-serif;
+    font-size: 112px;
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+  }
+
+  .panel.off .n { color: var(--muted); }
+  .panel.on .n { color: var(--green-text); }
+
+  .word {
+    font-size: 18px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .term {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink);
+    align-self: end;
+  }
+
+  .term .dim { color: var(--muted); }
+  .term .hi { color: var(--green-text); }
+
+  .foot {
+    display: flex;
+    align-items: baseline;
+  }
+
+  .line {
+    font-size: 18px;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="bar">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 56 38" aria-hidden="true">
+          <defs><clipPath id="clip"><circle cx="19" cy="19" r="17"/></clipPath></defs>
+          <g clip-path="url(#clip)">
+            <circle class="vesica" cx="37" cy="19" r="17"/>
+          </g>
+          <circle cx="19" cy="19" r="17"/>
+          <circle cx="37" cy="19" r="17"/>
+        </svg>
+        <span>Quorum</span>
+      </div>
+      <div class="url">runquorum.site</div>
+    </header>
+
+    <div class="pair">
+      <article class="panel on">
+        <div class="head">
+          <div class="switch" aria-hidden="true">
+            <span class="on">Memory on</span>
+            <span>Memory off</span>
+          </div>
+          <svg class="mark" viewBox="0 0 56 38" aria-hidden="true">
+            <g clip-path="url(#clip)">
+              <circle class="vesica" cx="37" cy="19" r="17"/>
+            </g>
+            <circle cx="19" cy="19" r="17"/>
+            <circle cx="37" cy="19" r="17"/>
+          </svg>
+        </div>
+        <p class="answer">
+          <span class="n">2</span>
+          <span class="word">confirmed</span>
+        </p>
+        <div class="term">
+          <div><span class="dim">$</span> quorum run</div>
+          <div>scanned 12 | <span class="hi">confirmed 2</span> | recalled 1</div>
+        </div>
+      </article>
+
+      <article class="panel off">
+        <div class="head">
+          <div class="switch" aria-hidden="true">
+            <span>Memory on</span>
+            <span class="on">Memory off</span>
+          </div>
+          <svg class="mark void" viewBox="0 0 56 38" aria-hidden="true">
+            <g clip-path="url(#clip)">
+              <circle class="vesica" cx="37" cy="19" r="17"/>
+            </g>
+            <circle cx="19" cy="19" r="17"/>
+            <circle cx="37" cy="19" r="17"/>
+          </svg>
+        </div>
+        <p class="answer">
+          <span class="n">0</span>
+          <span class="word">confirmed</span>
+        </p>
+        <div class="term">
+          <div><span class="dim">$</span> quorum run --no-memory</div>
+          <div>scanned 12 | confirmed 0 | recalled 0</div>
+        </div>
+      </article>
+    </div>
+
+    <footer class="foot">
+      <div class="line">Same files. Same checkers.</div>
+    </footer>
+  </div>
+</body>
+</html>
