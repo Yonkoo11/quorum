@@ -1,0 +1,19 @@
+Quorum article images for the CM
+Checked 2026-09-13.
+
+X Article COVER (use this in the article editor):
+  1920 x 368 px  (~5.2:1)
+  ~/Downloads/quorum-article-banner-1920x368.png
+  Source: live Canva/X test of the article cover crop
+  (https://medium.com/@odafeobiku228/x-article-banner-size-the-complete-guide-2026-2cb92021629b)
+  A 16:9 file is cropped top and bottom in the article header.
+
+Post that SHARES the article (timeline, 16:9):
+  1600 x 900 px
+  ~/Downloads/quorum-article-banner-feed-1600x900.png
+  X single-image post default.
+
+Do not put the nonce, expiry, or wallet copy on the banner.
+Those belong in screenshots inside the article body.
+
+Copy on both: HEY RESEARCH / CLAIM QUORUM.
