@@ -1,6 +1,6 @@
 """Quorum command line.
 
-    quorum fetch 0x...          pull a verified Base contract into targets/
+    quorum fetch [--chain X] 0x...   pull a verified contract from ethereum, base, arbitrum, optimism or polygon into targets/
     quorum run                  run the swarm over targets/
     quorum run --no-memory      the deletion test: same swarm, memory removed
     quorum run --sarif f.sarif  the same run, confirmed findings also written as SARIF
@@ -23,9 +23,11 @@ import sys
 import time
 from datetime import datetime, timezone
 
+import requests
+
 from .memory import DEFAULT_DB, QUORUM_THRESHOLD, NoMemory, SwarmMemory
 from .swarm import run_swarm
-from .targets import load_targets, save
+from .targets import DEFAULT_CHAIN, SOURCE_CHAINS, load_targets, save
 
 DIM, BOLD, GREEN, YELLOW, RED, RESET = "\033[2m", "\033[1m", "\033[32m", "\033[33m", "\033[31m", "\033[0m"
 
@@ -40,10 +42,17 @@ def _memory(args) -> SwarmMemory:
 
 
 def cmd_fetch(args) -> int:
+    failed = 0
     for address in args.addresses:
-        path = save(address)
-        print(f"{GREEN}saved{RESET} {path.name}  ({path.stat().st_size} bytes)  {DIM}{address}{RESET}")
-    return 0
+        try:
+            path = save(address, args.chain)
+        except (RuntimeError, requests.RequestException) as e:
+            failed += 1
+            print(f"{RED}not saved{RESET} {_shown(e, 200)}")
+            continue
+        shown = path.relative_to(path.parent.parent)
+        print(f"{GREEN}saved{RESET} {shown}  ({path.stat().st_size:,} bytes)  {DIM}{address}{RESET}")
+    return 1 if failed else 0
 
 
 def cmd_run(args) -> int:
@@ -346,7 +355,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--db", default=DEFAULT_DB, help="Sibyl Memory database path")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p = sub.add_parser("fetch", help="download verified Base contract source")
+    p = sub.add_parser("fetch", help="download verified contract source from one of five chains, no API key")
+    p.add_argument("--chain", default=DEFAULT_CHAIN, choices=sorted(SOURCE_CHAINS),
+                   help=f"where the address lives (default {DEFAULT_CHAIN})")
     p.add_argument("addresses", nargs="+")
     p.set_defaults(func=cmd_fetch)
 

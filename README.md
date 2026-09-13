@@ -97,7 +97,7 @@ No key, no wallet, no GPU. Every line below was run on a fresh memory file befor
 git clone https://github.com/Yonkoo11/quorum && cd quorum
 python3 -m venv .venv && .venv/bin/pip install -e .          # or: uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 
-.venv/bin/python -m pytest tests -q                           # → 41 passed
+.venv/bin/python -m pytest tests -q                           # → 49 passed
 .venv/bin/quorum --db fresh.db run --targets fixtures/*.sol   # → confirmed 2 | recalled 1 | candidates 5
 .venv/bin/quorum --db fresh.db run --no-memory --targets fixtures/*.sol
                                                               # → confirmed 0 | recalled 0: without memory the swarm
@@ -272,6 +272,8 @@ The signing key is read from the process environment at call time. It is never l
 
 The claims above form a public registry of "this swarm knew this bug shape at this block". A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone: each claim burns **100,000 QUORUM** through the token contract's own `burn(uint256)` on Robinhood Chain before the claim is written to the same chain, and the claim's calldata (`QUORUM2` shape) carries the burn's transaction hash. `quorum verify` checks both halves: the digest on chain, and that the burn it points at is a real burn of at least the fee by the same signer. Burn and claim share one chain, so one RPC verifies both. A claim whose fee was never burned does not verify.
 
+**One chain, on purpose.** The token pays for one thing: publishing a claim. Claims live on Robinhood Chain because that is where the token is. The tool reads verified code from Ethereum, Base, Arbitrum, Optimism and Polygon, and that is the part of those chains Quorum cares about. The token goes to a second chain only when three things are true at once: a claim registry exists on that chain, a canonical or audited bridge path exists for the token, and someone on that chain wants to publish claims. None of the three is true today. There is no date, and we will not give one.
+
 The first claim at the current fee, 2026-09-12. (The launch claim at the 1,000 fee, claim `0xacd123…efb0` at block 60748972 with burn `0x76da2f…d5d7`, came 22 minutes earlier and still verifies.)
 
 ```console
@@ -325,7 +327,7 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 | **Paid claims on chain** | Real. Fee burned through the token's own `burn(uint256)`, claim written with the burn hash in its calldata, both live on Robinhood Chain (block 60762176). Reveal and import ran live the same day. |
 | **Measured against labelled bugs** | Two corpora, one harsh rule: a finding counts only if it names a labelled function. [`bench/BENCHMARK.md`](bench/BENCHMARK.md), SmartBugs-curated (143 files from 2017, 73 targets): two-witness 63% recall at 51% precision, reentrancy 94% / 69%, arithmetic 76% / 33%, after six rounds of lens changes made on that corpus, so tuned. [`bench/HELDOUT.md`](bench/HELDOUT.md), DeFiVulnLabs (57 modern files, 10 targets hand-labelled before any lens was changed, and no lens was adjusted against it): 50% recall at 62% precision. [`bench/SLITHER.md`](bench/SLITHER.md) and [`bench/SLITHER-HELDOUT.md`](bench/SLITHER-HELDOUT.md) score Slither the same way: 48% / 41% on SmartBugs (reentrancy 90% / 62%, and far better on access control) and 40% / 20% on the held-out set. Slither has no overflow detector, so it scores 0% on arithmetic on 2017 code; the rebuilt pair scores 76% at 33%. [`bench/README.md`](bench/README.md) has the tables, the history and the caveats. |
 | **Restraint on production code** | Measured, not asserted. On Aerodrome's Router, WETH9 and a Compound proxy: 0 confirmed, 14 candidates held back. The first cut of the rebuilt arithmetic pair confirmed WETH9's `deposit` (`balanceOf[msg.sender] += msg.value`), which is why bound-lens now counts what the chain itself bounds as bounded. |
-| **Tests** | 41, run in CI on every push. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that `attest` burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move, that the pre-0.5 call idiom reaches quorum, that an unnamed 0.4 fallback is parsed as a function, that the call-order lens follows a storage alias, that the SARIF export names both witnesses and leaves candidates out, that the arithmetic pair reads one bug from two sides (bounded arithmetic and checked arithmetic each get one witness only), that an imported pattern never confirms alone and is upgraded by local quorum, that one burn admits one import, that reverted, unpaid and mis-addressed claims are refused, that malformed reveals are refused rather than crashed, that the v2 signature keeps the member name, that a 2300-gas transfer is not an external call while a token transfer is, that braces inside comments are ignored and lines are counted from the brace, that 0.4 constructors and `constant` functions are skipped, and that bound-lens reads `msg.value` as a dotted name and accepts an equality bound. |
+| **Tests** | 49, run in CI on every push. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that `attest` burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move, that the pre-0.5 call idiom reaches quorum, that an unnamed 0.4 fallback is parsed as a function, that the call-order lens follows a storage alias, that the SARIF export names both witnesses and leaves candidates out, that the arithmetic pair reads one bug from two sides (bounded arithmetic and checked arithmetic each get one witness only), that an imported pattern never confirms alone and is upgraded by local quorum, that one burn admits one import, that reverted, unpaid and mis-addressed claims are refused, that malformed reveals are refused rather than crashed, that the v2 signature keeps the member name, that a 2300-gas transfer is not an external call while a token transfer is, that braces inside comments are ignored and lines are counted from the brace, that 0.4 constructors and `constant` functions are skipped, that bound-lens reads `msg.value` as a dotted name and accepts an equality bound, and that an explorer's answer can only become a file under `targets/<chain>/` or be refused (multi-file joins, 404s, unverified or oversized bodies, a name that tries to leave the folder). |
 | **Findings in the Security tab** | Live: three alerts on the fixtures in this repository's Security tab. `run --sarif` writes SARIF 2.1.0; [`tests/test_quorum.py`](tests/test_quorum.py) asserts that the fixture run yields three results (two by quorum, one recalled), that each names both lenses, that candidates are left out, that the fingerprint is the idiom signature, that a second run on the same memory keeps the findings in the log, and that quoted source cannot carry a link and is bounded. The first version of the action installed from the `main` branch at run time and interpolated its inputs into a shell line; both were found in the 2026-09-13 review and fixed the same day (install from the pinned ref, inputs through the environment, actions pinned to commits, upload split from the scan). |
 | **Attacked, 2026-09-13** | Four ways to poison the registry were found by reviewing the tool itself. Fixed: an imported pattern was recalled from one sighting exactly like a locally confirmed one (now a hint until local quorum); one fee burn could admit unlimited imports into a memory (now one per burn); the idiom signature dropped the member name, so `x.delegatecall(y)` and `t.approve(s)` hashed the same and one retirement silenced both (signature v2 keeps it); a claim was accepted even if reverted, not self-addressed, or unpaid after the fee existed (all refused). Not fixed: globally, one burn can still back more than one claim, because nothing on chain ties a burn to a claim. That needs a contract or an indexer and is written here instead of pretended. |
 | The lenses | Deliberately simple: regex-and-brace-matching heuristics over source text, not a compiler front end. They read lines rather than a call graph: a call inside a modifier, a write reached through an internal call, and a guard in the caller are invisible to them, which is why Slither finds far more access-control bugs on old code, and wrap-lens reads the pragma rather than the compiler, so a file with no pragma is treated as checked, and they key a finding by file, function and risk, so two contracts in one file can share a key. The point of this project is the coordination and memory layer. |
@@ -340,8 +342,8 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 
 - **Language:** Python 3.10 to 3.13. No framework; the CLI is `argparse`.
 - **Memory:** [Sibyl Memory](https://github.com/Sibyl-Labs/Sibyl-Memory), all five tiers, load-bearing. Every read and write in one file.
-- **Chain:** `web3.py` against Robinhood Chain (chain id 4663) for the token, the fee burn, claims, reveals and imports; Base mainnet for the first claim and for verified target source via Blockscout (no API key needed).
-- **Tests:** pytest, 41 tests, no chain access needed (the chain is mocked where it matters).
+- **Chain:** `web3.py` against Robinhood Chain (chain id 4663) for the token, the fee burn, claims, reveals and imports; Base mainnet for the first claim. Verified target source comes from the Blockscout instances of Ethereum, Base, Arbitrum, Optimism and Polygon, with no API key ([`bench/MULTICHAIN.md`](bench/MULTICHAIN.md)).
+- **Tests:** pytest, 49 tests, no chain access needed (the chain is mocked where it matters).
 - **Site:** static HTML, CSS and JavaScript in [`docs/`](docs/), served by GitHub Pages at [runquorum.site](https://runquorum.site); the in-browser verifier reads the chain through public JSON-RPC nodes.
 - **Demo:** the terminal recording lives in [`demo/`](demo/) and the video assembly in [`video/`](video/).
 
@@ -353,10 +355,10 @@ quorum/
   swarm.py       # the run: claim units, record sightings, promote, recall, retire
   memory.py      # every Sibyl Memory read and write (HOT, WARM, REFERENCE, ARCHIVE, COLD) and NoMemory
   chain.py       # claim digest, QUORUM1/2/3 calldata, fee schedule, burn check, attest, verify, reveal, import
-  targets.py     # quorum fetch: verified source from Blockscout
+  targets.py     # quorum fetch: verified source from five chains' Blockscout instances, no key
   sarif.py       # confirmed findings as SARIF 2.1.0: both witnesses, what each read, the idiom as the fingerprint
   cli.py         # the command line
-tests/           # 41 tests: test_quorum.py (the swarm) and test_token.py (the token boundary)
+tests/           # 49 tests: test_quorum.py (the swarm), test_token.py (the token boundary), test_targets.py (what an explorer may do)
 fixtures/        # two teaching contracts, vulnerable on purpose
 docs/            # the site (runquorum.site): five pages, one stylesheet, one script, self-hosted fonts
 brand/           # the cards, marks and fonts the site and the posts are built from
@@ -376,10 +378,11 @@ git clone https://github.com/Yonkoo11/quorum && cd quorum
 python3 -m venv .venv && .venv/bin/pip install -e .   # or:
 uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 
-# pull real verified source from Base mainnet (no API key needed)
+# pull real verified source, no API key: --chain ethereum | base | arbitrum | optimism | polygon (default base)
 .venv/bin/quorum fetch 0xCF205808Ed36593aa40a44F10c7f7C2F67d4A4d4 \
                        0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43 \
                        0x4200000000000000000000000000000000000006
+.venv/bin/quorum fetch --chain ethereum 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2   # lands in targets/ethereum/
 
 .venv/bin/quorum run --targets fixtures/*.sol   # the swarm learns
 .venv/bin/quorum run                            # a fresh session recognises
@@ -389,7 +392,7 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   # what it learned since
 .venv/bin/quorum run --no-memory                # the deletion test
 .venv/bin/quorum run --sarif quorum.sarif       # the same run, findings written for the GitHub Security tab
-.venv/bin/python -m pytest tests -q             # 41 tests
+.venv/bin/python -m pytest tests -q             # 49 tests
 ```
 
 `quorum attest` additionally needs `DEPLOYER_PRIVATE_KEY` in the environment, gas on Robinhood Chain, and the claim fee in QUORUM. `QUORUM_RPC` overrides the public Robinhood Chain endpoint; `BASE_RPC` overrides the public Base endpoint used only to read the first claim.
@@ -415,7 +418,7 @@ steps:
 ## Tests
 
 ```bash
-.venv/bin/python -m pytest tests -q             # 41 passed
+.venv/bin/python -m pytest tests -q             # 49 passed
 ```
 
 [`tests/test_quorum.py`](tests/test_quorum.py) drives the swarm end to end on the fixtures: one lens never confirms, two lenses from different evidence do, the signature matches across contracts, the deletion test confirms nothing, a retirement sticks. [`tests/test_token.py`](tests/test_token.py) pins the calldata shapes, the digest a reveal must reproduce, the burn rules a claim must satisfy, that `attest` burns before it claims and reuses a saved burn rather than paying twice, that the scanner modules never import the chain, and that the first Base claim still reads after the move to Robinhood Chain. The same suite runs in [CI](https://github.com/Yonkoo11/quorum/actions/workflows/tests.yml) on every push.
