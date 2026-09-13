@@ -51,6 +51,8 @@ def _elapsed(since: str | None) -> float | None:
 PRIVILEGED_WORDS = re.compile(r"(owner|admin|treasury|fee|rate|price|oracle|paused|beneficiary|supply)", re.I)
 CHAIN = re.compile(r"\b[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)+\b")
 IDENT = re.compile(r"\b[A-Za-z_]\w*\b")
+MEMBER_OR_IDENT = re.compile(r"(\.)?\b[A-Za-z_]\w*\b")  # group 1 set: a member name, kept
+SIGNATURE_VERSION = 2  # 1 dropped member names; every v1 hash is different from its v2 hash
 
 
 def _class_of(token: str) -> str:
@@ -85,9 +87,12 @@ def signature(risk: str, evidence: str) -> str:
         text = text[m.end():]
 
     text = CHAIN.sub(lambda mm: "X." + mm.group(0).split(".")[-1], text)
-    text = IDENT.sub(lambda mm: mm.group(0) if mm.group(0) in {"S", "N"} else "X", text)
+    # Every identifier collapses to X except a member name after a dot: `.call`, `.delegatecall`,
+    # `.approve` are the idiom, and version 1 of this function erased them, so `x.delegatecall(y)`
+    # and `t.approve(s)` hashed the same. Version 2 keeps them.
+    text = MEMBER_OR_IDENT.sub(lambda mm: mm.group(0) if mm.group(1) or mm.group(0) in {"S", "N"} else "X", text)
     text = re.sub(r"X\s*\[[^\]]*\]", "X", text)
-    shape = prefix + re.sub(r"\s+", "", text)
+    shape = f"v{SIGNATURE_VERSION}|" + prefix + re.sub(r"\s+", "", text)
     return f"{risk}:{hashlib.sha256(shape.encode()).hexdigest()[:16]}"
 
 
@@ -233,6 +238,7 @@ class SwarmMemory:
                 "recognised_on": [],
             }
 
+        reference["trust"] = "local"  # this swarm reached quorum itself; an imported pattern is upgraded here
         _retry(self.client.set_reference, f"pattern:{sig}", reference)
         _retry(self.client.set_entity, "finding", key,
                {**body, "status": "confirmed", "confirmed_via": body.get("via", "quorum")})
@@ -254,17 +260,23 @@ class SwarmMemory:
         """Has the swarm confirmed this shape before, in any earlier session?"""
         return self._body(self.client.get_reference(f"pattern:{sig}"))
 
-    def import_pattern(self, revealed: dict[str, Any], claim_tx: str, burn_tx: str) -> bool:
-        """Learn a pattern another swarm confirmed, revealed and paid to publish.
+    def import_pattern(self, revealed: dict[str, Any], claim_tx: str, burn_tx: str) -> str:
+        """Learn a pattern another swarm paid to publish, as a HINT, never as a confirmation.
 
-        This is the only way knowledge enters the REFERENCE tier without this
-        swarm reaching quorum itself, so the bar is the on-chain one: the caller
-        has already checked the reveal matches the claim digest and the claim's
-        fee was really burned. Returns False if the shape is already known.
+        The caller has checked the reveal matches the claim digest and the claim's fee was burned.
+        That proves someone paid; it proves nothing about the pattern. So an imported pattern
+        carries trust "imported": a sighting that matches it is shown as a candidate with a note,
+        and it still needs two local lenses to confirm. When local quorum lands on the same
+        signature, promote() upgrades it to trust "local". One burn admits one import into this
+        memory, so a single fee cannot seed it with many patterns.
+
+        Returns "imported", "known" (signature already present) or "burn-used".
         """
         sig = revealed["signature"]
         if self.known_pattern(sig):
-            return False
+            return "known"
+        if self._body(self.client.get_reference(f"burn:{burn_tx}")):
+            return "burn-used"
         reference = {
             "risk": revealed["risk"],
             "signature": sig,
@@ -273,11 +285,18 @@ class SwarmMemory:
             "evidence": "",
             "confirmed_at": _now(),
             "recognised_on": [],
+            "trust": "imported",
             "imported_from": {"claim_tx": claim_tx, "fee_burn_tx": burn_tx},
         }
         _retry(self.client.set_reference, f"pattern:{sig}", reference)
-        self.log(evaluated={"claim_tx": claim_tx}, acted={"imported": sig}, forward={"fee_burn_tx": burn_tx})
-        return True
+        _retry(self.client.set_reference, f"burn:{burn_tx}", {"claim_tx": claim_tx, "signature": sig, "imported_at": _now()})
+        self.log(evaluated={"claim_tx": claim_tx}, acted={"imported": sig, "trust": "imported"}, forward={"fee_burn_tx": burn_tx})
+        return "imported"
+
+    @staticmethod
+    def trust_of(pattern: dict[str, Any]) -> str:
+        """Patterns written before trust existed were all reached locally unless they carry an import record."""
+        return pattern.get("trust") or ("imported" if pattern.get("imported_from") else "local")
 
     def confirmed_patterns(self) -> list[dict[str, Any]]:
         hits = self.client.search("signature", limit=200, tiers=("reference",))

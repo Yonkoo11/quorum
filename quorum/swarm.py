@@ -80,12 +80,16 @@ def _handle(memory: SwarmMemory, s: Sighting, threshold: int, report: RunReport)
     # REFERENCE: confirmed in an earlier session on a different contract.
     # One sighting is enough, because the swarm already paid for this knowledge.
     known = memory.known_pattern(sig)
-    if known:
+    if known and memory.trust_of(known) == "local":
         memory.promote(s.key, {**body, "via": "recall"})
         report.recalled.append({**body, "first_confirmed_on": known.get("first_confirmed_on")})
         memory.log(evaluated={"key": s.key}, acted={"recalled_from": known.get("first_confirmed_on")},
                    forward={"promoted": sig})
         return
+    if known:
+        # Imported, so paid for by someone else and never corroborated here. A hint on the
+        # candidate, not a confirmation: the finding still needs two local lenses.
+        body = {**body, "hint": known.get("imported_from", {})}
 
     if body["corroborations"] >= threshold:
         memory.promote(s.key, body)

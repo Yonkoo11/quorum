@@ -232,3 +232,46 @@ contract Tally {
 }
 """
     assert _math_lenses_on(src, "bump") == {"wrap-lens", "bound-lens"}
+
+
+ONE_LENS_PAYOUT = """pragma solidity ^0.8.0;
+contract Payout {
+    mapping(address => uint256) public owed;
+    function pay() external {
+        (bool ok, ) = msg.sender.call{value: owed[msg.sender]}("");
+        require(ok);
+    }
+}
+"""
+
+
+def test_imported_pattern_never_confirms_alone_and_is_upgraded_by_local_quorum():
+    """Before this, an imported pattern was recalled from one sighting exactly like a pattern this
+    swarm had confirmed itself, so one paid reveal could make every importing swarm publish a chosen
+    shape. Now it is a hint until two local lenses agree."""
+    from quorum.agents import guard_lens
+
+    db = _db()
+    m = SwarmMemory(db)
+    sig = guard_lens("P.sol", ONE_LENS_PAYOUT)[0].signature
+    assert m.import_pattern({"risk": "reentrancy", "signature": sig, "corroborated_by": ["a", "b"], "contract": "X.sol"},
+                            "0xclaim", "0xburn") == "imported"
+    r = run_swarm(SwarmMemory(db), {"P.sol": ONE_LENS_PAYOUT})
+    assert r.recalled == [] and r.promoted == []
+    assert r.candidates and r.candidates[0].get("hint", {}).get("claim_tx") == "0xclaim"
+
+    # local quorum on the same idiom (call then write, no guard) upgrades the pattern to local trust
+    run_swarm(SwarmMemory(db), {"V.sol": VULN})
+    assert m.trust_of(m.known_pattern(signature("reentrancy", '(bool success, ) = msg.sender.call{value: amount}("");'))) == "local"
+
+
+def test_signature_v2_keeps_the_member_name():
+    """v1 collapsed every identifier, so a delegatecall and an approve hashed the same and one
+    retirement silenced both. The receiver and arguments still collapse; the member does not."""
+    same = signature("reentrancy", '(bool ok, ) = msg.sender.call{value: amt}("");') == \
+           signature("reentrancy", '(bool success1, ) = feeDest.call{value: fee}("");')
+    assert same
+    assert signature("r", "target.delegatecall(payload);") != signature("r", "token.approve(spender);")
+    assert signature("r", "to.transfer(amount);") != signature("r", "logger.record(nonce);")
+    assert signature("r", '(bool ok, ) = msg.sender.call{value: amount}("");') != \
+           signature("r", '(bool ok, ) = weth.deposit{value: amount}("");')

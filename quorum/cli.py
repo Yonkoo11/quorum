@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -27,6 +28,11 @@ from .swarm import run_swarm
 from .targets import load_targets, save
 
 DIM, BOLD, GREEN, YELLOW, RED, RESET = "\033[2m", "\033[1m", "\033[32m", "\033[33m", "\033[31m", "\033[0m"
+
+
+def _shown(value, limit: int = 80) -> str:
+    """Text that came off the chain: no control characters, so calldata cannot repaint the terminal."""
+    return re.sub(r"[\x00-\x1f\x7f]", "", str(value))[:limit]
 
 
 def _memory(args) -> SwarmMemory:
@@ -73,8 +79,10 @@ def cmd_run(args) -> int:
         print(f"  {GREEN}QUORUM{RESET}    {f['contract']}:{f['function']} {DIM}{f['risk']}{RESET}"
               f"  corroborated by {', '.join(f['seen_by'])}")
     for f in report.candidates:
+        hint = f.get("hint")
+        note = f"  {DIM}(matches a pattern paid for by another swarm, claim {_shown(hint.get('claim_tx'), 14)}…; still needs two local lenses){RESET}" if hint else ""
         print(f"  {YELLOW}candidate{RESET} {f['contract']}:{f['function']} {DIM}{f['risk']}"
-              f"  only {', '.join(f['seen_by'])} — held back{RESET}")
+              f"  only {', '.join(f['seen_by'])} — held back{RESET}{note}")
     for f in report.suppressed:
         print(f"  {DIM}suppressed {f['contract']}:{f['function']} {f['risk']} — retired earlier: {f['reason']}{RESET}")
 
@@ -247,6 +255,10 @@ def cmd_verify(args) -> int:
     print(f"\n{BOLD}claim on {claim['chain']}{RESET}  block {claim['block']}  {stamp}")
     print(f"  published by {claim['from']}")
     print(f"  digest       {claim['digest']}")
+    problem = chain.claim_problem(claim)
+    if problem:
+        print(f"  {RED}not a claim{RESET}  {problem}")
+        return 1
 
     if claim.get("burn_tx"):
         burn = chain.read_burn(claim["burn_tx"])
@@ -296,7 +308,7 @@ def cmd_import(args) -> int:
 
     r = chain.read_reveal(args.tx)
     fields = r["fields"]
-    print(f"\n{BOLD}reveal{RESET} {fields['risk']}  {fields['signature']}  by {r['revealed_by']}")
+    print(f"\n{BOLD}reveal{RESET} {_shown(fields['risk'])}  {_shown(fields['signature'])}  by {r['revealed_by']}")
     required = (r["burn"] or {}).get("required", chain.CLAIM_FEE) // 10**chain.TOKEN_DECIMALS
     checks = [("digest matches the claim", r["digest_matches"]), ("revealed by the claim's signer", r["same_signer"]),
               (f"claim fee of {required:,} QUORUM burned", r["fee_paid"])]
@@ -305,9 +317,17 @@ def cmd_import(args) -> int:
     if not all(ok for _, ok in checks):
         print(f"\n  {RED}not imported{RESET}: a pattern nobody paid to publish is not evidence")
         return 1
+    problem = chain.claim_problem(r["claim"])
+    if problem:
+        print(f"\n  {RED}not imported{RESET}: {problem}")
+        return 1
     memory = SwarmMemory(args.db)
-    if memory.import_pattern(fields, r["claim_tx"], r["claim"]["burn_tx"]):
-        print(f"\n  {GREEN}imported into REFERENCE{RESET}: the swarm will recognise this idiom on sight")
+    outcome = memory.import_pattern(fields, r["claim_tx"], r["claim"]["burn_tx"])
+    if outcome == "imported":
+        print(f"\n  {GREEN}imported as a hint{RESET}: a sighting of this idiom is flagged, and still needs two local lenses to confirm")
+    elif outcome == "burn-used":
+        print(f"\n  {RED}not imported{RESET}: that fee burn already backed an import into this memory. One fee, one pattern.")
+        return 1
     else:
         print(f"\n  {DIM}already known{RESET}")
     return 0

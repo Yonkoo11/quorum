@@ -47,6 +47,9 @@ CHAIN_ID = int(os.getenv("QUORUM_CHAIN_ID", str(TOKEN_CHAIN_ID)))
 if CHAIN_ID not in CHAINS:
     raise RuntimeError(f"QUORUM_CHAIN_ID={CHAIN_ID} is not a chain Quorum claims on: {sorted(CHAINS)}")
 PREFIX = b"QUORUM1"  # v1 claim: digest only (the first claim, Base block 51138878, is this shape)
+# An unpaid (v1) claim is accepted only where and when the fee did not yet exist: on Base, up to
+# the block of the first claim. Everywhere else an unpaid claim is not a claim.
+UNPAID_CLAIMS_UNTIL = {8453: 51138878}
 PREFIX_V2 = b"QUORUM2"  # v2 claim: digest + fee burn tx hash
 EXPLORER = os.getenv("QUORUM_EXPLORER", CHAINS[CHAIN_ID]["explorer"])
 
@@ -247,7 +250,13 @@ def decode_reveal(data: bytes) -> dict[str, Any]:
     if not data.startswith(PREFIX_REVEAL) or len(data) <= len(PREFIX_REVEAL) + 32:
         raise RuntimeError("not a Quorum reveal: calldata is missing the QUORUM3 shape")
     body = data[len(PREFIX_REVEAL):]
-    return {"claim_tx": "0x" + body[:32].hex(), "fields": json.loads(body[32:].decode())}
+    try:
+        fields = json.loads(body[32:].decode())
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"not a Quorum reveal: the fields are not JSON ({exc.__class__.__name__})") from exc
+    if not isinstance(fields, dict) or not isinstance(fields.get("risk"), str) or not isinstance(fields.get("signature"), str):
+        raise RuntimeError("not a Quorum reveal: the fields are not an object with a risk and a signature")
+    return {"claim_tx": "0x" + body[:32].hex(), "fields": fields}
 
 
 def reveal(finding: dict[str, Any]) -> dict[str, Any]:
@@ -335,8 +344,23 @@ def read_claim(tx_hash: str) -> dict[str, Any]:
         "chain_id": cid,
         "chain": chain_name(cid),
         "from": tx["from"],
+        "to": tx.get("to"),
+        "self_addressed": (tx.get("to") or "").lower() == tx["from"].lower(),
         "block": receipt["blockNumber"],
         "timestamp": block["timestamp"],
         "status": receipt["status"],
         **parsed,
     }
+
+
+def claim_problem(claim: dict[str, Any]) -> str | None:
+    """Why a claim that decoded fine is still not a claim. None means it stands."""
+    if claim["status"] != 1:
+        return "the claim transaction reverted"
+    if not claim["self_addressed"]:
+        return "the claim is not a self-addressed transaction"
+    if claim.get("burn_tx") is None:
+        limit = UNPAID_CLAIMS_UNTIL.get(claim["chain_id"])
+        if limit is None or claim["block"] > limit:
+            return "unpaid claim: no fee burn, and the fee was already in force at this block"
+    return None

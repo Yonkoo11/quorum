@@ -92,7 +92,7 @@ def test_import_learns_a_paid_pattern_once_and_no_memory_never():
     fields = chain.reveal_fields(FINDING)
     assert m.import_pattern(fields, "0xclaim", "0xburn")
     assert m.known_pattern(FINDING["signature"])["imported_from"]["fee_burn_tx"] == "0xburn"
-    assert not m.import_pattern(fields, "0xclaim", "0xburn")
+    assert m.import_pattern(fields, "0xclaim", "0xburn") == "known"
     assert not NoMemory(_db()).import_pattern(fields, "0xclaim", "0xburn")
 
 
@@ -221,3 +221,37 @@ def test_fee_is_judged_at_the_burns_own_block():
         assert not chain.read_burn("0x" + "01" * 32)["valid"], "1,000 is not enough after the raise"
     with mock.patch.object(chain, "_token_w3", return_value=_fake_burn_tx(chain.TOKEN, raised)):
         assert chain.read_burn("0x" + "01" * 32)["valid"]
+
+
+def test_import_is_a_hint_and_one_burn_admits_one_pattern():
+    """A paid reveal proves someone paid. It proves nothing about the pattern, so it never confirms
+    on its own, and one burn cannot seed a memory with many patterns."""
+    m = SwarmMemory(_db())
+    fields = chain.reveal_fields(FINDING)
+    assert m.import_pattern(fields, "0xclaim", "0xburn") == "imported"
+    assert m.trust_of(m.known_pattern(FINDING["signature"])) == "imported"
+    assert m.import_pattern(fields, "0xclaim", "0xburn") == "known"
+    other = {**fields, "signature": "reentrancy:0000000000000000"}
+    assert m.import_pattern(other, "0xclaim2", "0xburn") == "burn-used"
+    assert m.known_pattern(other["signature"]) is None
+
+
+def test_claim_problems_reverted_unpaid_and_not_self_addressed():
+    base_first = {"chain_id": 8453, "block": 51138878, "status": 1, "self_addressed": True, "burn_tx": None}
+    assert chain.claim_problem(base_first) is None, "the first claim predates the fee"
+    assert "unpaid" in chain.claim_problem({**base_first, "block": 51138879})
+    assert "unpaid" in chain.claim_problem({**base_first, "chain_id": 4663, "block": 1})
+    paid = {"chain_id": 4663, "block": 60762176, "status": 1, "self_addressed": True, "burn_tx": "0x" + "ab" * 32}
+    assert chain.claim_problem(paid) is None
+    assert "reverted" in chain.claim_problem({**paid, "status": 0})
+    assert "self-addressed" in chain.claim_problem({**paid, "self_addressed": False})
+
+
+def test_malformed_reveal_is_refused_not_crashed():
+    claim_tx = bytes.fromhex("cd" * 32)
+    for junk in (b"\xff\xfe", b"[1,2]", b'"text"', b'{"risk": "reentrancy"}', b'{"risk": 1, "signature": "x"}'):
+        try:
+            chain.decode_reveal(chain.PREFIX_REVEAL + claim_tx + junk)
+            assert False, f"should have refused {junk!r}"
+        except RuntimeError as exc:
+            assert "not a Quorum reveal" in str(exc)
