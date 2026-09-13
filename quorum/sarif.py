@@ -2,7 +2,7 @@
 
 A Quorum finding is not a line number. Each result names the two lenses that agreed, the
 different evidence each one read, and the idiom signature the swarm will recognise it by. Only
-confirmed and recalled findings are written: a candidate seen by one lens is not a finding, and
+confirmed, recalled and still-standing findings are written: a candidate seen by one lens is not a finding, and
 the export does not pretend otherwise.
 """
 
@@ -23,6 +23,19 @@ RULES = {
 NOTICE = "Not a vulnerability claim: two independent readings agreed on a shape worth review."
 
 
+EVIDENCE_LIMIT = 160
+
+
+def _quote(evidence: str) -> str:
+    """Source text inside a SARIF message. SARIF renders `[text](target)` as a link and treats
+    backslashes and brackets as markup, so a contract comment could plant a link in someone's
+    Security tab; and one minified line could push the log past the upload limit."""
+    text = str(evidence)[:EVIDENCE_LIMIT] + ("…" if len(str(evidence)) > EVIDENCE_LIMIT else "")
+    for ch in ("\\", "[", "]", "`", "{", "}"):
+        text = text.replace(ch, "\\" + ch)
+    return text
+
+
 def _what_it_reads(lens: str) -> str:
     doc = (LENSES[lens].__doc__ or "").strip()
     return doc.removeprefix("Evidence: ").rstrip(".")
@@ -31,7 +44,7 @@ def _what_it_reads(lens: str) -> str:
 def _message(f: dict) -> str:
     where = f"{f['risk']} in {f['contract']}:{f['function']}."
     witnesses = f.get("witnesses") or {f["lens"]: {"line": f["line"], "evidence": f["evidence"]}}
-    seen = "; ".join(f"{lens} (line {w['line']}) reads: {_what_it_reads(lens)}: `{w['evidence']}`"
+    seen = "; ".join(f"{lens} (line {w['line']}) reads: {_what_it_reads(lens)}: {_quote(w['evidence'])}"
                      for lens, w in sorted(witnesses.items()))
     if f.get("via") == "recall":
         opening = (f"Recognised from memory. This idiom was confirmed earlier on {f.get('first_confirmed_on')} "
@@ -65,7 +78,8 @@ def to_sarif(report: RunReport, locations: dict[str, str]) -> dict:
         "helpUri": "https://runquorum.site/lenses/",
         "defaultConfiguration": {"level": "warning"},
     } for risk, text in RULES.items()]
-    findings = [{**f, "via": "recall"} for f in report.recalled] + [{**f, "via": "quorum"} for f in report.promoted]
+    findings = ([{**f, "via": "recall"} for f in report.recalled] + [{**f, "via": "quorum"} for f in report.promoted]
+                + list(report.standing))
     results = [_result(f, locations) for f in findings]
     return {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",

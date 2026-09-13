@@ -19,6 +19,7 @@ class RunReport:
     promoted: list[dict] = field(default_factory=list)      # reached quorum this run
     recalled: list[dict] = field(default_factory=list)      # recognised from an earlier session
     candidates: list[dict] = field(default_factory=list)    # seen once, not published
+    standing: list[dict] = field(default_factory=list)      # confirmed in an earlier run, still present
     suppressed: list[dict] = field(default_factory=list)    # retired by a human, stayed retired
     duplicate_work: int = 0                                  # units skipped because a peer had them
     scanned: int = 0
@@ -72,6 +73,10 @@ def _handle(memory: SwarmMemory, s: Sighting, threshold: int, report: RunReport)
 
     existing = memory.get_finding(s.key) or {}
     if existing.get("status") == "confirmed":
+        # Still there on a later run. Not new, so not promoted again, but a report that dropped it
+        # would tell the Security tab the bug was fixed.
+        if not any(f.get("key") == s.key for f in report.standing):
+            report.standing.append({**existing, "key": s.key, "via": existing.get("confirmed_via", "quorum")})
         return
 
     body = memory.record_sighting(s.key, s.lens, s.as_dict())

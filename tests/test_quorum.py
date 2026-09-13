@@ -275,3 +275,28 @@ def test_signature_v2_keeps_the_member_name():
     assert signature("r", "to.transfer(amount);") != signature("r", "logger.record(nonce);")
     assert signature("r", '(bool ok, ) = msg.sender.call{value: amount}("");') != \
            signature("r", '(bool ok, ) = weth.deposit{value: amount}("");')
+
+
+def test_second_run_on_the_same_memory_keeps_the_findings_in_sarif(tmp_path):
+    """A finding confirmed yesterday is still a finding today. Dropping it from the log would
+    make the Security tab close the alert as fixed."""
+    from quorum import sarif
+
+    db = _db()
+    first = run_swarm(SwarmMemory(db), {"V.sol": VULN})
+    second = run_swarm(SwarmMemory(db), {"V.sol": VULN}, fresh_claims=True)
+    assert second.promoted == [] and second.standing
+    n1 = len(sarif.to_sarif(first, {})["runs"][0]["results"])
+    n2 = len(sarif.to_sarif(second, {})["runs"][0]["results"])
+    assert n1 == n2 == 1
+
+
+def test_sarif_message_cannot_carry_a_link_and_is_bounded():
+    from quorum import sarif
+
+    planted = 'x.call{value: 1}("") // [view report](https://evil.example) ' + "a" * 500
+    f = {"risk": "reentrancy", "contract": "C.sol", "function": "f", "lens": "guard-lens", "line": 3,
+         "evidence": planted, "signature": "reentrancy:0000000000000000", "seen_by": ["guard-lens"]}
+    text = sarif._message(f)
+    assert "[view report](" not in text and "\\[view report\\]" in text
+    assert len(text) < 700

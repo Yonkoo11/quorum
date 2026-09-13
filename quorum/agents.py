@@ -140,6 +140,8 @@ def guard_lens(contract: str, src: str) -> list[Sighting]:
         if re.search(r"nonReentrant|ReentrancyGuard|_locked|lock\(\)", fn.header + fn.body):
             continue
         for ln, text in _lines(fn):
+            if text.startswith("//") or text.startswith("*"):
+                continue
             if EXTERNAL_CALL.search(text):
                 out.append(Sighting("guard-lens", "reentrancy", contract, fn.name, ln, text))
                 break
