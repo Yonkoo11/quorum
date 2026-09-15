@@ -13,3 +13,6 @@ video/public/video/
 video/render.log
 design/
 proposals/
+contracts/out/
+contracts/cache/
+contracts/broadcast/

@@ -91,6 +91,9 @@
   if (v) {
     var TX = v.getAttribute("data-tx"),
         EXPECT = v.getAttribute("data-digest").toLowerCase(),
+        /* the claim registry on Robinhood Chain; a Claimed log from this address means the fee was pulled and burned in the same transaction */
+        REGISTRY = (v.getAttribute("data-registry") || "").toLowerCase(),
+        CLAIMED_TOPIC = (v.getAttribute("data-claimed-topic") || "").toLowerCase(),
         /* the same order quorum verify uses: the claim chain first, then every chain a claim has lived on */
         CHAINS = [
           { name: "Robinhood Chain", rpcs: ["https://rpc.mainnet.chain.robinhood.com"] },
@@ -157,9 +160,33 @@
           return { tx: found.tx, chain: found.chain, head: parseInt(h, 16) };
         });
       }).then(function (res) {
+        return onChain(res.chain, "eth_getTransactionReceipt", [TX]).then(function (receipt) {
+          return { tx: res.tx, chain: res.chain, head: res.head, receipt: receipt };
+        });
+      }).then(function (res) {
         var tx = res.tx, head = res.head;
         set("v-chain", res.chain.name);
         var block = parseInt(tx.blockNumber, 16);
+        /* a registry claim: exactly one Claimed log from the registry address */
+        var claimed = (res.receipt && res.receipt.logs || []).filter(function (log) {
+          return REGISTRY && log.address.toLowerCase() === REGISTRY && log.topics[0] === CLAIMED_TOPIC;
+        });
+        if (claimed.length === 1) {
+          var log = claimed[0];
+          out.hidden = false;
+          set("v-prefix", "registry claim (Claimed event)");
+          set("v-block", block.toLocaleString() + "  ·  " + (head - block).toLocaleString() + " confirmations");
+          set("v-from", "0x" + log.topics[2].slice(26));
+          set("v-selfaddr", "no: recorded by the registry " + REGISTRY);
+          set("v-digest", log.topics[1]);
+          set("v-burn", (parseInt(log.data, 16) / 1e18).toLocaleString() + " QUORUM pulled and burned in this same transaction");
+          var same = log.topics[1].toLowerCase() === EXPECT;
+          set("v-match", same ? "matches the digest printed on this page" : "does NOT match the digest printed on this page", same ? "ok" : "bad");
+          status.textContent = "Read from " + res.chain.name + " just now, in your browser. Nothing was sent anywhere.";
+          vbtn.disabled = false;
+          vbtn.textContent = "Read it again";
+          return;
+        }
         var data = tx.input.slice(2);
         var prefix = hexToAscii(data);
         var version = prefix.indexOf("QUORUM2") === 0 ? 2 : (prefix.indexOf("QUORUM1") === 0 ? 1 : 0);
