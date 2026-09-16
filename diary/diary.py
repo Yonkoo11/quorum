@@ -138,6 +138,7 @@ def write(activity: dict) -> str:
         raise SystemExit(f"the writer refused the request ({e.code}): {e.read().decode(errors='replace')[:300]}") from None
     text = "".join(c.get("text", "") for c in out.get("content", [])).strip()
     if is_nothing(text):
+        print(f"writer replied {text!r} (stop: {out.get('stop_reason')}, blocks: {[c.get('type') for c in out.get('content', [])]})")
         return "NOTHING"
     links = "".join(f"\n{r['tag']}: {r['url']}" for r in activity["releases"])
     return text + links
