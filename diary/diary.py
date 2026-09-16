@@ -40,7 +40,7 @@ Rules, all of them hard:
 - Never mention price, chart, market, buying, selling, holders, or the token. Never say the tool needs the token. Never say we won anything.
 - Four states, never mixed: designed (written down), built (in the repo), tested (a test ran and passed, and the input shows it), proven. Use the weakest word the input supports. A commit that says "tests" is not proof a test passed unless a passing run is in the input.
 - If something failed, broke, or was reverted, say so in plain words. Do not soften it.
-- Never invent. If a commit's meaning is unclear, leave it out.
+- Never invent. If a commit's meaning is unclear, leave it out. Do not count, rank or order things (first, second, fourth) unless the input states the number; when it does, use that number.
 - Never repeat a link, a key, a hash, a number that looks like an id, or an address, even if one appears in the input.
 - A release is never noise. A change to what the tool reads, finds, reports or refuses is never noise. A new measurement is never noise. If even one item in the input is one of those, write the entry about that item and leave the noise out.
 - Only if every item is noise (typos, formatting, dependency bumps, workflow config, empty merges, brand images with no change to the tool) reply with exactly: NOTHING
