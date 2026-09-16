@@ -42,7 +42,8 @@ Rules, all of them hard:
 - If something failed, broke, or was reverted, say so in plain words. Do not soften it.
 - Never invent. If a commit's meaning is unclear, leave it out.
 - Never repeat a link, a key, a hash, a number that looks like an id, or an address, even if one appears in the input.
-- If the activity is only noise (typos, formatting, dependency bumps, workflow config, empty merges, brand files with no user-facing change), reply with exactly: NOTHING
+- A release is never noise. A change to what the tool reads, finds, reports or refuses is never noise. A new measurement is never noise. If even one item in the input is one of those, write the entry about that item and leave the noise out.
+- Only if every item is noise (typos, formatting, dependency bumps, workflow config, empty merges, brand images with no change to the tool) reply with exactly: NOTHING
 - Format: first line a two-to-six word headline wrapped in <b></b>. Then two to five short lines, one thing each. Then, only if there is a failure or an open problem, one line starting with "Still broken:" or "Not done yet:". Nothing else. Under 700 characters.
 - Telegram HTML only: <b>, <i>, <code>. No markdown."""
 
@@ -169,6 +170,10 @@ def main(argv: list[str] | None = None) -> int:
     activity = changes(repo, start, end)
     n = sum(len(activity[k]) for k in ("commits", "prs", "releases", "failures"))
     print(f"window {activity['since']} to {activity['until']}: {n} events")
+    if a.dry:
+        for k in ("commits", "prs", "releases", "failures"):
+            for item in activity[k]:
+                print(f"  {k[:-1]}: {item.get('message') or item.get('title') or item.get('tag') or item.get('name')}")
     if not n:
         return 0
     text = write(activity)
