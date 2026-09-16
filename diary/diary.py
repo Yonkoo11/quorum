@@ -130,8 +130,11 @@ def write(activity: dict) -> str:
                        "messages": [{"role": "user", "content": "Repository activity as JSON. Write the entry or reply NOTHING.\n\n" + json.dumps(for_model)}]}).encode()
     req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=body, method="POST",
                                  headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        out = json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            out = json.load(r)
+    except urllib.error.HTTPError as e:
+        raise SystemExit(f"the writer refused the request ({e.code}): {e.read().decode(errors='replace')[:300]}") from None
     text = "".join(c.get("text", "") for c in out.get("content", [])).strip()
     if is_nothing(text):
         return "NOTHING"
