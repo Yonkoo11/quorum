@@ -19,7 +19,7 @@ Delete the memory layer and there is no swarm left. Just eight programs that eac
 
 **[ Live site ↗ ](https://runquorum.site)** · **[ Watch the demo ↗ ](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4)** · **[ Verify it yourself ↗ ](#verify-it-yourself-in-60-seconds)** · **[ The paid claim ↗ ](https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655)**
 
-Built for the Sibyl Labs Hackathon.
+Built for the Sibyl Labs Hackathon. Named one of fifteen consolation winners among 92 submissions when the results came out on 16 September 2026 ([the announcement](https://x.com/sibyl_labs_/status/2100306128995561845)).
 
 </div>
 
