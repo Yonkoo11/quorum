@@ -1,4 +1,4 @@
-"""Six independent lenses, paired two-per-risk.
+"""Eight independent lenses, paired two-per-risk.
 
 Each lens is a narrow, deterministic reading of Solidity source. No lens can
 confirm anything on its own: a finding is only promoted when two lenses that
@@ -115,14 +115,34 @@ def parse_functions(src: str) -> list[Function]:
     return out
 
 
-def state_vars(src: str) -> set[str]:
-    """Contract-scope variable names (crude but honest: declarations outside functions)."""
+_DECL = re.compile(r"^\s*(mapping\s*\([^)]*\)|address|uint\d*|int\d*|bool|bytes\d*|string)\s+"
+                   r"(?:public|private|internal|immutable|constant|payable|\s)*\s*(\w+)\s*[;=]", re.M)
+
+
+def _declarations(src: str) -> list[tuple[str, str]]:
+    """(type, name) for every contract-scope declaration (crude but honest: declarations outside functions)."""
     stripped = _strip_comments(src)
     for fn in parse_functions(src):
         stripped = stripped.replace(fn.body, "")
-    pat = re.compile(r"^\s*(?:mapping\s*\([^)]*\)|address|uint\d*|int\d*|bool|bytes\d*|string)\s+"
-                     r"(?:public|private|internal|immutable|constant|payable|\s)*\s*(\w+)\s*[;=]", re.M)
-    return {m.group(1) for m in pat.finditer(stripped)}
+    return [(m.group(1), m.group(2)) for m in _DECL.finditer(stripped)]
+
+
+def state_vars(src: str) -> set[str]:
+    """Contract-scope variable names."""
+    return {name for _, name in _declarations(src)}
+
+
+# Names that count things rather than hold them: an id, an index, a count. They only ever grow and that is
+# their job, so they are not ledgers. Added after reading the seven SmartBugs confirmations of the first cut
+# (three were a raffle id and a birth counter read in a condition next to a refund); marked tuned in bench/.
+COUNTER = re.compile(r"(Id|ID|Ids|Count|Counter|Index|Idx|Nonce|Length|Num|Number|Seq)$")
+
+
+def ledger_vars(src: str) -> set[str]:
+    """State variables that can hold a balance: mappings and integers, minus configuration and counter names."""
+    return {name for typ, name in _declarations(src)
+            if (typ.startswith("mapping") or typ.startswith("uint") or typ.startswith("int"))
+            and not PRIVILEGED.search(name) and not COUNTER.search(name)}
 
 
 def _is_external(fn: Function) -> bool:
@@ -320,6 +340,89 @@ def bound_lens(contract: str, src: str) -> list[Sighting]:
     return out
 
 
+# ------------------------ risk: accounting-mismatch ------------------------
+#
+# One bug, two readings. The bug is a balance that only ever goes up while value goes out against it:
+# "a contract that adds to a balance in one function and never takes it back in another". ledger-lens
+# reads the whole contract: is there any way down for this variable? payout-lens reads one function:
+# does value leave here against a balance this function never reduces? A monotonic counter read by a
+# setter is a candidate; a payout against a balance the contract lowers elsewhere is a candidate; only
+# both together confirm. Not this shape, and invisible to a line reader: a sibling function that forgot
+# one debit another function has (the variable does go down somewhere, on the other path).
+
+OUTFLOW = re.compile(EXTERNAL_CALL.pattern + r"|\.(transfer|send|safeTransfer|safeTransferFrom|transferFrom)\s*\(")
+WRITE = re.compile(r"^\s*(?:delete\s+)?([A-Za-z_]\w*)\s*((?:\[[^\]]*\]|\.\w+)*)\s*(\+\+|--|\+=|-=|\*=|/=|=(?!=))|^\s*(?:\+\+|--)\s*([A-Za-z_]\w*)")
+CREDIT = re.compile(r"^\s*([A-Za-z_]\w*)\s*((?:\[[^\]]*\]|\.\w+)*)\s*(?:\+\+|\+=)|^\s*\+\+\s*([A-Za-z_]\w*)|"
+                    r"^\s*([A-Za-z_]\w*)\s*((?:\[[^\]]*\]|\.\w+)*)\s*=(?!=)\s*\4\s*\5\s*\+")
+
+
+def _writes_of(fn: Function) -> Iterator[tuple[int, str, str, bool]]:
+    """(line, text, variable, is_credit) for every write to a named variable in this function."""
+    for ln, text in _lines(fn):
+        if text.startswith("//") or text.startswith("*"):
+            continue
+        m = WRITE.match(text)
+        if not m:
+            continue
+        name = m.group(1) or m.group(4)
+        credit = bool(CREDIT.match(text)) and not text.lstrip().startswith("delete")
+        yield ln, text, name, credit
+
+
+def _reads(fn: Function, names: set[str]) -> Iterator[tuple[int, str, str]]:
+    """(line, text, variable) for every line that mentions a variable without writing it."""
+    for ln, text in _lines(fn):
+        if text.startswith("//") or text.startswith("*"):
+            continue
+        w = WRITE.match(text)
+        written = (w.group(1) or w.group(4)) if w else None
+        for v in names:
+            if v != written and re.search(rf"\b{re.escape(v)}\b", text):
+                yield ln, text, v
+                break
+
+
+def one_way_ledgers(src: str) -> set[str]:
+    """Ledger variables written somewhere in the contract whose every write, anywhere, is a credit."""
+    written: dict[str, bool] = {}
+    for fn in parse_functions(src):
+        for _, _, name, credit in _writes_of(fn):
+            written[name] = written.get(name, True) and credit
+    return {v for v in ledger_vars(src) if written.get(v)}
+
+
+def ledger_lens(contract: str, src: str) -> list[Sighting]:
+    """Evidence: the balance this function relies on has no way down anywhere in the contract."""
+    out, one_way = [], one_way_ledgers(src)
+    if not one_way:
+        return out
+    for fn in parse_functions(src):
+        if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
+            continue
+        touched = {name for _, _, name, _ in _writes_of(fn)}
+        for ln, text, v in _reads(fn, one_way - touched):
+            out.append(Sighting("ledger-lens", "accounting-mismatch", contract, fn.name, ln, text))
+            break
+    return out
+
+
+def payout_lens(contract: str, src: str) -> list[Sighting]:
+    """Evidence: value leaves this function against a balance it reads and never reduces."""
+    out, ledgers = [], ledger_vars(src)
+    for fn in parse_functions(src):
+        if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
+            continue
+        outflow = next(((ln, text) for ln, text in _lines(fn)
+                        if not text.startswith("//") and not text.startswith("*") and OUTFLOW.search(text)), None)
+        if not outflow:
+            continue
+        written = {name for _, _, name, _ in _writes_of(fn)}
+        read = {v for _, _, v in _reads(fn, ledgers)}
+        if read and not (read & written):
+            out.append(Sighting("payout-lens", "accounting-mismatch", contract, fn.name, outflow[0], outflow[1]))
+    return out
+
+
 LENSES = {
     "callorder-lens": callorder_lens,
     "guard-lens": guard_lens,
@@ -327,4 +430,6 @@ LENSES = {
     "sender-lens": sender_lens,
     "wrap-lens": wrap_lens,
     "bound-lens": bound_lens,
+    "ledger-lens": ledger_lens,
+    "payout-lens": payout_lens,
 }

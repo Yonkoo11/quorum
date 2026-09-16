@@ -50,13 +50,13 @@ detectors that map onto the three risks (the mapping is at the top of the file).
 detectors Slither rates High or Medium for the risk; "loose" adds Low and Informational, the
 analogue of counting any single lens.
 
-## The numbers, 2026-09-13
+## The numbers, 2026-09-16
 
 | | SmartBugs-curated (73 targets) | | DeFiVulnLabs, held out (10 targets) | |
 |---|---|---|---|---|
 | | recall | precision | recall | precision |
 | lenses, any single lens | 78% | 12% | 50% | 5% |
-| **lenses, two-witness rule** | **63%** | **51%** | **50%** | **62%** |
+| **lenses, two-witness rule** | **63%** | **48%** | **50%** | **62%** |
 | Slither, strict | 48% | 41% | 40% | 20% |
 | Slither, loose | 49% | 24% | 40% | 7% |
 
@@ -67,9 +67,10 @@ Per risk, two-witness against Slither strict (recall / precision):
 | reentrancy | 94% / 69% | 90% / 62% | 2 of 4, 67% | 2 of 4, 40% |
 | unguarded-state-write | 5% / 100% | 33% / 19% | 1 of 2, 100% | 1 of 2, 8% |
 | unsafe-math | 76% / 33% | 0% | 2 of 4, 50% | 1 of 4, 50% |
+| accounting-mismatch | no labels; 4 confirmed, all counted false | no detector for this shape | no labels; 0 confirmed | no detector for this shape |
 
 Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLITHER.md),
-[SLITHER-HELDOUT.md](SLITHER-HELDOUT.md).
+[SLITHER-HELDOUT.md](SLITHER-HELDOUT.md), [ACCOUNTING.md](ACCOUNTING.md) (the fourth pair, measured before it was posted), [MULTICHAIN.md](MULTICHAIN.md).
 
 ## History of the lenses on SmartBugs-curated, corpus commit `230e649`
 
@@ -80,10 +81,12 @@ Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLIT
 | [2026-09-12 third](history/2026-09-12-before-fallback-and-alias.md) | a function with no visibility keyword counts as callable, which is what it was before 0.5 | 31% | 39% | 68% | 39% |
 | [2026-09-12 fourth](history/2026-09-13-before-wrap-bound.md) | unnamed 0.4 fallback functions are parsed, so two labels on them become targets (71 → 73); `callorder-lens` follows a storage alias (`var acc = Acc[msg.sender]`) | 40% | 44% | 90% | 44% |
 | [2026-09-13 fifth](history/2026-09-13-before-precision.md) | the arithmetic pair rebuilt as two readings of one bug: `wrap-lens` (the compiler lets it wrap) and `bound-lens` (nothing bounds the operands). The first cut scored 81% / 19% on arithmetic and confirmed WETH9's `deposit` on the production targets, so operands the chain itself bounds (`msg.value`, `block.number`, small constants) now count as bounded | 62% | 36% | 90% | 44% |
-| [2026-09-13 sixth](BENCHMARK.md) | 2300-gas `transfer`/`send` no longer count as external calls (token `transfer(to, amt)` still does); comments stripped before brace matching; evidence lines counted from the brace; `constant` is read-only; 0.4 constructors skipped by the access pair; `delete` is a state write; chain-bounded operands matched as dotted names and `==` accepted as a bound. False positives 81 → 45, true positives 45 → 46 | 63% | 51% | 94% | 69% |
+| [2026-09-13 sixth](history/2026-09-16-before-accounting.md) | 2300-gas `transfer`/`send` no longer count as external calls (token `transfer(to, amt)` still does); comments stripped before brace matching; evidence lines counted from the brace; `constant` is read-only; 0.4 constructors skipped by the access pair; `delete` is a state write; chain-bounded operands matched as dotted names and `==` accepted as a bound. False positives 81 → 45, true positives 45 → 46 | 63% | 51% | 94% | 69% |
+| [2026-09-16 seventh](BENCHMARK.md) | the accounting pair: `ledger-lens` (a balance with no way down anywhere in the contract) and `payout-lens` (value leaves against a balance this function never reduces). Names that count rather than hold (…Id, …Count, …Index, …Nonce) are not ledgers; that rule came after reading the first cut's seven confirmations here (three were an id or a count), so it is tuned. Four confirmations, all on functions the corpus labels for other bugs, all counted false | 63% | 48% | 94% | 69% |
 
-All six changes were made after looking at this corpus, so every row after the first is a tuned
-number. The held-out run above is the untuned one. It did not move for the third and fourth
+All seven changes were made after looking at this corpus, so every row after the first is a tuned
+number. The seventh added a pair for a bug this corpus does not label, so its four confirmations
+there can only count as false; the row records what the pair costs, not what it finds. The held-out run above is the untuned one. It did not move for the third and fourth
 changes; the fifth moved it from 30% / 60% to 40% / 44%, because the old arithmetic pair
 could not confirm anything there and the new one confirms four; the sixth moved it to 50% / 62%
 (one more true positive, two fewer false).

@@ -1,6 +1,6 @@
 # Verified source from five chains, no key
 
-Run 2026-09-13 · `quorum fetch --chain <name> <address>` · Blockscout v2 API on each chain · no API key, no RPC, no token.
+Run 2026-09-13 (fetch) and re-run 2026-09-16 with the eight lenses (the swarm lines below) · `quorum fetch --chain <name> <address>` · Blockscout v2 API on each chain · no API key, no RPC, no token.
 
 One verified contract per chain, chosen because each is the wrapped native token (or the canonical proxy on Arbitrum) and anyone can check it exists. The sixth address is a deliberate miss to show what a refusal looks like.
 
@@ -27,11 +27,11 @@ Files land under `targets/<chain>/`, and a finding is keyed by that path, so `WE
 $ quorum --db fresh.db run
   candidate polygon/WMATIC.sol:transferFrom unsafe-math  only wrap-lens — held back
 
-scanned 30 lens-units | confirmed 0 | recalled 0 | candidates 20 | suppressed 0 | duplicate work avoided 0
+scanned 40 lens-units | confirmed 0 | recalled 0 | candidates 20 | suppressed 0 | duplicate work avoided 0
 
 $ quorum --db fresh2.db run --no-memory
 
-scanned 30 lens-units | confirmed 0 | recalled 0 | candidates 20 | suppressed 0 | duplicate work avoided 0
+scanned 40 lens-units | confirmed 0 | recalled 0 | candidates 20 | suppressed 0 | duplicate work avoided 0
 nothing was confirmed, recalled or suppressed: without memory the swarm cannot corroborate, recognise or forget.
 ```
 

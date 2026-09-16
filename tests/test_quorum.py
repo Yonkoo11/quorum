@@ -379,3 +379,73 @@ contract T {
     assert _math_lenses_on(src, "b") == {"wrap-lens"}
     assert _math_lenses_on(src, "c") == {"wrap-lens", "bound-lens"}, "a parameter named `value` is not msg.value"
     assert _math_lenses_on(src, "d") == {"wrap-lens"}, "an equality check bounds n"
+
+
+ONE_WAY_VAULT = '''pragma solidity ^0.8.20;
+contract Rewards {
+    mapping(address => uint256) public credits;
+    mapping(address => uint256) public stake;
+    uint256 public totalDeposited;
+    address public owner;
+    uint256 public feeRate;
+    function deposit() external payable {
+        credits[msg.sender] += msg.value;
+        totalDeposited += msg.value;
+    }
+    function claim(uint256 amount) external {
+        require(credits[msg.sender] >= amount, "no credit");
+        (bool ok, ) = msg.sender.call{value: amount}("");
+        require(ok);
+    }
+    function unstake(uint256 amount) external {
+        require(stake[msg.sender] >= amount, "no stake");
+        payable(msg.sender).transfer(amount);
+    }
+    function slash(address who) external {
+        require(msg.sender == owner);
+        stake[who] = 0;
+    }
+    function setCap(uint256 cap) external {
+        require(cap >= totalDeposited, "below deposits");
+        feeRate = cap;
+    }
+    function sweep() external {
+        require(msg.sender == owner);
+        payable(owner).transfer(address(this).balance / feeRate);
+    }
+}
+'''
+FIXED_VAULT = ONE_WAY_VAULT.replace('require(credits[msg.sender] >= amount, "no credit");',
+                                    'require(credits[msg.sender] >= amount, "no credit");\n        credits[msg.sender] -= amount;')
+
+
+def _accounting_lenses_on(src: str, function: str) -> set[str]:
+    from quorum.agents import ledger_lens, payout_lens
+
+    return {s.lens for s in ledger_lens("R.sol", src) + payout_lens("R.sol", src)
+            if s.function == function and s.risk == "accounting-mismatch"}
+
+
+def test_accounting_pair_reads_one_bug_from_two_sides():
+    """ledger-lens reads the contract (does this balance ever go down?), payout-lens reads the function
+    (does value leave against a balance it never reduces?). The announced shape: a contract that adds
+    to a balance in one function and never takes it back in another."""
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "claim") == {"ledger-lens", "payout-lens"}
+    assert _accounting_lenses_on(FIXED_VAULT, "claim") == set()                 # the twin takes it back
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "setCap") == {"ledger-lens"}    # a counter that only grows, no payout
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "unstake") == {"payout-lens"}   # slash() lowers stake elsewhere: one witness
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "sweep") == set()               # owner and feeRate are configuration, not balances
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "deposit") == set()             # the crediting function writes the ledger
+
+
+def test_accounting_pair_confirms_only_together():
+    m = SwarmMemory(_db())
+    r = run_swarm(m, {"R.sol": ONE_WAY_VAULT})
+    # setCap also reaches quorum on the access pair (an open setter of feeRate), which is the swarm being right about the fixture
+    keys = {f"{f['contract']}:{f['function']}:{f['risk']}" for f in r.promoted if f["risk"] == "accounting-mismatch"}
+    assert keys == {"R.sol:claim:accounting-mismatch"}
+    held = {f"{c['contract']}:{c['function']}:{c['risk']}" for c in r.candidates}
+    assert "R.sol:setCap:accounting-mismatch" in held and "R.sol:unstake:accounting-mismatch" in held
+    assert run_swarm(NoMemory(_db()), {"R.sol": ONE_WAY_VAULT}).promoted == []
+    fixed = run_swarm(SwarmMemory(_db()), {"R.sol": FIXED_VAULT}).promoted
+    assert not [f for f in fixed if f["risk"] == "accounting-mismatch"]

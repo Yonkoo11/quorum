@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="hey-research-verification" content="rma0A12gxSApa__ZoqScG3gBTUE6skm5">
 <title>Quorum: a swarm that coordinates through memory</title>
-<meta name="description" content="Six security lenses that never talk to each other. A finding exists only when two agree, and every number on the page comes from a file in the repo.">
+<meta name="description" content="Eight security lenses that never talk to each other. A finding exists only when two agree, and every number on the page comes from a file in the repo.">
 <link rel="icon" href="./icon-256.png">
 <meta name="theme-color" content="#f3eee4">
 <meta property="og:title" content="Quorum: a swarm that coordinates through memory">
-<meta property="og:description" content="Six security lenses that never talk to each other. A finding exists only when two agree.">
+<meta property="og:description" content="Eight security lenses that never talk to each other. A finding exists only when two agree.">
 <meta property="og:image" content="https://runquorum.site/post-2.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -45,7 +45,7 @@
         <span class="line" data-reveal style="--rv-delay:267ms;--rv-dur:483ms">Two lenses.</span>
         <span class="line g" data-reveal style="--rv-delay:417ms;--rv-dur:450ms">One finding.</span>
       </h1>
-      <p class="lede" data-reveal style="--rv-delay:833ms;--rv-dur:617ms">Six lenses read Solidity and never talk to each other. A finding exists only when two agree, and the only place they can agree is memory.</p>
+      <p class="lede" data-reveal style="--rv-delay:833ms;--rv-dur:617ms">Eight lenses read Solidity and never talk to each other. A finding exists only when two agree, and the only place they can agree is memory.</p>
       <div class="test" data-reveal style="--rv-delay:833ms;--rv-dur:600ms">
         <div class="switch" role="group" aria-label="Memory"><button type="button" id="btn-on" aria-pressed="true" aria-controls="pane-on">Memory on</button><button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">Memory off</button></div>
         <p class="answer"><span class="number" id="answer-n" aria-live="polite">2</span><span class="answer-word">confirmed</span></p>
@@ -61,7 +61,7 @@
       </div>
       <p class="actions" data-reveal style="--rv-delay:1017ms;--rv-dur:500ms">
         <a class="btn primary" href="./start/">Run it</a>
-        <a class="textlink" href="./lenses/">The six lenses</a>
+        <a class="textlink" href="./lenses/">The eight lenses</a>
       </p>
     </div>
     <div class="hero__panel">
@@ -74,15 +74,15 @@
         <h2>The deletion test</h2>
         <span class="aside" id="term-state">Memory on</span>
       </header>
-      <p class="slab__caption" data-reveal style="--rv-delay:1783ms;--rv-dur:350ms">The same six lenses on the same two files, memory on and then memory off. Flip the switch to read what each run confirmed.</p>
+      <p class="slab__caption" data-reveal style="--rv-delay:1783ms;--rv-dur:350ms">The same eight lenses on the same two files, memory on and then memory off. Flip the switch to read what each run confirmed.</p>
       <div class="panes-text">
         <pre class="terminal" id="pane-on" tabindex="0" aria-label="Terminal output, memory on">$ quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
   QUORUM    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
   QUORUM    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
-scanned 12 lens-units | confirmed 2 | recalled 1 | candidates 5</pre>
+scanned 16 lens-units | confirmed 2 | recalled 1 | candidates 5</pre>
         <pre class="terminal" id="pane-off" tabindex="0" aria-label="Terminal output, memory off" hidden># same swarm, same contracts, memory removed
 $ quorum run --no-memory
-scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 12
+scanned 32 lens-units | confirmed 0 | recalled 0 | candidates 15
 nothing was confirmed, recalled or suppressed: without memory the swarm
 cannot corroborate, recognise or forget.</pre>
       </div>
@@ -97,7 +97,7 @@ cannot corroborate, recognise or forget.</pre>
         <p class="label">The numbers</p>
         <h2 class="display" id="h-numbers"><span class="line">Measured.</span> <span class="line">Every file kept.</span></h2>
       </div>
-      <p class="intro">Six lenses over 143 contracts with known bugs, a second set of ten bugs they were never tuned on, and Slither run on the same files with the same rule. Each panel links to the file that produced it.</p>
+      <p class="intro">Eight lenses over 143 contracts with known bugs, a second set of ten bugs they were never tuned on, and Slither run on the same files with the same rule. Each panel links to the file that produced it.</p>
     </header>
     <div class="band c-5-4-3">
       <section class="panel raised p-precision" aria-labelledby="h-precision">
@@ -111,14 +111,14 @@ cannot corroborate, recognise or forget.</pre>
         <a class="more" href="https://github.com/Yonkoo11/quorum/blob/main/bench/BENCHMARK.md">The file</a>
       </section>
       <section class="panel p-history" aria-labelledby="h-history">
-        <header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-history">Bugs found</h2><span class="aside">six runs</span></header>
+        <header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-history">Bugs found</h2><span class="aside">seven runs</span></header>
         <p class="chart__ends"><span class="chart__from">1%</span><span class="chart__to g">63%</span></p>
-        <svg class="chart" viewBox="0 0 300 100" role="img" aria-label="Recall across six benchmark runs: 1, 23, 31, 40, 62 and 63 percent">
-          <polygon class="chart__area" points="16,98 16,92.2 68,92.2 68,74.6 120,74.6 120,68.2 172,68.2 172,61 224,61 224,43.4 276,43.4 276,42.6 296,42.6 296,98"/>
-          <path class="chart__line" pathLength="1" d="M16,92.2 H68 V74.6 H120 V68.2 H172 V61 H224 V43.4 H276 V42.6 H296"/>
+        <svg class="chart" viewBox="0 0 300 100" role="img" aria-label="Recall across seven benchmark runs: 1, 23, 31, 40, 62, 63 and 63 percent">
+          <polygon class="chart__area" points="16,98 16,92.2 56,92.2 56,74.6 96,74.6 96,68.2 136,68.2 136,61 176,61 176,43.4 216,43.4 216,42.6 256,42.6 256,42.6 296,42.6 296,98"/>
+          <path class="chart__line" pathLength="1" d="M16,92.2 H56 V74.6 H96 V68.2 H136 V61 H176 V43.4 H216 V42.6 H256 V42.6 H296"/>
           <circle class="chart__dot" cx="296" cy="42.6" r="5"/>
         </svg>
-        <p class="chart__axis label"><span>first run</span><span>sixth run</span></p>
+        <p class="chart__axis label"><span>first run</span><span>seventh run</span></p>
         <p>Recall on the same 143 contracts, from the hackathon build to today. Every before-file is in the repo.</p>
         <a class="more" href="https://github.com/Yonkoo11/quorum/blob/main/bench/README.md">The file</a>
       </section>

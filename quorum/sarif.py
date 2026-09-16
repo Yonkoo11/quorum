@@ -19,6 +19,7 @@ RULES = {
     "reentrancy": "An external call is made before the state it depends on is written, in a function with no guard.",
     "unguarded-state-write": "Storage that looks privileged is written by a function anyone can call.",
     "unsafe-math": "Storage arithmetic the compiler will let wrap, with nothing in the function bounding the operands.",
+    "accounting-mismatch": "Value leaves against a storage balance that is only ever credited in this contract and never reduced in this function.",
 }
 NOTICE = "Not a vulnerability claim: two independent readings agreed on a shape worth review."
 
