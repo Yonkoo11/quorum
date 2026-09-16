@@ -9,31 +9,16 @@
   :root { --dark: #0d100d; --paper: #e9ede9; --green: #3fb950; --muted: #8a938a; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 1280px; height: 720px; background: #0d100d; overflow: hidden; }
-  .card { position: relative; width: 1280px; height: 720px; background: var(--dark); overflow: hidden; }
-  .copy { position: absolute; left: 88px; top: 112px; width: 700px; z-index: 3; }
-  .kicker { font-family: "IBM Plex Sans", sans-serif; font-weight: 500; font-size: 15px; letter-spacing: 0.28em; color: var(--green); text-transform: uppercase; line-height: 1; }
-  .status { margin-top: 11px; font-family: "IBM Plex Sans", sans-serif; font-weight: 500; font-size: 13px; letter-spacing: 0.34em; color: var(--muted); text-transform: uppercase; line-height: 1; }
-  h1 { margin-top: 72px; font-family: "Archivo Black", sans-serif; font-weight: 400; font-size: 72px; line-height: 0.94; letter-spacing: -0.04em; color: var(--paper); text-transform: uppercase; white-space: nowrap; }
-  h1 span { display: block; }
-  h1 .green { color: var(--green); }
-  .amount { margin-top: 34px; font-family: "IBM Plex Sans", sans-serif; font-weight: 500; font-size: 17px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; line-height: 1.5; max-width: 560px; }
-  .site { position: absolute; left: 88px; bottom: 72px; font-family: "IBM Plex Sans", sans-serif; font-weight: 500; font-size: 15px; letter-spacing: 0.28em; color: var(--paper); text-transform: uppercase; }
-  .art { position: absolute; right: 96px; top: 50%; transform: translateY(-50%); width: 352px; height: 264px; z-index: 2; }
+  .card { position: relative; width: 1280px; height: 720px; background: var(--dark); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 44px; }
+  .art { width: 300px; height: 225px; }
   .art svg { width: 100%; height: 100%; display: block; }
+  h1 { font-family: "Archivo Black", sans-serif; font-weight: 400; font-size: 96px; line-height: 1; letter-spacing: -0.04em; color: var(--paper); text-transform: uppercase; white-space: nowrap; }
+  .sub { font-family: "IBM Plex Sans", sans-serif; font-weight: 500; font-size: 17px; letter-spacing: 0.3em; color: var(--green); text-transform: uppercase; line-height: 1; }
+  .site { position: absolute; bottom: 56px; left: 0; right: 0; text-align: center; font-family: "IBM Plex Sans", sans-serif; font-weight: 500; font-size: 14px; letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase; }
 </style>
 </head>
 <body>
   <article class="card">
-    <div class="copy">
-      <div class="kicker">Sibyl Labs Hackathon</div>
-      <div class="status">results, 16 september 2026</div>
-      <h1>
-        <span>92 entries.</span>
-        <span class="green">One of fifteen.</span>
-      </h1>
-      <div class="amount">Named a consolation winner. The smart-contract scanner kept building past the deadline.</div>
-    </div>
-    <div class="site">runquorum.site</div>
     <div class="art" aria-hidden="true">
       <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
         <defs><clipPath id="l"><circle cx="146" cy="150" r="112"/></clipPath></defs>
@@ -42,6 +27,9 @@
         <circle cx="264.7" cy="150" r="112" fill="none" stroke="#e9ede9" stroke-width="22.4"/>
       </svg>
     </div>
+    <h1>One of fifteen.</h1>
+    <div class="sub">Sibyl Labs Hackathon &middot; 92 entries</div>
+    <div class="site">runquorum.site</div>
   </article>
 </body>
 </html>
