@@ -13,7 +13,7 @@
 
 **A swarm of security lenses that never talk to each other. Sibyl Memory is the only channel between them, and it is the only reason the swarm can agree on anything, recognise anything, or forget anything.**
 
-Six independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion, and the count of who agreed lives in memory, not in any agent's head. Once a pattern is confirmed, the swarm recognises that idiom on sight in a completely different contract, in a completely different session, from a single sighting.
+Eight independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion, and the count of who agreed lives in memory, not in any agent's head. Once a pattern is confirmed, the swarm recognises that idiom on sight in a completely different contract, in a completely different session, from a single sighting.
 
 Delete the memory layer and there is no swarm left. Just eight programs that each shout once and forget.
 
@@ -58,12 +58,13 @@ Built for the Sibyl Labs Hackathon. Named one of fifteen consolation winners amo
 - [Run it](#run-it)
 - [Tests](#tests)
 - [Site and docs](#site-and-docs)
+- [The diary](#the-diary)
 
 ---
 
 ## The problem
 
-A single detector that reports everything it sees is noise. Six of them are six times the noise.
+A single detector that reports everything it sees is noise. Eight of them are eight times the noise.
 
 - **A lens on its own cannot tell a finding from a sighting.** Nobody checks whether a second, independent reading agrees.
 - **Agents that share nothing duplicate everything.** Without a shared record of who claimed what, every process scans every unit.
@@ -74,7 +75,7 @@ Every one of those is a memory problem, not a detection problem. Quorum is the c
 
 ## What Quorum is
 
-Six regex-and-brace-matching lenses over Solidity source, coordinated through one Sibyl Memory file and nothing else. The loop:
+Eight regex-and-brace-matching lenses over Solidity source, coordinated through one Sibyl Memory file and nothing else. The loop:
 
 <div align="center">
 
@@ -423,6 +424,14 @@ steps:
 ```
 
 [`tests/test_quorum.py`](tests/test_quorum.py) drives the swarm end to end on the fixtures: one lens never confirms, two lenses from different evidence do, the signature matches across contracts, the deletion test confirms nothing, a retirement sticks. [`tests/test_token.py`](tests/test_token.py) pins the calldata shapes, the digest a reveal must reproduce, the burn rules a claim must satisfy, that `attest` burns before it claims and reuses a saved burn rather than paying twice, that the scanner modules never import the chain, and that the first Base claim still reads after the move to Robinhood Chain. The same suite runs in [CI](https://github.com/Yonkoo11/quorum/actions/workflows/tests.yml) on every push.
+
+## The diary
+
+Every two hours a workflow reads what changed in this repo (commits, merged pull requests, releases, failed runs), hands it to Claude with the rules in `diary/diary.py`, and posts a short entry in plain words to the Telegram group. If nothing happened, or only noise happened, it posts nothing. The entry never mentions price, the market or the token, never invents, says when something broke, and uses the weakest of designed, built, tested or proven that the evidence supports. Links, keys, hashes and addresses are scrubbed before the text leaves the process. Each run covers the time since the previous scheduled run's window closed, so nothing is posted twice and a missed run is covered by the next.
+
+```
+python diary/diary.py --dry --hours 48    # print what it would say about the last two days, post nothing
+```
 
 ## Site and docs
 
