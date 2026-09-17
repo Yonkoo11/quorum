@@ -45,7 +45,33 @@ Rules, all of them hard:
 - A release is never noise. A change to what the tool reads, finds, reports or refuses is never noise. A new measurement is never noise. If even one item in the input is one of those, write the entry about that item and leave the noise out.
 - Only if every item is noise (typos, formatting, dependency bumps, workflow config, empty merges, brand images with no change to the tool) reply with exactly: NOTHING
 - Format: first line a two-to-six word headline wrapped in <b></b>. Then two to five short lines, one thing each. Then, only if there is a failure or an open problem, one line starting with "Still broken:" or "Not done yet:". Nothing else. Under 700 characters.
+- Never name a person, an account, a handle or an author. The entry is by "we", about the code.
+- Nothing that is not in the input: no plans, no dates, no promises, no internal file, folder, version or branch names, no wallet or contract details, no mention of keys, tokens, secrets, bots, or infrastructure.
+- No hype words: thorough, comprehensive, exhaustive, battle-tested, production-ready, bulletproof, rock-solid, robust, seamless, powerful, exciting, delve, landscape, leverage, unlock, empower, journey, game-changer.
+- Write like a person: varied sentence length, no lists of three for effect, no "not just X but Y", no closing line that sums up or cheers.
 - Telegram HTML only: <b>, <i>, <code>. No markdown."""
+
+BANNED = re.compile(r"\b(thorough|comprehensive|exhaustive|battle-tested|production-ready|bulletproof|rock-solid|robust|seamless|"
+                    r"powerful|exciting|delve|landscape|leverage|unlock|empower|journey|game-changer|won|winner|price|chart|market cap|holders?)\b", re.I)
+
+
+def unfit(text: str) -> str | None:
+    """Why an entry may not be posted, or None. Anything the rules forbid that the model
+    still wrote means the whole entry is dropped; silence is the safe failure."""
+    if "\u2014" in text or "\u2013" in text or " -- " in text:
+        return "dash"
+    if re.search(r"https?://|www\.|t\.me/", text):
+        return "link"
+    if re.search(r"\b0x[a-fA-F0-9]{6,}\b|\b[a-fA-F0-9]{32,}\b", text):
+        return "address or hash"
+    if re.search(r"(^|\s)@\w+", text):
+        return "handle"
+    m = BANNED.search(text)
+    if m:
+        return f"word: {m.group(0)}"
+    if len(text) > 900:
+        return "too long"
+    return None
 
 SECRET = re.compile(r"\b(sk|pk|ghp|gho|ghs|github_pat|xox[abp]|AKIA)[-_A-Za-z0-9]{8,}\b")
 
@@ -106,11 +132,11 @@ def window(repo: str, now_ms: int, hours: int | None) -> tuple[int, int]:
 def changes(repo: str, start: int, end: int) -> dict:
     """Commits, merged pull requests, releases and failed workflow runs inside the window, scrubbed."""
     s, u = _iso(start), _iso(end)
-    commits = [{"when": c["commit"]["author"]["date"], "author": (c.get("author") or {}).get("login") or "someone",
+    commits = [{"when": c["commit"]["author"]["date"],
                 "message": scrub(c["commit"]["message"]).split("\n")[0][:160],
                 "body": " ".join(scrub(c["commit"]["message"]).split("\n")[1:]).strip()[:400]}
                for c in _gh(repo, f"/commits?since={s}&until={u}&per_page=100")]
-    prs = [{"title": scrub(p["title"])[:160], "body": scrub(p.get("body"))[:600], "author": (p.get("user") or {}).get("login")}
+    prs = [{"title": scrub(p["title"])[:160], "body": scrub(p.get("body"))[:600]}
            for p in _gh(repo, "/pulls?state=closed&sort=updated&direction=desc&per_page=50")
            if p.get("merged_at") and s <= p["merged_at"] < u]
     releases = [{"tag": r["tag_name"], "name": scrub(r.get("name")), "body": scrub(r.get("body"))[:800], "url": r["html_url"]}
@@ -139,6 +165,10 @@ def write(activity: dict) -> str:
     text = "".join(c.get("text", "") for c in out.get("content", [])).strip()
     if is_nothing(text):
         print(f"writer replied {text!r} (stop: {out.get('stop_reason')}, blocks: {[c.get('type') for c in out.get('content', [])]})")
+        return "NOTHING"
+    why = unfit(text)
+    if why:
+        print(f"entry dropped ({why}); nothing posted")
         return "NOTHING"
     links = "".join(f"\n{r['tag']}: {r['url']}" for r in activity["releases"])
     return text + links

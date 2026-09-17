@@ -32,3 +32,14 @@ def test_window_end_never_includes_the_open_step():
 def test_nothing_rule_accepts_only_the_word():
     assert diary.is_nothing("NOTHING") and diary.is_nothing("  nothing.\n") and diary.is_nothing("")
     assert not diary.is_nothing("<b>Nothing broke</b>\nwe shipped the diary")
+
+
+def test_gate_drops_what_the_rules_forbid():
+    assert diary.unfit("<b>Fine</b>\nwe fixed the fetch on two chains") is None
+    assert diary.unfit("we shipped it — finally") == "dash"
+    assert diary.unfit("see https://example.com") == "link"
+    assert diary.unfit("deployed at 0xdeadbeefcafe") == "address or hash"
+    assert diary.unfit("thanks @someone") == "handle"
+    assert diary.unfit("a robust fix").startswith("word")
+    assert diary.unfit("we won the hackathon").startswith("word")
+    assert diary.unfit("x" * 901) == "too long"
