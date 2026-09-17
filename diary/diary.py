@@ -166,11 +166,32 @@ def send(text: str) -> None:
                          f"The token belongs to @{who}; the chat is {chat}.")
 
 
+def check() -> int:
+    """Who the token belongs to, whether something else holds it, and whether the bot is in the chat."""
+    token, chat = os.getenv("TELEGRAM_BOT_TOKEN"), os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat:
+        raise SystemExit("TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not set")
+    me = _get(f"https://api.telegram.org/bot{token}/getMe", {}).get("result", {})
+    hook = _get(f"https://api.telegram.org/bot{token}/getWebhookInfo", {}).get("result", {})
+    print(f"token belongs to @{me.get('username')} (id {me.get('id')})")
+    print("webhook: " + (f"set, to host {hook['url'].split('/')[2]}" if hook.get("url") else "none"))
+    print(f"pending updates: {hook.get('pending_update_count', 0)}")
+    try:
+        m = _get(f"https://api.telegram.org/bot{token}/getChatMember?chat_id={chat}&user_id={me.get('id')}", {}).get("result", {})
+        print(f"in the chat: {m.get('status')}")
+    except urllib.error.HTTPError as e:
+        print("in the chat: no (" + json.loads(e.read().decode(errors="replace") or "{}").get("description", str(e.code)) + ")")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry", action="store_true", help="print what would be posted and post nothing")
     ap.add_argument("--hours", type=int, default=None, help="widen the window back from the last closed boundary")
+    ap.add_argument("--check", action="store_true", help="report the bot's state on Telegram and exit")
     a = ap.parse_args(argv)
+    if a.check:
+        return check()
     repo = os.getenv("GITHUB_REPO", "Yonkoo11/quorum")
     start, end = window(repo, int(time.time() * 1000), a.hours)
     activity = changes(repo, start, end)

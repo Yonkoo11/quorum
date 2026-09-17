@@ -17,6 +17,10 @@ on:
         description: "Print only, post nothing"
         type: boolean
         default: false
+      check:
+        description: "Only report the bot's state on Telegram"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -41,4 +45,5 @@ jobs:
           ARGS=""
           if [ -n "${{ github.event.inputs.hours }}" ]; then ARGS="$ARGS --hours ${{ github.event.inputs.hours }}"; fi
           if [ "${{ github.event.inputs.dry }}" = "true" ]; then ARGS="$ARGS --dry"; fi
+          if [ "${{ github.event.inputs.check }}" = "true" ]; then ARGS="$ARGS --check"; fi
           python diary/diary.py $ARGS
