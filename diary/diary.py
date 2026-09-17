@@ -153,7 +153,7 @@ def write(activity: dict) -> str:
     if not key:
         raise SystemExit("ANTHROPIC_API_KEY is not set")
     for_model = {**activity, "releases": [{k: v for k, v in r.items() if k != "url"} for r in activity["releases"]]}
-    body = json.dumps({"model": MODEL, "max_tokens": 1500, "system": VOICE,
+    body = json.dumps({"model": MODEL, "max_tokens": 4000, "system": VOICE,
                        "messages": [{"role": "user", "content": "Repository activity as JSON. Write the entry or reply NOTHING.\n\n" + json.dumps(for_model)}]}).encode()
     req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=body, method="POST",
                                  headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"})
