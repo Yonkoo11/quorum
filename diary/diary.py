@@ -241,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
         print("--- would post ---\n" + text)
         return 0
     send(text)
-    print("posted")
+    print("posted:\n" + text)
     return 0
 
 
