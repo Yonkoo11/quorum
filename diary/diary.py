@@ -155,10 +155,13 @@ def send(text: str) -> None:
     body = json.dumps({"chat_id": chat, "text": text[:4000], "parse_mode": "HTML", "disable_web_page_preview": True}).encode()
     req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=body, method="POST",
                                  headers={"content-type": "application/json"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        out = json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            out = json.load(r)
+    except urllib.error.HTTPError as e:
+        out = json.loads(e.read().decode(errors="replace") or "{}")
     if not out.get("ok"):
-        raise SystemExit(f"telegram refused the message: {out.get('description')}")
+        raise SystemExit(f"telegram refused the message ({out.get('error_code')}): {out.get('description')}")
 
 
 def main(argv: list[str] | None = None) -> int:
