@@ -161,7 +161,9 @@ def send(text: str) -> None:
     except urllib.error.HTTPError as e:
         out = json.loads(e.read().decode(errors="replace") or "{}")
     if not out.get("ok"):
-        raise SystemExit(f"telegram refused the message ({out.get('error_code')}): {out.get('description')}")
+        who = _get(f"https://api.telegram.org/bot{token}/getMe", {}).get("result", {}).get("username")
+        raise SystemExit(f"telegram refused the message ({out.get('error_code')}): {out.get('description')}. "
+                         f"The token belongs to @{who}; the chat is {chat}.")
 
 
 def main(argv: list[str] | None = None) -> int:
