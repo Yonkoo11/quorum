@@ -26,4 +26,4 @@ Every PNG is rendered at its own size by headless Chrome from the SVG; nothing i
 
 ## How it was chosen
 
-`brand/logo-forge/`: BRAND-TRUTH.md (what the codebase already said), ART-DIRECTION.md (the idea, the forbidden list, the rules), rounds/round1/ (three geometries at every size, the favicon strokes tested pixel by pixel, CRITIQUE.md with the verdicts). The previous files drew the same idea three different ways; this is the one way.
+`brand/`: BRAND-TRUTH.md (what the codebase already said), ART-DIRECTION.md (the idea, the forbidden list, the rules), CRITIQUE.md (the verdicts, round 1 and the round 2 test at 16 px), explorations/ (round1/ with three geometries at every size, round2-* with the favicon at the size floor). `brand/logo-forge/` keeps build.py and the raw round-1 renders. Paths moved 2026-09-18 to the ones ~/System/scripts/skill-contracts.txt checks. The previous files drew the same idea three different ways; this is the one way.
