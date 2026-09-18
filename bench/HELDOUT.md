@@ -9,8 +9,8 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | reentrancy | 4 | 44 | 2 | 5% | 50% | **3** | 2 | **67%** | **50%** |
 | unguarded-state-write | 2 | 36 | 1 | 3% | 50% | **1** | 1 | **100%** | **50%** |
 | unsafe-math | 4 | 19 | 2 | 11% | 50% | **4** | 2 | **50%** | **50%** |
-| accounting-mismatch | 0 | 9 | 0 | 0% | n/a | **0** | 0 | **n/a** | **n/a** |
-| **all** | 10 | 108 | 5 | 5% | 50% | **8** | 5 | **62%** | **50%** |
+| accounting-mismatch | 0 | 8 | 0 | 0% | n/a | **0** | 0 | **n/a** | **n/a** |
+| **all** | 10 | 107 | 5 | 5% | 50% | **8** | 5 | **62%** | **50%** |
 
 ## Per lens
 
@@ -23,9 +23,9 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | wrap-lens | 6 | 2 |
 | bound-lens | 17 | 2 |
 | ledger-lens | 0 | 0 |
-| payout-lens | 9 | 0 |
+| payout-lens | 8 | 0 |
 
-Candidates held back by the rule (one lens only): 100, of which on a target: 0.
+Candidates held back by the rule (one lens only): 99, of which on a target: 0.
 
 ## Confirmed findings that are not on a labelled target
 

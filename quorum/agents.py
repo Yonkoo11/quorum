@@ -158,7 +158,11 @@ def _is_readonly(fn: Function) -> bool:
 # A function only a privileged caller can reach: the owner re-entering the owner's own function is not an
 # attack. Read from the header's modifiers (onlyOwner, onlyRole(...), onlyAdmin, auth, requiresAuth ...).
 # Added after the Robinhood Chain run (bench/ROBINHOOD.md): most false reentrancy confirmations were here.
-OWNER_ONLY = re.compile(r"\bonly[A-Z]\w*|\b(auth|requiresAuth|onlyowner|adminOnly|ownerOnly|restricted)\b")
+# Only names that mean one privileged party. `onlyMember`, `onlyStaker`, `onlyWhitelisted` are many callers,
+# any of whom can be a contract, so they stay in scope.
+OWNER_ONLY = re.compile(r"\bonly(Owner|Admin|Gov\w*|Operator|Manager|Controller|Keeper|Role|Authorized|Auth\w*|Minter|"
+                        r"Treasury|Dao|DAO|Guardian|Executor|Timelock|Deployer|Factory|Vault|Protocol|Multisig|Council)\w*\b"
+                        r"|\b(auth|requiresAuth|onlyowner|adminOnly|ownerOnly|restricted)\b")
 
 
 def _owner_only(fn: Function) -> bool:

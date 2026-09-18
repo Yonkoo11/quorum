@@ -560,3 +560,8 @@ def test_unsafe_math_needs_both_readings_of_the_same_sum():
         report = run_swarm(SwarmMemory(os.path.join(d, "m.db")), {"Token.sol": SPLIT_SUM})
     assert not [f for f in report.promoted if f["risk"] == "unsafe-math"]
     assert [c for c in report.candidates if c["risk"] == "unsafe-math"]
+
+
+def test_member_only_function_is_still_a_reentrancy_target():
+    src = OWNER_PAYS.replace("onlyOwner", "onlyMember")
+    assert _reentrancy_lenses_on(src, "pay") == {"callorder-lens", "guard-lens"}

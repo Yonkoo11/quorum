@@ -22,7 +22,7 @@ Skipped listings without a Solidity repo are not counted as scanned. Seven repos
 
 ## The hand-read, 2026-09-18
 
-Every one of the 281 confirmed findings was read by a person (with Claude reading alongside, each verdict tied to a concrete reason in the file). The full list of verdicts with one reason each is in [hand-read.json](robinhood/hand-read.json).
+Every one of the 281 confirmed findings was read by Claude Code under one strict rubric (true only if the shape is there and matters; false if guarded, bounded, by design or reduced elsewhere; out of scope for tests and mocks), each verdict tied to a concrete reason in the file. The three true findings and the three adjacent bugs were then re-read line by line in the source before anyone was told. No human read the 228 false ones; the reasons are there so anyone can. The full list of verdicts with one reason each is in [hand-read.json](robinhood/hand-read.json).
 
 | verdict | count |
 |---|---|
@@ -47,7 +47,7 @@ Every one of those became a change to the lenses the same day, measured on the l
 | | SmartBugs recall | SmartBugs precision | held-out recall | held-out precision |
 |---|---|---|---|---|
 | before | 63% | 48% | 50% | 62% |
-| after | 62% | 49% | 50% | 62% |
+| after | 62% | 48% | 50% | 62% |
 
 The labelled corpora barely move, which is the point: they were built from the bugs the lenses were written for. The wild run is where the change shows, and it is being re-done with the new lenses; its numbers are appended here when it finishes.
 

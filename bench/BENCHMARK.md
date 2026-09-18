@@ -6,18 +6,18 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
-| reentrancy | 31 | 87 | 28 | 32% | 90% | **37** | 28 | **76%** | **90%** |
+| reentrancy | 31 | 91 | 28 | 31% | 90% | **39** | 28 | **72%** | **90%** |
 | unguarded-state-write | 21 | 179 | 8 | 4% | 38% | **1** | 1 | **100%** | **5%** |
 | unsafe-math | 21 | 171 | 20 | 12% | 95% | **48** | 16 | **33%** | **76%** |
 | accounting-mismatch | 0 | 39 | 0 | 0% | n/a | **5** | 0 | **0%** | **n/a** |
-| **all** | 73 | 476 | 56 | 12% | 77% | **91** | 45 | **49%** | **62%** |
+| **all** | 73 | 480 | 56 | 12% | 77% | **93** | 45 | **48%** | **62%** |
 
 ## Per lens
 
 | lens | sightings | on a target |
 |---|---|---|
-| callorder-lens | 37 | 28 |
-| guard-lens | 87 | 28 |
+| callorder-lens | 39 | 28 |
+| guard-lens | 91 | 28 |
 | modifier-lens | 173 | 8 |
 | sender-lens | 7 | 1 |
 | wrap-lens | 171 | 20 |
@@ -25,13 +25,14 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | ledger-lens | 7 | 0 |
 | payout-lens | 37 | 0 |
 
-Candidates held back by the rule (one lens only): 385, of which on a target: 11.
+Candidates held back by the rule (one lens only): 387, of which on a target: 11.
 
 ## Confirmed findings that are not on a labelled target
 
 - `0x07f7ecb66d788ab01dc93b9b71a88401de7d0f2e.sol` `donate` reentrancy — callorder-lens, guard-lens
 - `0x07f7ecb66d788ab01dc93b9b71a88401de7d0f2e.sol` `donateToWhale` unsafe-math — bound-lens, wrap-lens
 - `0x07f7ecb66d788ab01dc93b9b71a88401de7d0f2e.sol` `loseWager` unsafe-math — bound-lens, wrap-lens
+- `0x07f7ecb66d788ab01dc93b9b71a88401de7d0f2e.sol` `play` reentrancy — callorder-lens, guard-lens
 - `0x19cf8481ea15427a98ba3cdd6d9e14690011ab10.sol` `createDaoPOLSKAtokens` unsafe-math — bound-lens, wrap-lens
 - `0x19cf8481ea15427a98ba3cdd6d9e14690011ab10.sol` `refundTRA` unsafe-math — bound-lens, wrap-lens
 - `0x19cf8481ea15427a98ba3cdd6d9e14690011ab10.sol` `setBonusCreationRate` unsafe-math — bound-lens, wrap-lens
@@ -41,6 +42,7 @@ Candidates held back by the rule (one lens only): 385, of which on a target: 11.
 - `0x7d09edb07d23acb532a82be3da5c17d9d85806b4.sol` `donate` reentrancy — callorder-lens, guard-lens
 - `0x7d09edb07d23acb532a82be3da5c17d9d85806b4.sol` `donateToWhale` unsafe-math — bound-lens, wrap-lens
 - `0x7d09edb07d23acb532a82be3da5c17d9d85806b4.sol` `loseWager` unsafe-math — bound-lens, wrap-lens
+- `0x7d09edb07d23acb532a82be3da5c17d9d85806b4.sol` `play` reentrancy — callorder-lens, guard-lens
 - `0x89c1b3807d4c67df034fffb62f3509561218d30b.sol` `cancel` reentrancy — callorder-lens, guard-lens
 - `0x89c1b3807d4c67df034fffb62f3509561218d30b.sol` `request` reentrancy — callorder-lens, guard-lens
 - `0x89c1b3807d4c67df034fffb62f3509561218d30b.sol` `reset` unsafe-math — bound-lens, wrap-lens
