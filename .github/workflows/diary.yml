@@ -41,9 +41,13 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          IN_HOURS: ${{ github.event.inputs.hours }}
+          IN_DRY: ${{ github.event.inputs.dry }}
+          IN_CHECK: ${{ github.event.inputs.check }}
+        # Inputs reach the shell as variables, never spliced into the script text.
         run: |
           ARGS=""
-          if [ -n "${{ github.event.inputs.hours }}" ]; then ARGS="$ARGS --hours ${{ github.event.inputs.hours }}"; fi
-          if [ "${{ github.event.inputs.dry }}" = "true" ]; then ARGS="$ARGS --dry"; fi
-          if [ "${{ github.event.inputs.check }}" = "true" ]; then ARGS="$ARGS --check"; fi
+          if [ -n "$IN_HOURS" ]; then ARGS="$ARGS --hours $IN_HOURS"; fi
+          if [ "$IN_DRY" = "true" ]; then ARGS="$ARGS --dry"; fi
+          if [ "$IN_CHECK" = "true" ]; then ARGS="$ARGS --check"; fi
           python diary/diary.py $ARGS
