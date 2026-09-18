@@ -37,6 +37,7 @@ CATEGORY_TO_RISK = {
     "reentrancy": "reentrancy",
     "access_control": "unguarded-state-write",
     "arithmetic": "unsafe-math",
+    "accounting": "accounting-mismatch",  # no corpus labels this yet; the row shows what the pair costs in false positives
 }
 RISKS = list(CATEGORY_TO_RISK.values())
 Key = tuple[str, str, str]  # (file name, function, risk)
@@ -140,7 +141,7 @@ def report(corpus: Corpus, sightings, lens_hits, command: str) -> None:
     any_lens = set(sightings)
     targets = corpus.targets
 
-    print(f"# Benchmark — the six lenses on {corpus.title}\n")
+    print(f"# Benchmark — the {len(LENSES)} lenses on {corpus.title}\n")
     print(f"Run {date.today().isoformat()} · corpus commit `{corpus.commit}` · {len(corpus.files)} files scanned · "
           f"{len(targets)} targets · quorum threshold {QUORUM_THRESHOLD} · `{command}`\n")
     print("Unit: a (file, function, risk). A target is a labelled function whose bug maps to a risk Quorum "

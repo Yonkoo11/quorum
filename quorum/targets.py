@@ -79,7 +79,9 @@ def save(address: str, chain: str = DEFAULT_CHAIN) -> Path:
 def load_targets(paths: list[str] | None = None) -> dict[str, str]:
     """Every target keyed by its path under targets/ (base/WETH9.sol), so one name on two chains stays two files."""
     if paths:
-        files = [Path(p) for p in paths]
-        return {f.name: f.read_text() for f in files if f.exists()}
+        files = [Path(p) for p in paths if Path(p).exists()]
+        names = [f.name for f in files]
+        # a bare name unless two given files share it (base/WETH9.sol and optimism/WETH9.sol): then the folder stays
+        return {(f.name if names.count(f.name) == 1 else f"{f.parent.name}/{f.name}"): f.read_text() for f in files}
     files = sorted(TARGET_DIR.rglob("*.sol"))
     return {str(f.relative_to(TARGET_DIR)): f.read_text() for f in files if f.is_file()}

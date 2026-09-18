@@ -33,7 +33,15 @@ runs:
         esac
         shopt -s globstar nullglob
         # shellcheck disable=SC2086  # TARGETS is a space-separated list of paths and globs
-        quorum --db "$RUNNER_TEMP/quorum-memory.db" run --targets $TARGETS --sarif "$SARIF"
+        quorum --db "$RUNNER_TEMP/quorum-memory.db" run --targets $TARGETS --sarif "$SARIF" --summary "$RUNNER_TEMP/quorum-summary.md"
+        # The page a reviewer sees from the pull request's checks. Needs no write token.
+        cat "$RUNNER_TEMP/quorum-summary.md" >> "$GITHUB_STEP_SUMMARY"
+    # The same page as an artifact, so a later job that runs no repository code can post it as a comment.
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      with:
+        name: quorum-summary
+        path: ${{ runner.temp }}/quorum-summary.md
+        retention-days: 7
     - if: inputs.upload == 'true'
       uses: github/codeql-action/upload-sarif@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3
       with:

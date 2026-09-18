@@ -379,3 +379,204 @@ contract T {
     assert _math_lenses_on(src, "b") == {"wrap-lens"}
     assert _math_lenses_on(src, "c") == {"wrap-lens", "bound-lens"}, "a parameter named `value` is not msg.value"
     assert _math_lenses_on(src, "d") == {"wrap-lens"}, "an equality check bounds n"
+
+
+ONE_WAY_VAULT = '''pragma solidity ^0.8.20;
+contract Rewards {
+    mapping(address => uint256) public credits;
+    mapping(address => uint256) public stake;
+    uint256 public totalDeposited;
+    address public owner;
+    uint256 public feeRate;
+    function deposit() external payable {
+        credits[msg.sender] += msg.value;
+        totalDeposited += msg.value;
+    }
+    function claim(uint256 amount) external {
+        require(credits[msg.sender] >= amount, "no credit");
+        (bool ok, ) = msg.sender.call{value: amount}("");
+        require(ok);
+    }
+    function unstake(uint256 amount) external {
+        require(stake[msg.sender] >= amount, "no stake");
+        payable(msg.sender).transfer(amount);
+    }
+    function slash(address who) external {
+        require(msg.sender == owner);
+        stake[who] = 0;
+    }
+    function setCap(uint256 cap) external {
+        require(cap >= totalDeposited, "below deposits");
+        feeRate = cap;
+    }
+    function sweep() external {
+        require(msg.sender == owner);
+        payable(owner).transfer(address(this).balance / feeRate);
+    }
+}
+'''
+FIXED_VAULT = ONE_WAY_VAULT.replace('require(credits[msg.sender] >= amount, "no credit");',
+                                    'require(credits[msg.sender] >= amount, "no credit");\n        credits[msg.sender] -= amount;')
+
+
+def _accounting_lenses_on(src: str, function: str) -> set[str]:
+    from quorum.agents import ledger_lens, payout_lens
+
+    return {s.lens for s in ledger_lens("R.sol", src) + payout_lens("R.sol", src)
+            if s.function == function and s.risk == "accounting-mismatch"}
+
+
+def test_accounting_pair_reads_one_bug_from_two_sides():
+    """ledger-lens reads the contract (does this balance ever go down?), payout-lens reads the function
+    (does value leave against a balance it never reduces?). The announced shape: a contract that adds
+    to a balance in one function and never takes it back in another."""
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "claim") == {"ledger-lens", "payout-lens"}
+    assert _accounting_lenses_on(FIXED_VAULT, "claim") == set()                 # the twin takes it back
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "setCap") == {"ledger-lens"}    # a counter that only grows, no payout
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "unstake") == {"payout-lens"}   # slash() lowers stake elsewhere: one witness
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "sweep") == set()               # owner and feeRate are configuration, not balances
+    assert _accounting_lenses_on(ONE_WAY_VAULT, "deposit") == set()             # the crediting function writes the ledger
+
+
+def test_accounting_pair_confirms_only_together():
+    m = SwarmMemory(_db())
+    r = run_swarm(m, {"R.sol": ONE_WAY_VAULT})
+    # setCap also reaches quorum on the access pair (an open setter of feeRate), which is the swarm being right about the fixture
+    keys = {f"{f['contract']}:{f['function']}:{f['risk']}" for f in r.promoted if f["risk"] == "accounting-mismatch"}
+    assert keys == {"R.sol:claim:accounting-mismatch"}
+    held = {f"{c['contract']}:{c['function']}:{c['risk']}" for c in r.candidates}
+    assert "R.sol:setCap:accounting-mismatch" in held and "R.sol:unstake:accounting-mismatch" in held
+    assert run_swarm(NoMemory(_db()), {"R.sol": ONE_WAY_VAULT}).promoted == []
+    fixed = run_swarm(SwarmMemory(_db()), {"R.sol": FIXED_VAULT}).promoted
+    assert not [f for f in fixed if f["risk"] == "accounting-mismatch"]
+
+
+# ---- after the Robinhood Chain run (bench/ROBINHOOD.md): five changes, each with the shape that taught it ----
+
+HELPER_VAULT = """
+pragma solidity ^0.8.24;
+contract Vault {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => uint256) public rewardDebt;
+    uint256 public accRewardPerShare;
+    function claim() external returns (uint256 amount) { amount = _claim(msg.sender); }
+    function _claim(address user) private returns (uint256 amount) {
+        uint256 accumulated = balanceOf[user] * accRewardPerShare;
+        amount = accumulated - rewardDebt[user];
+        (bool ok, ) = payable(user).call{value: amount}("");
+        require(ok);
+        rewardDebt[user] = accumulated;
+    }
+}
+"""
+
+OWNER_PAYS = """
+pragma solidity ^0.8.24;
+contract Treasury {
+    address public owner;
+    uint256 public paid;
+    modifier onlyOwner() { require(msg.sender == owner); _; }
+    function pay(address to, uint256 amount) external onlyOwner {
+        (bool ok, ) = to.call{value: amount}("");
+        require(ok);
+        paid += amount;
+    }
+}
+"""
+
+ALIAS_LEDGER = """
+pragma solidity ^0.8.24;
+contract Staking {
+    struct Info { uint256 amount; }
+    mapping(address => Info) public users;
+    function stake(uint256 amount) external { users[msg.sender].amount += amount; }
+    function unstake(uint256 amount) external {
+        Info storage u = users[msg.sender];
+        u.amount -= amount;
+        payable(msg.sender).transfer(amount);
+    }
+}
+"""
+
+ONE_LINE_DEBIT = """
+pragma solidity ^0.8.24;
+contract Pool {
+    mapping(address => uint256) public staked;
+    function stake() external payable { staked[msg.sender] += msg.value; }
+    function unstake(uint256 amount) external {
+        unchecked { staked[msg.sender] -= amount; }
+        payable(msg.sender).transfer(amount);
+    }
+}
+"""
+
+SPLIT_SUM = """
+pragma solidity ^0.8.20;
+contract Token {
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    function mint(address to, uint256 amount) external {
+        totalSupply += amount;
+        unchecked { balanceOf[to] += amount; }
+    }
+}
+"""
+
+
+def _reentrancy_lenses_on(src: str, function: str) -> set[str]:
+    from quorum.agents import callorder_lens, guard_lens
+
+    return {s.lens for s in callorder_lens("C.sol", src) + guard_lens("C.sol", src)
+            if s.function == function and s.risk == "reentrancy"}
+
+
+def test_reentrancy_seen_through_a_private_helper():
+    """The Sherwood vault shape: the paying line lives in a private function three external ones call."""
+    assert _reentrancy_lenses_on(HELPER_VAULT, "claim") == {"callorder-lens", "guard-lens"}
+    assert _reentrancy_lenses_on(HELPER_VAULT, "_claim") == set()  # the helper is not an entry point
+
+
+def test_owner_only_function_is_not_a_reentrancy_target():
+    assert _reentrancy_lenses_on(OWNER_PAYS, "pay") == set()
+
+
+def test_ledger_reduced_through_a_storage_alias_is_two_way():
+    from quorum.agents import one_way_ledgers
+
+    assert one_way_ledgers(ALIAS_LEDGER) == set()
+    assert _accounting_lenses_on(ALIAS_LEDGER, "unstake") == set()
+
+
+def test_ledger_reduced_on_a_one_line_block_is_two_way():
+    from quorum.agents import one_way_ledgers
+
+    assert one_way_ledgers(ONE_LINE_DEBIT) == set()
+
+
+def test_unsafe_math_needs_both_readings_of_the_same_sum():
+    """wrap-lens on the unchecked add, bound-lens on the checked add above it: two candidates, no finding."""
+    assert _math_lenses_on(SPLIT_SUM, "mint") == {"wrap-lens", "bound-lens"}
+    with tempfile.TemporaryDirectory() as d:
+        report = run_swarm(SwarmMemory(os.path.join(d, "m.db")), {"Token.sol": SPLIT_SUM})
+    assert not [f for f in report.promoted if f["risk"] == "unsafe-math"]
+    assert [c for c in report.candidates if c["risk"] == "unsafe-math"]
+
+
+def test_member_only_function_is_still_a_reentrancy_target():
+    src = OWNER_PAYS.replace("onlyOwner", "onlyMember")
+    assert _reentrancy_lenses_on(src, "pay") == {"callorder-lens", "guard-lens"}
+
+
+def test_summary_page_names_both_witnesses_and_counts_candidates():
+    from quorum.summary import MARK, markdown
+
+    vuln = open("fixtures/VulnerableVault.sol").read()
+    with tempfile.TemporaryDirectory() as d:
+        report = run_swarm(SwarmMemory(os.path.join(d, "m.db")), {"VulnerableVault.sol": vuln})
+    page = markdown(report, {"VulnerableVault.sol": "fixtures/VulnerableVault.sol"})
+    assert page.startswith(MARK)
+    assert "1 finding(s) confirmed" in page and "reentrancy" in page and "fixtures/VulnerableVault.sol" in page
+    assert "callorder-lens, line" in page and "guard-lens, line" in page
+    assert f"{len(report.candidates)} candidate(s)" in page
+    quiet = markdown(run_swarm(SwarmMemory(os.path.join(d, "n.db")), {"Empty.sol": "pragma solidity ^0.8.0; contract E {}"}), {})
+    assert "Nothing confirmed" in quiet

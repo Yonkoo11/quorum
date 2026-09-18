@@ -96,14 +96,22 @@ def cmd_run(args) -> int:
         print(f"  {DIM}suppressed {f['contract']}:{f['function']} {f['risk']} — retired earlier: {f['reason']}{RESET}")
 
     print(f"\n{report.summary()}")
-    if getattr(args, "sarif", None):
+    if getattr(args, "summary", None) or getattr(args, "sarif", None):
         from pathlib import Path
 
-        from . import sarif
         from .targets import TARGET_DIR
 
         paths = args.targets or [str(p) for p in sorted(TARGET_DIR.glob("*.sol"))]
-        n = sarif.write(report, {Path(p).name: p for p in paths}, args.sarif)
+        locations = {Path(p).name: p for p in paths}
+    if getattr(args, "summary", None):
+        from . import summary
+
+        summary.write(report, locations, args.summary)
+        print(f"{GREEN}wrote{RESET} the run as a page to {args.summary}")
+    if getattr(args, "sarif", None):
+        from . import sarif
+
+        n = sarif.write(report, locations, args.sarif)
         print(f"{GREEN}wrote{RESET} {n} finding(s) as SARIF to {args.sarif}  {DIM}candidates are not findings and are not written{RESET}")
     if not memory.enabled:
         print(f"{RED}nothing was confirmed, recalled or suppressed: without memory the swarm "
@@ -360,6 +368,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--json", action="store_true", help="machine-readable summary")
     p.add_argument("--agent-id", dest="agent_id", help="identity this agent claims work under")
     p.add_argument("--sarif", metavar="PATH", help="also write confirmed findings as SARIF 2.1.0 (GitHub Security tab)")
+    p.add_argument("--summary", metavar="PATH", help="also write the run as a markdown page (job summary, pull request comment)")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("swarm", help="run N agent processes against one memory")

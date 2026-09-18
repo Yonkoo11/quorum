@@ -13,13 +13,13 @@
 
 **A swarm of security lenses that never talk to each other. Sibyl Memory is the only channel between them, and it is the only reason the swarm can agree on anything, recognise anything, or forget anything.**
 
-Six independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion, and the count of who agreed lives in memory, not in any agent's head. Once a pattern is confirmed, the swarm recognises that idiom on sight in a completely different contract, in a completely different session, from a single sighting.
+Eight independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion, and the count of who agreed lives in memory, not in any agent's head. Once a pattern is confirmed, the swarm recognises that idiom on sight in a completely different contract, in a completely different session, from a single sighting.
 
-Delete the memory layer and there is no swarm left. Just six programs that each shout once and forget.
+Delete the memory layer and there is no swarm left. Just eight programs that each shout once and forget.
 
-**[ Live site ↗ ](https://runquorum.site)** · **[ Watch the demo ↗ ](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4)** · **[ Verify it yourself ↗ ](#verify-it-yourself-in-60-seconds)** · **[ The paid claim ↗ ](https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655)**
+**[ Telegram ↗ ](https://t.me/runQuorumchat)** · **[ Live site ↗ ](https://runquorum.site)** · **[ Watch the demo ↗ ](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4)** · **[ Verify it yourself ↗ ](#verify-it-yourself-in-60-seconds)** · **[ The paid claim ↗ ](https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655)**
 
-Built for the Sibyl Labs Hackathon.
+Built for the Sibyl Labs Hackathon. Named one of fifteen consolation winners among 92 submissions when the results came out on 16 September 2026 ([the announcement](https://x.com/sibyl_labs_/status/2100306128995561845)).
 
 </div>
 
@@ -31,7 +31,7 @@ Built for the Sibyl Labs Hackathon.
 
 *The switch on [runquorum.site](https://runquorum.site), recorded live: flip the memory off and the same swarm on the same contracts confirms nothing.*
 
-*Every terminal line in the demo is a real run: an empty memory, six lenses on two teaching contracts, two findings published and five held back, three processes sharing one memory and doing twenty-four units of work once each, the reentrancy idiom recognised inside Friend.tech's live contract from a single sighting, the same swarm with memory removed confirming nothing, and the first claim on Base verified against memory. The video predates the fee: the paid claim on Robinhood Chain is on the registry page, not in the video.*
+*Every terminal line in the demo is a real run: an empty memory, eight lenses on two teaching contracts, two findings published and five held back, three processes sharing one memory and doing twenty-four units of work once each, the reentrancy idiom recognised inside Friend.tech's live contract from a single sighting, the same swarm with memory removed confirming nothing, and the first claim on Base verified against memory. The video predates the fee: the paid claim on Robinhood Chain is on the registry page, not in the video.*
 
 **[quorum-demo-v2.mp4](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4)** (release asset, 12 MB) · the demo is also live: [the deletion test switch on the front page](https://runquorum.site) and [the in-browser claim verifier](https://runquorum.site/registry/).
 
@@ -58,12 +58,13 @@ Built for the Sibyl Labs Hackathon.
 - [Run it](#run-it)
 - [Tests](#tests)
 - [Site and docs](#site-and-docs)
+- [The diary](#the-diary)
 
 ---
 
 ## The problem
 
-A single detector that reports everything it sees is noise. Six of them are six times the noise.
+A single detector that reports everything it sees is noise. Eight of them are eight times the noise.
 
 - **A lens on its own cannot tell a finding from a sighting.** Nobody checks whether a second, independent reading agrees.
 - **Agents that share nothing duplicate everything.** Without a shared record of who claimed what, every process scans every unit.
@@ -74,7 +75,7 @@ Every one of those is a memory problem, not a detection problem. Quorum is the c
 
 ## What Quorum is
 
-Six regex-and-brace-matching lenses over Solidity source, coordinated through one Sibyl Memory file and nothing else. The loop:
+Eight regex-and-brace-matching lenses over Solidity source, coordinated through one Sibyl Memory file and nothing else. The loop:
 
 <div align="center">
 
@@ -82,7 +83,7 @@ Six regex-and-brace-matching lenses over Solidity source, coordinated through on
 
 </div>
 
-1. **Scan.** Six lenses read the source, two per risk, each pair reasoning from different evidence. A lens records what it saw and reads nothing about what its peers saw.
+1. **Scan.** Eight lenses read the source, two per risk, each pair reasoning from different evidence. A lens records what it saw and reads nothing about what its peers saw.
 2. **Corroborate.** A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion. The tally of who agreed lives on the finding in memory (WARM tier), not in any agent's head. Disagreement is kept as a candidate and never published.
 3. **Remember.** A confirmed idiom is promoted to permanent swarm knowledge (REFERENCE tier). Every sighting, promotion, suppression and on-chain claim is appended to the COLD journal.
 4. **Recognise.** In a later session, on a contract the swarm has never read, a confirmed idiom is matched on sight from a single sighting. No quorum needed the second time.
@@ -119,18 +120,18 @@ The import reads Robinhood Chain and refuses unless the revealed fields hash to 
 $ quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
   QUORUM    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
   QUORUM    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
-scanned 12 lens-units | confirmed 2 | recalled 1 | candidates 5
+scanned 16 lens-units | confirmed 2 | recalled 1 | candidates 5
 
 # new process, new day, contracts it has never seen. Real verified Base mainnet source
 $ quorum run
 recalled before reading any code: 2 confirmed pattern(s)
   RECALLED  FriendtechSharesV1.sol:buyShares   reentrancy
             first confirmed on VulnerableVault.sol   (1 sighting was enough)
-scanned 24 lens-units | confirmed 0 | recalled 1 | candidates 14
+scanned 32 lens-units | confirmed 0 | recalled 1 | candidates 14
 
 # same swarm, same contracts, memory removed
 $ quorum run --no-memory
-scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 15
+scanned 32 lens-units | confirmed 0 | recalled 0 | candidates 15
 nothing was confirmed, recalled or suppressed: without memory the swarm
 cannot corroborate, recognise or forget.
 ```
@@ -154,7 +155,7 @@ Run Quorum against audited production contracts and it mostly holds its tongue. 
 
 ```mermaid
 flowchart TB
-  L["six lenses, separate processes, no messages between them<br/>callorder · guard · modifier · sender · wrap · bound"]
+  L["eight lenses, separate processes, no messages between them<br/>callorder · guard · modifier · sender · wrap · bound · ledger · payout"]
   subgraph M["one Sibyl Memory file: quorum/memory.py"]
     direction TB
     HOT["HOT · state/ · who claimed which unit"]
@@ -233,6 +234,7 @@ Quorum pairs its lenses two per risk, and each pair reasons from different evide
 | `reentrancy` | `callorder-lens`: an external call precedes a state write in the same function | `guard-lens`: the function moves value out and carries no reentrancy guard |
 | `unguarded-state-write` | `modifier-lens`: externally callable, writes storage, carries no modifier at all | `sender-lens`: writes a privileged-looking variable with no `msg.sender` check anywhere on the path |
 | `unsafe-math` | `wrap-lens`: the compiler lets this storage arithmetic wrap (a pre-0.8 pragma, or an `unchecked` block) | `bound-lens`: nothing in the function bounds the operands before the write |
+| `accounting-mismatch` | `ledger-lens`: this balance has no way down anywhere in the contract, and this function relies on it | `payout-lens`: value leaves this function against a balance it reads and never reduces |
 
 Each pair is two readings of one bug, never two bugs. The first arithmetic pair broke that rule (one lens for `unchecked` blocks, one for division before multiplication) and could never agree with itself; the benchmark showed it, and it was rebuilt. Agreement is signal. Disagreement is kept as a candidate and never published.
 
@@ -325,12 +327,12 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 | **Cross-session recognition** | Real. Learned on a teaching fixture, recognised in verified Base mainnet source in a new process from one sighting. The signature hashes the idiom on a line, not the identifiers on it. |
 | **Coordination without a message bus** | Real. Three OS processes, one memory file, 24 units each done exactly once; the HOT tier decided who did what. Take it away and all three do all 24. |
 | **Paid claims on chain** | Real. Fee burned through the token's own `burn(uint256)`, claim written with the burn hash in its calldata, both live on Robinhood Chain (block 60762176). Reveal and import ran live the same day. |
-| **Measured against labelled bugs** | Two corpora, one harsh rule: a finding counts only if it names a labelled function. [`bench/BENCHMARK.md`](bench/BENCHMARK.md), SmartBugs-curated (143 files from 2017, 73 targets): two-witness 63% recall at 51% precision, reentrancy 94% / 69%, arithmetic 76% / 33%, after six rounds of lens changes made on that corpus, so tuned. [`bench/HELDOUT.md`](bench/HELDOUT.md), DeFiVulnLabs (57 modern files, 10 targets hand-labelled before any lens was changed, and no lens was adjusted against it): 50% recall at 62% precision. [`bench/SLITHER.md`](bench/SLITHER.md) and [`bench/SLITHER-HELDOUT.md`](bench/SLITHER-HELDOUT.md) score Slither the same way: 48% / 41% on SmartBugs (reentrancy 90% / 62%, and far better on access control) and 40% / 20% on the held-out set. Slither has no overflow detector, so it scores 0% on arithmetic on 2017 code; the rebuilt pair scores 76% at 33%. [`bench/README.md`](bench/README.md) has the tables, the history and the caveats. |
-| **Restraint on production code** | Measured, not asserted. On Aerodrome's Router, WETH9 and a Compound proxy: 0 confirmed, 14 candidates held back. The first cut of the rebuilt arithmetic pair confirmed WETH9's `deposit` (`balanceOf[msg.sender] += msg.value`), which is why bound-lens now counts what the chain itself bounds as bounded. |
-| **Tests** | 49, run in CI on every push. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that `attest` burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move, that the pre-0.5 call idiom reaches quorum, that an unnamed 0.4 fallback is parsed as a function, that the call-order lens follows a storage alias, that the SARIF export names both witnesses and leaves candidates out, that the arithmetic pair reads one bug from two sides (bounded arithmetic and checked arithmetic each get one witness only), that an imported pattern never confirms alone and is upgraded by local quorum, that one burn admits one import, that reverted, unpaid and mis-addressed claims are refused, that malformed reveals are refused rather than crashed, that the v2 signature keeps the member name, that a 2300-gas transfer is not an external call while a token transfer is, that braces inside comments are ignored and lines are counted from the brace, that 0.4 constructors and `constant` functions are skipped, that bound-lens reads `msg.value` as a dotted name and accepts an equality bound, and that an explorer's answer can only become a file under `targets/<chain>/` or be refused (multi-file joins, 404s, unverified or oversized bodies, a name that tries to leave the folder). |
+| **Measured against labelled bugs** | Two corpora, one harsh rule: a finding counts only if it names a labelled function. [`bench/BENCHMARK.md`](bench/BENCHMARK.md), SmartBugs-curated (143 files from 2017, 73 targets): two-witness 62% recall at 48% precision, reentrancy 90% / 72%, arithmetic 76% / 33%, after eight rounds of lens changes made on that corpus, so tuned; the accounting pair's five confirmations there count as false because the corpus labels none of its files for that bug ([`bench/ACCOUNTING.md`](bench/ACCOUNTING.md), each of the five read by hand). The eighth round came from reading every confirmation of a run over 631 public repos ([`bench/ROBINHOOD.md`](bench/ROBINHOOD.md)): 3 of 281 were true. [`bench/HELDOUT.md`](bench/HELDOUT.md), DeFiVulnLabs (57 modern files, 10 targets hand-labelled before any lens was changed, and no lens was adjusted against it): 50% recall at 62% precision. [`bench/SLITHER.md`](bench/SLITHER.md) and [`bench/SLITHER-HELDOUT.md`](bench/SLITHER-HELDOUT.md) score Slither the same way: 48% / 41% on SmartBugs (reentrancy 90% / 62%, and far better on access control) and 40% / 20% on the held-out set. Slither has no overflow detector, so it scores 0% on arithmetic on 2017 code; the rebuilt pair scores 76% at 33%. [`bench/README.md`](bench/README.md) has the tables, the history and the caveats. |
+| **Restraint on production code** | Measured, not asserted. On Aerodrome's Router, WETH9 and a Compound proxy, fresh memory, eight lenses: 0 confirmed, 9 candidates held back. On the wrapped token from each of five chains: 0 confirmed, 20 held back ([`bench/MULTICHAIN.md`](bench/MULTICHAIN.md)). On 1,164 files from twelve audited codebases the accounting pair confirmed nothing ([`bench/ACCOUNTING.md`](bench/ACCOUNTING.md)). The first cut of the rebuilt arithmetic pair confirmed WETH9's `deposit` (`balanceOf[msg.sender] += msg.value`), which is why bound-lens now counts what the chain itself bounds as bounded. |
+| **Tests** | 64, run in CI on every push. They cover the idiom signature matching across contracts, that one lens never confirms, that two lenses reach quorum, that the deletion test really confirms nothing, the claim and reveal calldata shapes, that a burn is only valid for the fee on the token, that `attest` burns before it claims, that the scanner modules never touch the token, that burn and claim share one chain by default, and that the first Base claim still reads after the move, that the pre-0.5 call idiom reaches quorum, that an unnamed 0.4 fallback is parsed as a function, that the call-order lens follows a storage alias, that the SARIF export names both witnesses and leaves candidates out, that the arithmetic pair reads one bug from two sides (bounded arithmetic and checked arithmetic each get one witness only), that an imported pattern never confirms alone and is upgraded by local quorum, that one burn admits one import, that reverted, unpaid and mis-addressed claims are refused, that malformed reveals are refused rather than crashed, that the v2 signature keeps the member name, that a 2300-gas transfer is not an external call while a token transfer is, that braces inside comments are ignored and lines are counted from the brace, that 0.4 constructors and `constant` functions are skipped, that bound-lens reads `msg.value` as a dotted name and accepts an equality bound, and that an explorer's answer can only become a file under `targets/<chain>/` or be refused (multi-file joins, 404s, unverified or oversized bodies, a name that tries to leave the folder), that the accounting pair reads one bug from two sides and confirms only together (the fixed twin gets neither lens; a counter read by a setter and a payout against a balance lowered elsewhere each get one), and that one file name on two chains stays two targets. |
 | **Findings in the Security tab** | Live: three alerts on the fixtures in this repository's Security tab. `run --sarif` writes SARIF 2.1.0; [`tests/test_quorum.py`](tests/test_quorum.py) asserts that the fixture run yields three results (two by quorum, one recalled), that each names both lenses, that candidates are left out, that the fingerprint is the idiom signature, that a second run on the same memory keeps the findings in the log, and that quoted source cannot carry a link and is bounded. The first version of the action installed from the `main` branch at run time and interpolated its inputs into a shell line; both were found in the 2026-09-13 review and fixed the same day (install from the pinned ref, inputs through the environment, actions pinned to commits, upload split from the scan). |
 | **Attacked, 2026-09-13** | Four ways to poison the registry were found by reviewing the tool itself. Fixed: an imported pattern was recalled from one sighting exactly like a locally confirmed one (now a hint until local quorum); one fee burn could admit unlimited imports into a memory (now one per burn); the idiom signature dropped the member name, so `x.delegatecall(y)` and `t.approve(s)` hashed the same and one retirement silenced both (signature v2 keeps it); a claim was accepted even if reverted, not self-addressed, or unpaid after the fee existed (all refused). Not fixed: globally, one burn can still back more than one claim, because nothing on chain ties a burn to a claim. That needs a contract or an indexer and is written here instead of pretended. |
-| The lenses | Deliberately simple: regex-and-brace-matching heuristics over source text, not a compiler front end. They read lines rather than a call graph: a call inside a modifier, a write reached through an internal call, and a guard in the caller are invisible to them, which is why Slither finds far more access-control bugs on old code, and wrap-lens reads the pragma rather than the compiler, so a file with no pragma is treated as checked, and they key a finding by file, function and risk, so two contracts in one file can share a key. The point of this project is the coordination and memory layer. |
+| The lenses | Deliberately simple: regex-and-brace-matching heuristics over source text, not a compiler front end. They read lines rather than a call graph: a call inside a modifier, a write reached through an internal call, and a guard in the caller are invisible to them, which is why Slither finds far more access-control bugs on old code, and wrap-lens reads the pragma rather than the compiler, so a file with no pragma is treated as checked, and they key a finding by file, function and risk, so two contracts in one file can share a key. The accounting pair sees a balance that only ever grows; it cannot see a sibling function that forgot one debit another function has, because there the balance does go down, on the other path. The point of this project is the coordination and memory layer. |
 | Vulnerability claims | **None.** Quorum publishes *corroborated idioms worth review*, not confirmed vulnerabilities. A quorum means two independent lenses agreed on a shape, nothing more. The Friend.tech recall above is a pattern match on a call idiom, not an allegation about that contract. |
 | The fixtures | [`fixtures/`](fixtures/) are vulnerable on purpose and are not deployed anywhere. |
 | The first claim | On Base, block 51138878, before the fee and the move. It reads back as a v1 claim with no burn to check, and it is accepted only because it predates the fee: an unpaid claim mined anywhere after the fee existed is refused by `verify` and `import`, as is a claim whose transaction reverted or was not self-addressed. |
@@ -343,7 +345,7 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 - **Language:** Python 3.10 to 3.13. No framework; the CLI is `argparse`.
 - **Memory:** [Sibyl Memory](https://github.com/Sibyl-Labs/Sibyl-Memory), all five tiers, load-bearing. Every read and write in one file.
 - **Chain:** `web3.py` against Robinhood Chain (chain id 4663) for the token, the fee burn, claims, reveals and imports; Base mainnet for the first claim. Verified target source comes from the Blockscout instances of Ethereum, Base, Arbitrum, Optimism and Polygon, with no API key ([`bench/MULTICHAIN.md`](bench/MULTICHAIN.md)).
-- **Tests:** pytest, 49 tests, no chain access needed (the chain is mocked where it matters).
+- **Tests:** pytest, 64 tests, no chain access needed (the chain is mocked where it matters).
 - **Site:** static HTML, CSS and JavaScript in [`docs/`](docs/), served by GitHub Pages at [runquorum.site](https://runquorum.site); the in-browser verifier reads the chain through public JSON-RPC nodes.
 - **Demo:** the terminal recording lives in [`demo/`](demo/) and the video assembly in [`video/`](video/).
 
@@ -351,19 +353,20 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 
 ```
 quorum/
-  agents.py      # the six lenses, two per risk
+  agents.py      # the eight lenses, two per risk
   swarm.py       # the run: claim units, record sightings, promote, recall, retire
   memory.py      # every Sibyl Memory read and write (HOT, WARM, REFERENCE, ARCHIVE, COLD) and NoMemory
   chain.py       # claim digest, QUORUM1/2/3 calldata, fee schedule, burn check, attest, verify, reveal, import
   targets.py     # quorum fetch: verified source from five chains' Blockscout instances, no key
   sarif.py       # confirmed findings as SARIF 2.1.0: both witnesses, what each read, the idiom as the fingerprint
   cli.py         # the command line
-tests/           # 49 tests: test_quorum.py (the swarm), test_token.py (the token boundary), test_targets.py (what an explorer may do)
+tests/           # 64 tests: test_quorum.py (the swarm), test_token.py (the token boundary), test_targets.py (what an explorer may do), test_diary.py (the diary)
 fixtures/        # two teaching contracts, vulnerable on purpose
 docs/            # the site (runquorum.site): five pages, one stylesheet, one script, self-hosted fonts
 brand/           # the cards, marks and fonts the site and the posts are built from
 bench/           # the lenses and Slither scored on two labelled corpora, re-run with one command each
-action.yml       # `uses: Yonkoo11/quorum@v0.2.0`: scan, write SARIF, upload to the Security tab
+diary/           # the Telegram diary: what the repo did, in plain words, every two hours, silent when nothing happened
+action.yml       # `uses: Yonkoo11/quorum@v0.4.2`: scan, write the page to the job summary, write SARIF, upload to the Security tab
 demo/            # the recorded terminal session and its beats
 video/           # the demo video pipeline
 ```
@@ -392,36 +395,44 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   # what it learned since
 .venv/bin/quorum run --no-memory                # the deletion test
 .venv/bin/quorum run --sarif quorum.sarif       # the same run, findings written for the GitHub Security tab
-.venv/bin/python -m pytest tests -q             # 49 tests
+.venv/bin/python -m pytest tests -q             # 64 tests
 ```
 
 `quorum attest` additionally needs `DEPLOYER_PRIVATE_KEY` in the environment, gas on Robinhood Chain, and the claim fee in QUORUM. `QUORUM_RPC` overrides the public Robinhood Chain endpoint; `BASE_RPC` overrides the public Base endpoint used only to read the first claim.
 
-Commands: `fetch`, `run [--sarif PATH]`, `swarm`, `recall [--since]`, `retire <key> --reason`, `attest`, `verify <tx>`, `reveal <key>`, `import <tx>`, `status`.
+Commands: `fetch`, `run [--sarif PATH] [--summary PATH]`, `swarm`, `recall [--since]`, `retire <key> --reason`, `attest`, `verify <tx>`, `reveal <key>`, `import <tx>`, `status`.
 
 ### In a GitHub workflow
 
-Findings go where reviewers already look. Each Security-tab alert names the two lenses that agreed, what each one read, and the idiom signature it will be recognised by next time; a candidate seen by one lens is not written at all. The fingerprint is the idiom signature, so the same shape is one alert across runs and renames, and a finding confirmed on an earlier run stays in the log while the code still has it. Pin the action to a tag or a commit: it installs the code at the ref you pinned and fetches nothing from a branch at run time. Source lines quoted in an alert are escaped and cut at 160 characters, so a comment in a contract cannot plant a link in your Security tab.
+Findings go where reviewers already look. The action writes the run as a page in the job summary, which a reviewer reaches from the pull request's checks: each confirmed finding with the two lenses that agreed, the line each one read, and the count of candidates held back. Each Security-tab alert carries the same two witnesses and the idiom signature it will be recognised by next time; a candidate seen by one lens is not written at all. A small repository never opens the Security tab, so the page also lands as one comment on the pull request when the workflow adds the comment job shown in [`.github/workflows/quorum.yml`](.github/workflows/quorum.yml): it downloads the page as an artifact and posts it from a job that runs no repository code. The fingerprint is the idiom signature, so the same shape is one alert across runs and renames, and a finding confirmed on an earlier run stays in the log while the code still has it. Pin the action to a tag or a commit: it installs the code at the ref you pinned and fetches nothing from a branch at run time. Source lines quoted in an alert are escaped and cut at 160 characters, so a comment in a contract cannot plant a link in your Security tab.
 
 ```yaml
 permissions:
   security-events: write
 steps:
   - uses: actions/checkout@v4
-  - uses: Yonkoo11/quorum@v0.2.0
+  - uses: Yonkoo11/quorum@v0.4.2
     with:
       targets: contracts/**/*.sol
 ```
 
-[`.github/workflows/quorum.yml`](.github/workflows/quorum.yml) runs it on this repository's own fixtures on every push, so the two teaching findings are this repository's own alerts. That workflow is two jobs on purpose: the scan runs repository code with a read-only token, and the upload, which needs a write-scoped token, runs no repository code and never runs on a pull request. Every third-party action is pinned to a commit.
+[`.github/workflows/quorum.yml`](.github/workflows/quorum.yml) runs it on this repository's own fixtures on every push, so the two teaching findings are this repository's own alerts. That workflow keeps the scan, the upload and the comment in separate jobs on purpose: the scan runs repository code with a read-only token; the upload and the comment need write-scoped tokens and run no repository code; the upload never runs on a pull request and the comment only runs on one from this repository. Every third-party action is pinned to a commit.
 
 ## Tests
 
 ```bash
-.venv/bin/python -m pytest tests -q             # 49 passed
+.venv/bin/python -m pytest tests -q             # 52 passed
 ```
 
 [`tests/test_quorum.py`](tests/test_quorum.py) drives the swarm end to end on the fixtures: one lens never confirms, two lenses from different evidence do, the signature matches across contracts, the deletion test confirms nothing, a retirement sticks. [`tests/test_token.py`](tests/test_token.py) pins the calldata shapes, the digest a reveal must reproduce, the burn rules a claim must satisfy, that `attest` burns before it claims and reuses a saved burn rather than paying twice, that the scanner modules never import the chain, and that the first Base claim still reads after the move to Robinhood Chain. The same suite runs in [CI](https://github.com/Yonkoo11/quorum/actions/workflows/tests.yml) on every push.
+
+## The diary
+
+Every two hours a workflow reads what changed in this repo (commits, merged pull requests, releases, failed runs), hands it to Claude with the rules in `diary/diary.py`, and posts a short entry in plain words to the Telegram group. If nothing happened, or only noise happened, it posts nothing. The entry never mentions price, the market or the token, never invents, says when something broke, and uses the weakest of designed, built, tested or proven that the evidence supports. Links, keys, hashes and addresses are scrubbed before the text leaves the process. Each run covers the time since the previous scheduled run's window closed, so nothing is posted twice and a missed run is covered by the next.
+
+```
+python diary/diary.py --dry --hours 48    # print what it would say about the last two days, post nothing
+```
 
 ## Site and docs
 

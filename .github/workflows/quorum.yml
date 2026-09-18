@@ -2,9 +2,9 @@
 # repository's Security tab with both witnesses named in each message. The fixtures are
 # vulnerable on purpose; the alerts are the demonstration.
 #
-# Two jobs on purpose: the scan runs repository code with a read-only token, and the upload,
-# which needs a write-scoped token, runs no repository code at all and never runs on a pull
-# request.
+# Separate jobs on purpose: the scan runs repository code with a read-only token; the upload and
+# the comment, which need write-scoped tokens, run no repository code at all. The upload never
+# runs on a pull request; the comment only runs on one.
 name: quorum
 on:
   push:
@@ -24,12 +24,43 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt -e .
-      - run: quorum --db "$RUNNER_TEMP/quorum-memory.db" run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol --sarif quorum.sarif
+      - run: quorum --db "$RUNNER_TEMP/quorum-memory.db" run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol --sarif quorum.sarif --summary quorum-summary.md
+      - run: cat quorum-summary.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: quorum-sarif
           path: quorum.sarif
           retention-days: 7
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: quorum-summary
+          path: quorum-summary.md
+          retention-days: 7
+  # The page as one comment on the pull request, updated in place on every push. Runs no
+  # repository code; only for pull requests from this repository, where the token can write.
+  comment:
+    needs: scan
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: quorum-summary
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          existing=$(gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '.[] | select(.body | startswith("<!-- quorum-summary -->")) | .id' | head -1)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$existing" -F body=@quorum-summary.md >/dev/null
+          else
+            gh api "repos/$REPO/issues/$PR/comments" -F body=@quorum-summary.md >/dev/null
+          fi
   upload:
     needs: scan
     if: github.event_name != 'pull_request'

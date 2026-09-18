@@ -125,8 +125,7 @@ pre.terminal:focus-visible { box-shadow: inset 0 0 0 3px var(--green); }
 
 /* ---------- the lens mark: one instrument, two states ---------- */
 .mark { width: 30px; height: auto; flex: none; display: block; }
-.mark circle { fill: none; stroke: currentColor; stroke-width: 2.6; }
-.brand .mark circle { stroke-width: 3.4; }  /* matches the weight of Archivo Black beside it */
+.mark circle { fill: none; stroke: currentColor; stroke-width: 3.4; }  /* 0.20 r, the master stroke (brand/logo/README.md) */
 .mark .vesica { fill: var(--green); stroke: none; opacity: 1; transition: opacity var(--dur) var(--ease); }
 [data-mark="void"] .vesica, .mark.void .vesica { opacity: 0; }
 

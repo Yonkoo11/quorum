@@ -1,0 +1,53 @@
+name: diary
+
+# What the repo did, told to the Telegram group in plain words. Every two hours,
+# seven minutes past the boundary; posts nothing when nothing happened.
+# Secrets: ANTHROPIC_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID (repository secrets).
+
+on:
+  schedule:
+    - cron: "7 */2 * * *"
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "Window in hours back from the last closed boundary (blank: since the previous run)"
+        required: false
+        default: ""
+      dry:
+        description: "Print only, post nothing"
+        type: boolean
+        default: false
+      check:
+        description: "Only report the bot's state on Telegram"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Write the entry
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          IN_HOURS: ${{ github.event.inputs.hours }}
+          IN_DRY: ${{ github.event.inputs.dry }}
+          IN_CHECK: ${{ github.event.inputs.check }}
+        # Inputs reach the shell as variables, never spliced into the script text.
+        run: |
+          ARGS=""
+          if [ -n "$IN_HOURS" ]; then ARGS="$ARGS --hours $IN_HOURS"; fi
+          if [ "$IN_DRY" = "true" ]; then ARGS="$ARGS --dry"; fi
+          if [ "$IN_CHECK" = "true" ]; then ARGS="$ARGS --check"; fi
+          python diary/diary.py $ARGS

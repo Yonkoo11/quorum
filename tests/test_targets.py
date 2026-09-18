@@ -99,3 +99,13 @@ def test_fetch_command_keeps_going_and_reports_failure(capsys):
     assert rc == 1
     assert "not saved" in out and "no verified source on optimism" in out
     assert "saved" in out and "optimism/Good.sol" in out
+
+
+def test_explicit_targets_with_one_name_on_two_chains_stay_two_targets():
+    root = Path(tempfile.mkdtemp())
+    for chain in ("base", "optimism"):
+        (root / chain).mkdir()
+        (root / chain / "WETH9.sol").write_text(f"contract WETH9 {{ /* {chain} */ }}")
+    (root / "Router.sol").write_text("contract Router {}")
+    got = targets.load_targets([str(root / "base/WETH9.sol"), str(root / "optimism/WETH9.sol"), str(root / "Router.sol")])
+    assert set(got) == {"base/WETH9.sol", "optimism/WETH9.sol", "Router.sol"}

@@ -1,14 +1,1 @@
-<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Quorum">
-  <title>Quorum</title>
-  <defs>
-    <clipPath id="q-left"><circle cx="196" cy="256" r="132"/></clipPath>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="#0b0f0c"/>
-  <!-- two lenses, drawn independently: neither one is the finding -->
-  <circle cx="196" cy="256" r="132" fill="none" stroke="#3fb950" stroke-opacity="0.55" stroke-width="14"/>
-  <circle cx="316" cy="256" r="132" fill="none" stroke="#3fb950" stroke-opacity="0.55" stroke-width="14"/>
-  <!-- the intersection is the only thing that gets published -->
-  <g clip-path="url(#q-left)">
-    <circle cx="316" cy="256" r="132" fill="#3fb950"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 326.00 220.00" role="img" aria-label="Quorum"><title>Quorum: two lenses, one finding</title><clipPath id="lens-m"><circle cx="110.00" cy="110.00" r="100.0"/></clipPath><g clip-path="url(#lens-m)"><circle cx="216.00" cy="110.00" r="100.0" fill="#3fb950"/></g><circle cx="110.00" cy="110.00" r="100.0" fill="none" stroke="#121212" stroke-width="20.00"/><circle cx="216.00" cy="110.00" r="100.0" fill="none" stroke="#121212" stroke-width="20.00"/></svg>
