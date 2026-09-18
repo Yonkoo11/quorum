@@ -366,7 +366,7 @@ docs/            # the site (runquorum.site): five pages, one stylesheet, one sc
 brand/           # the cards, marks and fonts the site and the posts are built from
 bench/           # the lenses and Slither scored on two labelled corpora, re-run with one command each
 diary/           # the Telegram diary: what the repo did, in plain words, every two hours, silent when nothing happened
-action.yml       # `uses: Yonkoo11/quorum@v0.2.0`: scan, write SARIF, upload to the Security tab
+action.yml       # `uses: Yonkoo11/quorum@v0.4.2`: scan, write the page to the job summary, write SARIF, upload to the Security tab
 demo/            # the recorded terminal session and its beats
 video/           # the demo video pipeline
 ```
@@ -400,23 +400,23 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 
 `quorum attest` additionally needs `DEPLOYER_PRIVATE_KEY` in the environment, gas on Robinhood Chain, and the claim fee in QUORUM. `QUORUM_RPC` overrides the public Robinhood Chain endpoint; `BASE_RPC` overrides the public Base endpoint used only to read the first claim.
 
-Commands: `fetch`, `run [--sarif PATH]`, `swarm`, `recall [--since]`, `retire <key> --reason`, `attest`, `verify <tx>`, `reveal <key>`, `import <tx>`, `status`.
+Commands: `fetch`, `run [--sarif PATH] [--summary PATH]`, `swarm`, `recall [--since]`, `retire <key> --reason`, `attest`, `verify <tx>`, `reveal <key>`, `import <tx>`, `status`.
 
 ### In a GitHub workflow
 
-Findings go where reviewers already look. Each Security-tab alert names the two lenses that agreed, what each one read, and the idiom signature it will be recognised by next time; a candidate seen by one lens is not written at all. The fingerprint is the idiom signature, so the same shape is one alert across runs and renames, and a finding confirmed on an earlier run stays in the log while the code still has it. Pin the action to a tag or a commit: it installs the code at the ref you pinned and fetches nothing from a branch at run time. Source lines quoted in an alert are escaped and cut at 160 characters, so a comment in a contract cannot plant a link in your Security tab.
+Findings go where reviewers already look. The action writes the run as a page in the job summary, which a reviewer reaches from the pull request's checks: each confirmed finding with the two lenses that agreed, the line each one read, and the count of candidates held back. Each Security-tab alert carries the same two witnesses and the idiom signature it will be recognised by next time; a candidate seen by one lens is not written at all. A small repository never opens the Security tab, so the page also lands as one comment on the pull request when the workflow adds the comment job shown in [`.github/workflows/quorum.yml`](.github/workflows/quorum.yml): it downloads the page as an artifact and posts it from a job that runs no repository code. The fingerprint is the idiom signature, so the same shape is one alert across runs and renames, and a finding confirmed on an earlier run stays in the log while the code still has it. Pin the action to a tag or a commit: it installs the code at the ref you pinned and fetches nothing from a branch at run time. Source lines quoted in an alert are escaped and cut at 160 characters, so a comment in a contract cannot plant a link in your Security tab.
 
 ```yaml
 permissions:
   security-events: write
 steps:
   - uses: actions/checkout@v4
-  - uses: Yonkoo11/quorum@v0.2.0
+  - uses: Yonkoo11/quorum@v0.4.2
     with:
       targets: contracts/**/*.sol
 ```
 
-[`.github/workflows/quorum.yml`](.github/workflows/quorum.yml) runs it on this repository's own fixtures on every push, so the two teaching findings are this repository's own alerts. That workflow is two jobs on purpose: the scan runs repository code with a read-only token, and the upload, which needs a write-scoped token, runs no repository code and never runs on a pull request. Every third-party action is pinned to a commit.
+[`.github/workflows/quorum.yml`](.github/workflows/quorum.yml) runs it on this repository's own fixtures on every push, so the two teaching findings are this repository's own alerts. That workflow keeps the scan, the upload and the comment in separate jobs on purpose: the scan runs repository code with a read-only token; the upload and the comment need write-scoped tokens and run no repository code; the upload never runs on a pull request and the comment only runs on one from this repository. Every third-party action is pinned to a commit.
 
 ## Tests
 

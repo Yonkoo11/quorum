@@ -565,3 +565,18 @@ def test_unsafe_math_needs_both_readings_of_the_same_sum():
 def test_member_only_function_is_still_a_reentrancy_target():
     src = OWNER_PAYS.replace("onlyOwner", "onlyMember")
     assert _reentrancy_lenses_on(src, "pay") == {"callorder-lens", "guard-lens"}
+
+
+def test_summary_page_names_both_witnesses_and_counts_candidates():
+    from quorum.summary import MARK, markdown
+
+    vuln = open("fixtures/VulnerableVault.sol").read()
+    with tempfile.TemporaryDirectory() as d:
+        report = run_swarm(SwarmMemory(os.path.join(d, "m.db")), {"VulnerableVault.sol": vuln})
+    page = markdown(report, {"VulnerableVault.sol": "fixtures/VulnerableVault.sol"})
+    assert page.startswith(MARK)
+    assert "1 finding(s) confirmed" in page and "reentrancy" in page and "fixtures/VulnerableVault.sol" in page
+    assert "callorder-lens, line" in page and "guard-lens, line" in page
+    assert f"{len(report.candidates)} candidate(s)" in page
+    quiet = markdown(run_swarm(SwarmMemory(os.path.join(d, "n.db")), {"Empty.sol": "pragma solidity ^0.8.0; contract E {}"}), {})
+    assert "Nothing confirmed" in quiet
