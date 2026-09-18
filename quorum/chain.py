@@ -75,8 +75,10 @@ BURN_SELECTOR = Web3.keccak(text="burn(uint256)")[:4]
 
 # The claim registry: one fee, one claim. Lives on the token's chain only. Set once deployed;
 # QUORUM_REGISTRY overrides it (verify prints the address it trusted, so an override is visible).
-REGISTRY_DEFAULT: str | None = None
-REGISTRY_SINCE: int | None = None  # block timestamp of the deployment; a self-addressed claim after it is refused
+# ClaimRegistry, deployed 2026-09-18 at block 66593107 by the claim wallet, tx 0x94a75c58…4a01e9. No owner, no
+# upgrade path: this address and the 100,000 QUORUM fee are final for this registry.
+REGISTRY_DEFAULT: str | None = "0xDeA0792cEc959CE6893C24dEeFc6FE9B047a3Ea3"
+REGISTRY_SINCE: int | None = 1789771591  # block timestamp of the deployment; a self-addressed claim after it is refused
 REGISTRY = Web3.to_checksum_address(os.environ["QUORUM_REGISTRY"]) if os.getenv("QUORUM_REGISTRY") else REGISTRY_DEFAULT
 CLAIMED_TOPIC = Web3.keccak(text="Claimed(bytes32,address,uint256)")
 _REGISTRY_ABI = [
