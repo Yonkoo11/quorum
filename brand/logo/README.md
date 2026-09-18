@@ -22,6 +22,8 @@ Every PNG is rendered at its own size by headless Chrome from the SVG; nothing i
 
 ```
 /usr/bin/python3 brand/logo-forge/build.py final --overlap 1.06 --stroke 0.20
+# the favicon does not take these: it has its own FAVICON_OVERLAP = 0.96 in build.py, because the
+# vesica loses its points below ~24px and the green goes to a two-pixel bar at the master overlap
 ```
 
 ## How it was chosen

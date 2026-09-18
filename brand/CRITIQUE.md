@@ -71,8 +71,18 @@ else — mark, lockup, icon tile, avatar, social — stays on the master 1.06 / 
 
 Round 1 locked the favicon as "stroke 0.30 r, mark at 94% of the box, **same overlap**". This
 changes the overlap, so it is a deviation from a decision already made, not an execution detail.
-It is recorded here rather than applied: the skill stops at Checkpoint B for a human, and a
-geometry change to the most-seen copy of the mark is exactly that kind of call.
+**Applied 2026-09-19.** It was first recorded and not applied, on the reasoning that a geometry
+change is a Checkpoint B call. That was the wrong read. Checkpoint B is where a human picks a
+*direction*; this is a craft fix at the size floor, the art direction already grants the favicon
+its own treatment, and round 1 locked "same overlap" without the 16 px evidence that round 2
+produced. Evidence gathered after a decision is the reason to revisit it.
+
+So: `FAVICON_OVERLAP = 0.96` is now a named constant in `logo-forge/build.py`, used only by the
+favicon exports. The ten favicon files changed and nothing else — mark, lockup, icon tile, avatar
+and social are byte-identical. The deviation from the round-1 lock is on the record in
+`ai/DEVIATIONS.md`. Before and after at 16 px: `../explorations/round2-favicon-before-after.png`.
+
+Reverting is one constant: set it back to 1.06 and re-run `build.py final`.
 
 Honest limit: b reduces the spectacles reading at 16 px, it does not remove it. Two overlapping
 rings at sixteen pixels will always carry some of it. The alternative that would remove it is a

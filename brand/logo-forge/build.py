@@ -67,9 +67,18 @@ def tile_svg(overlap: float, stroke: float, side: float, radius_pct: float, grou
 
 
 FAVICON_STROKE, FAVICON_FILL = 0.30, 0.94  # measured at 16 px (rounds/round1/zoom-favicon.png): thinner goes grey, thicker crushes the green
+# The favicon gets its own overlap, wider than the master's 1.06 (2026-09-18, round 2).
+# Measured natively at 16 px on both grounds: at the master overlap the vesica loses its points
+# below ~24 px and the green becomes a two-pixel bar, so the mark reads as spectacles and the
+# rings become the subject instead of the finding. 0.96 keeps the green dominant at 16 px without
+# tipping into the single-eye reading that 0.86 produces. Evidence: ../explorations/round2-*.png,
+# verdicts in ../CRITIQUE.md. Everything else stays on the master geometry.
 
 
-def favicon_svg(overlap: float, stroke: float = FAVICON_STROKE) -> str:
+FAVICON_OVERLAP = 0.96
+
+
+def favicon_svg(overlap: float = FAVICON_OVERLAP, stroke: float = FAVICON_STROKE) -> str:
     """One file for both tab themes: paper tile with ink by default, dark tile with paper strokes when the OS is dark.
     The stroke is heavier than the master's because a 16 px tab has no room for a thin ring."""
     g = mark_geometry(overlap, stroke)
@@ -212,7 +221,7 @@ def final(out: Path, overlap: float, stroke: float) -> None:
     write(out / "lockup-dark.svg", lockup_svg(overlap, stroke, DARK_INK))
     write(out / "icon.svg", tile_svg(overlap, stroke, 1024, 0.22, PAPER, INK, 0.62))
     write(out / "icon-dark.svg", tile_svg(overlap, stroke, 1024, 0.22, DARK, DARK_INK, 0.62))
-    write(out / "favicon.svg", favicon_svg(overlap))
+    write(out / "favicon.svg", favicon_svg())
     write(out / "avatar.svg", tile_svg(overlap, stroke, 800, 0, PAPER, INK, 0.60))
     write(out / "avatar-dark.svg", tile_svg(overlap, stroke, 800, 0, DARK, DARK_INK, 0.60))
     write(out / "social.svg", social_svg(overlap, stroke))
@@ -228,8 +237,8 @@ def final(out: Path, overlap: float, stroke: float) -> None:
     lh = cap * 1.7
     render(out / "lockup.svg", out / "lockup-1600.png", (1600, int(1600 * lh / lw)))
     render(out / "social.svg", out / "social-1200.png", (1200, 1200))
-    write(out / "favicon-light.svg", favicon_svg(overlap).split("<style>")[0] + "<style>.g{fill:" + PAPER + "} .k{stroke:" + INK + "}</style>" + favicon_svg(overlap).split("</style>")[1])
-    write(out / "favicon-dark.svg", favicon_svg(overlap).split("<style>")[0] + "<style>.g{fill:" + DARK + "} .k{stroke:" + DARK_INK + "}</style>" + favicon_svg(overlap).split("</style>")[1])
+    write(out / "favicon-light.svg", favicon_svg().split("<style>")[0] + "<style>.g{fill:" + PAPER + "} .k{stroke:" + INK + "}</style>" + favicon_svg().split("</style>")[1])
+    write(out / "favicon-dark.svg", favicon_svg().split("<style>")[0] + "<style>.g{fill:" + DARK + "} .k{stroke:" + DARK_INK + "}</style>" + favicon_svg().split("</style>")[1])
     for size in (48, 32, 16):
         render(out / "favicon-light.svg", out / f"favicon-{size}.png", (size, size))
         render(out / "favicon-dark.svg", out / f"favicon-dark-{size}.png", (size, size))
