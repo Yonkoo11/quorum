@@ -1,0 +1,1670 @@
+[
+ {
+  "repo": "0pen-Zaps/openzaps",
+  "key": "contracts/src/feeshare/FeeShareAutoCompounder.sol:deposit:accounting-mismatch",
+  "verdict": "false",
+  "why": "deposits[msg.sender] and totalDeposits are decremented in withdraw() before the share transfer out, so the credit is a real two-way ledger."
+ },
+ {
+  "repo": "0pen-Zaps/openzaps",
+  "key": "contracts/src/primitives/HookedRangeVault.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.34 and the flagged totalSupply += shares is outside the unchecked block; only balanceOf is unchecked and it is bounded by the checked totalSupply."
+ },
+ {
+  "repo": "0xFlicker/backed-by-fans",
+  "key": ".agents/skills/fizz/templates/Base.sol:skipTime:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "Foundry fuzz-harness template (vm.roll/vm.warp), not deployed code."
+ },
+ {
+  "repo": "0xFlicker/backed-by-fans",
+  "key": "contracts/src/MembershipTier.sol:_applyPayment:unsafe-math",
+  "verdict": "false",
+  "why": "gross is validated <= uint112.max and the constructor requires rewardBps+referralBps+protocolFeeBps <= 10_000 (lines 162-164), so the unchecked products and remainder cannot wrap."
+ },
+ {
+  "repo": "0xProject/0x-settler",
+  "key": "src/core/Bebop.sol:sellToBebop:unsafe-math",
+  "verdict": "false",
+  "why": "maker_amount and taker_amount come from a maker-signed Bebop order, takerFilledAmount is capped at taker_amount, the result is checked against amountOutMin and only used for a log while the actual settlement is done by the Bebop contract."
+ },
+ {
+  "repo": "0xProject/0x-settler",
+  "key": "src/core/MakerPSM.sol:sellToMakerPsm:unsafe-math",
+  "verdict": "false",
+  "why": "tout is a Maker-governance WAD fee parameter, not attacker-influenced, and tout + 1e18 cannot approach 2^256."
+ },
+ {
+  "repo": "0xProject/0x-settler",
+  "key": "src/core/MaverickV2.sol:sellToMaverickV2:unsafe-math",
+  "verdict": "false",
+  "why": "pool token balance is always >= the pool's stored reserve by the Maverick pool invariant, so balance - reserve cannot underflow; a broken pool would revert in the swap anyway."
+ },
+ {
+  "repo": "0xProject/0x-settler",
+  "key": "src/core/Velodrome.sol:sellToVelodrome:unsafe-math",
+  "verdict": "false",
+  "why": "Velodrome pair reserves are uint112 values and multiplying by 1e18 fits comfortably in 256 bits; an oversized value reverts inside the pair swap."
+ },
+ {
+  "repo": "0xSoftBoi/suwappubot",
+  "key": "contracts/SuwappuPositions.sol:mintWithAuthorization:unsafe-math",
+  "verdict": "false",
+  "why": "seq + 1 is a per-address monotone counter that cannot reach 2^256, and the function is nonReentrant with the counter bumped before the token pull."
+ },
+ {
+  "repo": "0xSoftBoi/suwappubot",
+  "key": "contracts/primitives/SuwappuTimeCurve.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.27 and totalSupply += amount at line 84 is outside the unchecked block that starts at line 85."
+ },
+ {
+  "repo": "13x54n/Eve",
+  "key": "backend/contracts/src/RideEscrow.sol:resolve:reentrancy",
+  "verdict": "false",
+  "why": "resolve is operator-only and item.state is set to Released/Refunded before the ETH call, so a re-entry hits BadState."
+ },
+ {
+  "repo": "3xBuilds/auction-house",
+  "key": "apps/web/utils/contracts/auctionContract.sol:placeBid:reentrancy",
+  "verdict": "false",
+  "why": "a.highestBid is zeroed before the refund and a plain ERC20.transfer has no callback into the previous bidder, so no double refund; a hooked token would only let the old bidder overwrite their own bid, which harms nobody else."
+ },
+ {
+  "repo": "Agus-ops/robin-index-vault",
+  "key": "contracts/StockRouter_flattened.sol:swap:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.20 with no unchecked in swap, decimals_ <= 18 is enforced in setTokenConfig (line 2974), and the function is nonReentrant."
+ },
+ {
+  "repo": "Alnasarmasarhtml/hoodtext",
+  "key": "contracts/src/RevenueVault.sol:sweepExpired:unguarded-state-write",
+  "verdict": "false",
+  "why": "permissionless by design: after CLAIM_WINDOW it only moves an epoch's unclaimed remainder from sealedUnclaimed to treasuryAccrued, and treasuryAccrued can only leave via onlyOwner withdrawTreasury."
+ },
+ {
+  "repo": "AmbireTech/ambire-common",
+  "key": "contracts/testHelpers/core/EntryPoint.sol:innerHandleOp:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "vendored ERC-4337 EntryPoint under contracts/testHelpers, a test dependency not project code."
+ },
+ {
+  "repo": "AnyPerp/anyperp",
+  "key": "contracts/src/Market.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "one-shot initializer guarded by require(!initialized) with the implementation locked in the constructor, and MarketDeployer calls initialize on the clone at creation (MarketDeployer.sol line 55)."
+ },
+ {
+  "repo": "Arkada-gg/pyramid-contracts",
+  "key": "contracts/ArkadaPVPArenaV3.sol:emergencyClose:reentrancy",
+  "verdict": "false",
+  "why": "onlyRole(ADMIN_ROLE) and the ETH goes to the admin-configured treasury, not a user-chosen address."
+ },
+ {
+  "repo": "Based-LTD/prooflaunch",
+  "key": "contracts/rhc/src/BurnLeg.sol:crank:reentrancy",
+  "verdict": "false",
+  "why": "token transfers go to the fixed DEAD address, the swap callback is bound to _pendingPool, and the only writes after the calls are burn/spend counters."
+ },
+ {
+  "repo": "Based-LTD/prooflaunch",
+  "key": "contracts/rhc/src/RewardsVault.sol:stake:accounting-mismatch",
+  "verdict": "false",
+  "why": "stakedOf[msg.sender] and totalStaked are decremented in unstake() and the function is nonReentrant."
+ },
+ {
+  "repo": "Damirogly/robinhood-marian-vault",
+  "key": "contracts/SherwoodVault.sol:deposit:accounting-mismatch",
+  "verdict": "false",
+  "why": "balanceOf[msg.sender] and totalStaked are decremented in withdraw(), so the flagged shape is absent (unrelated real issue: _claim sends ETH to the user before updating rewardDebt with no guard, so claim() can be re-entered to drain rewards)."
+ },
+ {
+  "repo": "DavidYashar/stockNFT",
+  "key": "contracts/GoogleStockNFT.sol:mint:reentrancy",
+  "verdict": "false",
+  "why": "treasuryVault and platformManager are owner-set once (setTreasuryVault requires it to be unset), not user-chosen, and the per-wallet wlMinted flags are written before the calls."
+ },
+ {
+  "repo": "DerekRaekwon/cacheflow-contracts",
+  "key": "src/CacheFlowTest.sol:_mint:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "self-described test stand-in for the real ERC721SeaDrop collection; faucet mints capped at 20 anyway."
+ },
+ {
+  "repo": "DerekRaekwon/cacheflow-contracts",
+  "key": "src/CachePool.sol:drain:reentrancy",
+  "verdict": "false",
+  "why": "onlyOwner via the onlyOwner modifier, so the recipient is owner-chosen."
+ },
+ {
+  "repo": "DerekRaekwon/cacheflow-contracts",
+  "key": "src/CachePool.sol:sell:reentrancy",
+  "verdict": "false",
+  "why": "cacheReserve, ethReserve and feesCache are all written before taxHook.charge and the ETH send to `to`, and taxHook is owner-set; checks-effects-interactions holds."
+ },
+ {
+  "repo": "DerekRaekwon/cacheflow-contracts",
+  "key": "test-fork/Collect.t.sol:test_TheSweepPaysBothAndMovesNoPrincipal:accounting-mismatch",
+  "verdict": "out-of-scope",
+  "why": "Foundry fork test file."
+ },
+ {
+  "repo": "DerekRaekwon/cacheflow-contracts",
+  "key": "test-fork/MassTestnet.t.sol:setUp:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "Foundry fork test file."
+ },
+ {
+  "repo": "DerekRaekwon/cacheflow-contracts",
+  "key": "test-fork/MidShiftTransfer.t.sol:setUp:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "Foundry fork test file."
+ },
+ {
+  "repo": "DerekRaekwon/cacheflow-contracts",
+  "key": "test-v4/HookedPool.t.sol:test_TheFeeLandsInThePositionAndIsSplitOneSixthToTheCreator:accounting-mismatch",
+  "verdict": "out-of-scope",
+  "why": "Foundry v4 test file."
+ },
+ {
+  "repo": "DimensionDev/RedPacket",
+  "key": "contracts/burn_token.sol:_transfer:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.0 and the flagged _balances[recipient] += is outside the unchecked block; the only unchecked line is the sender subtraction guarded by require(senderBalance >= amount)."
+ },
+ {
+  "repo": "DimensionDev/RedPacket",
+  "key": "contracts/redpacket.sol:claim:accounting-mismatch",
+  "verdict": "false",
+  "why": "remaining_tokens is written back via rewriteBox and claimed_list[..] is set before the transfer, so each claim reduces the packet balance."
+ },
+ {
+  "repo": "Dtwosam/bread",
+  "key": "contracts/src/rehearsal/Day9ControlledDependencies.sol:setFeeAmount:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "marked TEST/REHEARSAL ONLY fixture mimicking a V3 factory."
+ },
+ {
+  "repo": "EntropyRail/vrf",
+  "key": "contracts/examples/ExampleVRFConsumer.sol:request:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "example consumer under contracts/examples; coordinator is immutable regardless."
+ },
+ {
+  "repo": "FLock-io/flock-v4-hook",
+  "key": "src/FlockStockPairHook.sol:_account:unsafe-math",
+  "verdict": "false",
+  "why": "flockVolume/stockVolume are informational lifetime counters meant to only grow, incremented by int128-bounded pool deltas, so a 2^256 wrap is unreachable."
+ },
+ {
+  "repo": "FingersMe/fingersme.github.io",
+  "key": "contracts/src/FingersClaim.sol:sweepDust:accounting-mismatch",
+  "verdict": "false",
+  "why": "onlyOwner nonReentrant and it only sweeps balance above (winnerLockCount - totalClaimed) * perNFTShare, where totalClaimed increments in every _claim."
+ },
+ {
+  "repo": "Gitlawb/contracts",
+  "key": "src/GitlawbBounty.sol:approveBounty:reentrancy",
+  "verdict": "false",
+  "why": "onlyBountyCreator plus b.status set to Completed before the plain ERC20 transfer, and the post-transfer writes are monotone stat counters."
+ },
+ {
+  "repo": "Gitlawb/contracts",
+  "key": "src/GitlawbBuybackVault.sol:flush:reentrancy",
+  "verdict": "false",
+  "why": "transfers go to the fixed burn address and the owner-set sink, and the only writes after them are lifetime counters recomputed from balanceOf on each flush."
+ },
+ {
+  "repo": "Gitlawb/contracts",
+  "key": "src/GitlawbNodeStaking.sol:registerNode:accounting-mismatch",
+  "verdict": "false",
+  "why": "n.stake is zeroed and totalRegisteredStake decremented in unstake() lines 185-188, so the stake credit is paid out exactly once."
+ },
+ {
+  "repo": "Gitlawb/contracts",
+  "key": "src/GitlawbStaking.sol:unstake:accounting-mismatch",
+  "verdict": "false",
+  "why": "info.amount -= amount and totalStaked -= amount at lines 143-144 before the transfer, and pendingRewards is zeroed in claimRewards() line 171."
+ },
+ {
+  "repo": "Hookr-fun/hookr-contracts",
+  "key": "legacy/generation-3/contracts/src/HookrToken.sol:_transfer:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.28 and balanceOf[from] -= value sits outside the unchecked block; only the bounded balanceOf[to] += is unchecked (legacy folder besides)."
+ },
+ {
+  "repo": "Hookr-fun/hookr-contracts",
+  "key": "legacy/generation-3/contracts/src/LeverageFactory.sol:createMarket:reentrancy",
+  "verdict": "false",
+  "why": "The token and market called are contracts the factory itself just deployed, and the only state after the msg.sender refund is resetting pendingMarket and recording a fresh tokenAddr, which a re-entrant createMarket cannot exploit (also legacy folder)."
+ },
+ {
+  "repo": "Hookr-fun/hookr-contracts",
+  "key": "src/HookrTokenV61.sol:_transfer:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.26 and balanceOf[from] = fromBalance - value is checked arithmetic; the unchecked blocks only cover the balanceOf[to] add bounded by total supply."
+ },
+ {
+  "repo": "IBFolding/hooked-hatch",
+  "key": "contracts/src/HatchEgg.sol:crackEgg:unsafe-math",
+  "verdict": "false",
+  "why": "nonReentrant on the function and totalBurned is a lifetime counter bounded by the token's total supply, so the unchecked add cannot wrap."
+ },
+ {
+  "repo": "IceBox247/DRIP",
+  "key": "contracts/src/game/StakeVault.sol:stake:accounting-mismatch",
+  "verdict": "false",
+  "why": "nonReentrant on stake and staked[msg.sender] -= amount plus totalStaked -= amount in withdraw() lines 73-74."
+ },
+ {
+  "repo": "Isogate-CPU/isogate-genesis",
+  "key": "contracts/genesis/GenesisTestMocks.sol:modifyLiquidities:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "File is a set of test mocks (GenesisMockPositionManager, GenesisMockPoolManager, GenesisReentrantRecipient), not deployed code."
+ },
+ {
+  "repo": "KrystalDeFi/krystal-vault-contracts-v2",
+  "key": "contracts/private-vault/core/PrivateVaultFactory.sol:createVault:reentrancy",
+  "verdict": "false",
+  "why": "The value call targets a clone the factory just created, and the writes after it only register that fresh vault address; re-entering with the same name reverts on cloneDeterministic and a different name just creates another vault."
+ },
+ {
+  "repo": "LEVELpad/levelpad-v1-contracts",
+  "key": "contractsV1/@openzeppelin/contracts/token/ERC20/ERC20.sol:_update:unsafe-math",
+  "verdict": "false",
+  "why": "Vendored OpenZeppelin ERC20 at pragma ^0.8.20; _totalSupply += value is deliberately outside the unchecked blocks."
+ },
+ {
+  "repo": "LEVELpad/levelpad-v1-contracts",
+  "key": "contractsV1/contracts/UniswapV3Presale.sol:contributeNativeChecked:accounting-mismatch",
+  "verdict": "false",
+  "why": "nonReentrant on the function, and payouts against contributions[] are gated by the one-shot refunded[account] and claimed[account] flags (lines 293, 322), so a contribution cannot be paid twice."
+ },
+ {
+  "repo": "LandoCrissian/robinhood-meme-terminal",
+  "key": "packages/contracts/src/ProtocolRevenueRouter.sol:claim:reentrancy",
+  "verdict": "false",
+  "why": "claimable[msg.sender] = 0 and the _claiming mutex are set before the call at line 81-84."
+ },
+ {
+  "repo": "LandoCrissian/robinhood-meme-terminal",
+  "key": "packages/contracts/src/RMTV6Governance.sol:execute:reentrancy",
+  "verdict": "false",
+  "why": "transaction.executed = true and the _executing mutex are set before the target call, so the same or another transaction cannot be re-entered."
+ },
+ {
+  "repo": "LandoCrissian/robinhood-meme-terminal",
+  "key": "packages/contracts/src/clone/CloneBondingCurveMarket.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "One-shot initializer guarded by _initialized, and RMTLaunchFactoryV6 clones and initializes the market in the same transaction (lines 303-321), so there is no window for a stranger to set feeBps."
+ },
+ {
+  "repo": "LayerZero-Labs/LayerZero-v2",
+  "key": "packages/layerzero-v2/evm/messagelib/contracts/uln/dvn/DVN.sol:execute:reentrancy",
+  "verdict": "false",
+  "why": "execute is onlyRole(ADMIN_ROLE), requires quorum signatures, and usedHashes[hash] = true is written before the target call."
+ },
+ {
+  "repo": "Longbow-Finance/longbow",
+  "key": "src/periphery/UniswapV3LiquiditySink.sol:donate:reentrancy",
+  "verdict": "false",
+  "why": "Every external call goes to immutable WETH, SwapRouter02 and NonfungiblePositionManager which never call back into the sink, and the only state written is positionId on first mint."
+ },
+ {
+  "repo": "Meridian402/meridian",
+  "key": "contracts/MeridianLaunchSplitter.sol:withdrawNative:reentrancy",
+  "verdict": "false",
+  "why": "owedNative[msg.sender] = 0 before the call, restored only on a reverting failure."
+ },
+ {
+  "repo": "NFTeria/UNICA",
+  "key": "src/SettlementExecutor.sol:pay:reentrancy",
+  "verdict": "false",
+  "why": "order.status is moved from Open to Paying before the Universal Router call, so a re-entrant pay for the same order reverts with OrderNotOpen."
+ },
+ {
+  "repo": "NewSoulOnTheBlock/arrow-contracts",
+  "key": "contracts/allocators/FraxSharesAllocator.sol:harvest:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.7.5 but block.timestamp + a 4-year constant cannot overflow uint256 and no attacker-influenced value enters the expression; amounts use SafeMathUpgradeable."
+ },
+ {
+  "repo": "OrdoFi/ordofi",
+  "key": "contracts/src/OrdoStakes.sol:harvest:reentrancy",
+  "verdict": "false",
+  "why": "Callees are the immutable Uniswap position manager, router, WETH and the factory-deployed farm, and the state written around the calls (totalTreasury, totalRewards) is lifetime counters used in no calculation."
+ },
+ {
+  "repo": "OrdoFi/ordofi",
+  "key": "contracts/src/OrdoStakesV4.sol:harvest:reentrancy",
+  "verdict": "false",
+  "why": "weth.deposit and the v4 position manager are fixed trusted contracts; fees are measured by balance deltas and the only writes after the calls are lifetime counters."
+ },
+ {
+  "repo": "PhronisInc/vaultz",
+  "key": "src/LaunchVault.sol:finalize:accounting-mismatch",
+  "verdict": "false",
+  "why": "nonReentrant with finalized = true set first; finalize needs totalRaised >= softCap while claimRefund needs totalRaised < softCap and zeroes contributions[msg.sender] (line 196), so ETH cannot be paid out twice."
+ },
+ {
+  "repo": "PhysicalWorldAssets/pwa",
+  "key": "src/floor/FloorVault.sol:deposit:accounting-mismatch",
+  "verdict": "false",
+  "why": "nonReentrant, and the position amount/boost is zeroed via posNFT.update(posId, 0, 0, 0, ...) and totalBoost -= p.boost in withdraw() before the transfer."
+ },
+ {
+  "repo": "Pinguim306/OuroborosRH",
+  "key": "contracts/src/utils/ERC20.sol:_update:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.24 and totalSupply += amount is checked arithmetic; only the supply-bounded subtractions and the balanceOf[to] add are unchecked."
+ },
+ {
+  "repo": "PunzRH/punzrh",
+  "key": "src/FeeFeeder3.sol:withdraw:accounting-mismatch",
+  "verdict": "false",
+  "why": "nonReentrant and shares[msg.sender] -= sharesAmt, totalShares -= sharesAmt at line 113 before the ETH and PUNZ transfers."
+ },
+ {
+  "repo": "PunzRH/richythefly",
+  "key": "contracts/src/RichyTreasury.sol:harvest:reentrancy",
+  "verdict": "false",
+  "why": "fly and other are immutable addresses set in the constructor, the treasury holds no per-user state, and the only writes after the sends are lifetime counters."
+ },
+ {
+  "repo": "QorbQuant/Fomo-Copy-Trading",
+  "key": "contracts/src/MiniERC20.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.24 and totalSupply += amount is outside the unchecked block."
+ },
+ {
+  "repo": "QorbQuant/Fomo-Copy-Trading",
+  "key": "contracts/src/MiniERC20.sol:transfer:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.24 and balanceOf[msg.sender] -= amount is checked, reverting on insufficient balance; only the bounded add to balanceOf[to] is unchecked."
+ },
+ {
+  "repo": "Realbaji16/stoqs",
+  "key": "packages/contracts/src/PairLaunchRegistry.sol:launch:unsafe-math",
+  "verdict": "false",
+  "why": "launchCount = id + 1 is a monotonic launch counter that increments by one per nonReentrant call and cannot reach 2^256."
+ },
+ {
+  "repo": "RunTimeAdmin/countersig-network",
+  "key": "src/CountersigPublicSale.sol:finalize:accounting-mismatch",
+  "verdict": "false",
+  "why": "nonReentrant with finalized = true set first; the treasury sweep only runs when succeeded, and refund() only runs when not succeeded and is gated by the one-shot refunded[msg.sender] flag."
+ },
+ {
+  "repo": "Russiansky777/robinhood-chain-alpha",
+  "key": "contracts/ClosedCycleExecutorV3.sol:uniswapV3SwapCallback:reentrancy",
+  "verdict": "false",
+  "why": "The callback only pays msg.sender when it equals expectedPoolA/expectedPoolB, which are set exclusively inside the onlyOwner executeCycle and cleared after."
+ },
+ {
+  "repo": "Shellr-Packs/shellr-contracts",
+  "key": "src/ShellrLaunchpad.sol:launch:reentrancy",
+  "verdict": "false",
+  "why": "launchToken is called on the fixed pons factory and the state written afterwards is the record for the newly created token, guarded by an AlreadyRecorded check."
+ },
+ {
+  "repo": "Shellr-Packs/shellr-contracts",
+  "key": "src/ShellrPacks.sol:refund:reentrancy",
+  "verdict": "false",
+  "why": "noReentry modifier and pack.refunded = true plus the held/tokenTreasury decrement happen before the transfer."
+ },
+ {
+  "repo": "SherwoodOS/sherwoodos-core",
+  "key": "contracts/src/SherwoodRouter.sol:settle:reentrancy",
+  "verdict": "false",
+  "why": "settle is restricted to the facilitator, _charge debits the agent's limit before any call, and the transfers go to the owner-configured provider and treasury with only counters written afterwards."
+ },
+ {
+  "repo": "Sinjoh-Finance/sinjoh-contracts",
+  "key": "sinjoh-launchpad-adapters/src/SinjohFlapV2LiquidityManager.sol:mint:accounting-mismatch",
+  "verdict": "false",
+  "why": "nonReentrant, and entry.pendingWeth -= notional with totalWethLiability -= notional at lines 253-254 before the swap; only the measured native refund is credited back."
+ },
+ {
+  "repo": "Sinjoh-Finance/sinjoh-contracts",
+  "key": "sinjoh-launchpad-adapters/src/SinjohPonsV2BuybackAdapter.sol:swap:reentrancy",
+  "verdict": "false",
+  "why": "The adapter is stateless apart from the _active flag, the curve address comes from the pinned factory's immutable launch record, and output is measured by balance delta and forwarded to msg.sender with balance checks after."
+ },
+ {
+  "repo": "Sinjoh-Finance/sinjoh-contracts",
+  "key": "sinjoh-launchpad-adapters/src/SinjohPoolsTradeLBPAdapter.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "One-shot initializer gated by the `initialized` flag (line 268), set true in the implementation's constructor, and the factory's creator-only deploy() clones and calls initialize in the same transaction (factory line 190)."
+ },
+ {
+  "repo": "SocketDotTech/openrouter",
+  "key": "src/OpenRouter.sol:bridge:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.34; the unchecked `inputAmount - feeAmount` (line 322) feeds only an allowance-threshold check against a caller-chosen spender in a stateless pass-through router that holds no funds, so a wrap changes nothing the caller could not already do."
+ },
+ {
+  "repo": "StockFlow5/stockFlow",
+  "key": "contracts/contracts/MockPriceFeed.sol:setPrice:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "MockPriceFeed is a test mock (open setter by design, no consumer guard)."
+ },
+ {
+  "repo": "Story91/Swipe",
+  "key": "contracts/PredictionMarket_V2.sol:emergencyWithdraw:reentrancy",
+  "verdict": "false",
+  "why": "onlyOwner and requires paused, and ethFees is zeroed (line 810) before the call to owner."
+ },
+ {
+  "repo": "Story91/Swipe",
+  "key": "contracts/SwipeDailyRewards_V2.sol:claimAchievement:accounting-mismatch",
+  "verdict": "false",
+  "why": "totalClaimed/totalDistributed are cumulative counters meant only to grow; the payout is gated by the per-user isBetaTester/hasFollowedSocials flag set before the transfer (lines 480/484) and a live token balance check."
+ },
+ {
+  "repo": "Story91/Swipe",
+  "key": "contracts/SwipeDailyRewards_V2.sol:claimDaily:accounting-mismatch",
+  "verdict": "false",
+  "why": "totalClaimed/totalDistributed are cumulative counters by design; the 24h cooldown writes lastClaimTimestamp (line 378) before the transfer and the pool balance is checked live."
+ },
+ {
+  "repo": "Story91/Swipe",
+  "key": "contracts/SwipeDailyRewards_V2.sol:registerReferral:reentrancy",
+  "verdict": "false",
+  "why": "hasUsedReferral[msg.sender]=true (line 525) is written before any transfer, swipeToken is an immutable plain ERC20 with no hook, and only cumulative counters are written after the calls."
+ },
+ {
+  "repo": "TrainProtocol/contracts",
+  "key": "chains/evm/solidity/src/Train.sol:redeemUser:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.34 with nonReentrant; the unchecked `amount - payout` is guarded by _computePayout reverting when payout == 0 or payout > amount (line 715)."
+ },
+ {
+  "repo": "VJMX12/rh-swap",
+  "key": "src/ERC20.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.20 and `totalSupply += value` (line 58) is outside the unchecked block, so it is checked arithmetic."
+ },
+ {
+  "repo": "Virtual-Protocol/protocol-contracts",
+  "key": "contracts/token/StakedToken.sol:stake:accounting-mismatch",
+  "verdict": "false",
+  "why": "nonReentrant, and the pushed Lock is removed (swap-and-pop, line 219) in withdraw() before safeTransfer of lock.amount, so each credit pays out once."
+ },
+ {
+  "repo": "Virtual-Protocol/protocol-contracts",
+  "key": "contracts/virtualPersona/AgentFactory.sol:executeApplication:reentrancy",
+  "verdict": "false",
+  "why": "noReentrant modifier (locked flag, line 91) plus withdrawableAmount=0 and status=Executed (lines 256-257) are written before the transfer."
+ },
+ {
+  "repo": "Virtual-Protocol/protocol-contracts",
+  "key": "contracts/virtualPersona/AgentTokenV3.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.20; `_totalSupply += uint128(amount)` (line 1072) is a checked uint128 add outside the unchecked block, and amount comes from the owner-set initial supply, not an attacker."
+ },
+ {
+  "repo": "Virtual-Protocol/protocol-contracts",
+  "key": "contracts/virtualPersona/AgentTokenV3.sol:_taxProcessing:unsafe-math",
+  "verdict": "false",
+  "why": "Inside unchecked, but tax = sentAmount*bps/10000 <= sentAmount unless the onlyOwnerOrFactory setter (line 494) sets bps above 10000, and projectTaxPendingSwap is bounded by the uint128 supply and decremented on swap (lines 963/967/999); no attacker-controlled input can wrap."
+ },
+ {
+  "repo": "Yonkoo11/quorum",
+  "key": "fixtures/OpenFeeSetter.sol:setFeeRate:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "fixtures/ teaching fixture, documented as known-vulnerable on purpose."
+ },
+ {
+  "repo": "Yonkoo11/quorum",
+  "key": "fixtures/VulnerableVault.sol:withdraw:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "fixtures/ teaching fixture, documented as known-vulnerable on purpose."
+ },
+ {
+  "repo": "ZODs-Labs/cashcat-ai-kit",
+  "key": "contracts-fixtures/src/MiniMulticall3.sol:aggregate3:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "contracts-fixtures/ test fixture (Multicall3 stand-in, stateless by design)."
+ },
+ {
+  "repo": "ZODs-Labs/cashcat-ai-kit",
+  "key": "contracts-fixtures/src/MockStock.sol:setOraclePaused:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "contracts-fixtures/ mock token with open setters for tests."
+ },
+ {
+  "repo": "ZODs-Labs/cashcat-ai-kit",
+  "key": "contracts-fixtures/src/MockUniswap.sol:setRate:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "contracts-fixtures/ mock quoter/router with open setRate for tests."
+ },
+ {
+  "repo": "Zbank-Protocol/contracts",
+  "key": "src/oracle/ZecUsdDataStreamFeed.sol:updatePrice:reentrancy",
+  "verdict": "false",
+  "why": "The pre-write call goes to the immutable Chainlink verifier, not a caller-chosen address, and the msg.sender refund (line 116) happens after lastPrice/lastObservedAt are written so a re-entry reverts NotNewer."
+ },
+ {
+  "repo": "Zbank-Protocol/zbank-protocol",
+  "key": "src/oracle/ZecUsdDataStreamFeed.sol:updatePrice:reentrancy",
+  "verdict": "false",
+  "why": "Byte-identical to Zbank-Protocol/contracts: pre-write call only to the immutable verifier, refund to msg.sender after state writes, re-entry reverts NotNewer."
+ },
+ {
+  "repo": "aaronjmars/aeon-agent",
+  "key": "skills/deploy-uni-hook/templates/MockERC20.sol:mint:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "Template mock token (templates/ directory, documented test-only); the add is checked anyway."
+ },
+ {
+  "repo": "aaronjmars/aeon-agent",
+  "key": "skills/deploy-uni-hook/templates/MockERC20.sol:transfer:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "Template mock token (templates/ directory, documented test-only); `balanceOf[msg.sender] -= amount` is outside unchecked anyway."
+ },
+ {
+  "repo": "aaronjmars/miroshark-aeon",
+  "key": "skills/deploy-uni-hook/templates/MockERC20.sol:mint:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "Byte-identical template mock token, test-only; the add is checked anyway."
+ },
+ {
+  "repo": "aaronjmars/miroshark-aeon",
+  "key": "skills/deploy-uni-hook/templates/MockERC20.sol:transfer:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "Byte-identical template mock token, test-only; the subtraction is checked anyway."
+ },
+ {
+  "repo": "aashu91/robinhood-evm-mcp",
+  "key": "contracts/CommunityTrust.sol:distributeDividends:accounting-mismatch",
+  "verdict": "false",
+  "why": "totalDividendPoints is a cumulative per-share index meant only to grow; claims are settled through lastDividendPoints and accumulatedDividends, which is zeroed in claimDividends() line 161."
+ },
+ {
+  "repo": "alphamarketrh/alpha-market",
+  "key": "contracts/src/MarginVault.sol:defund:accounting-mismatch",
+  "verdict": "false",
+  "why": "onlyOwner treasury withdrawal and accruedRevenue is decremented (lines 136-137); it is not a user credit that could be paid twice."
+ },
+ {
+  "repo": "aryarakshit/Vigiles",
+  "key": "contracts/src/MockPriceFeed.sol:setPrice:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "MockPriceFeed is a configurable Chainlink mock for tests."
+ },
+ {
+  "repo": "aryarakshit/agentshield",
+  "key": "contracts/src/MockPriceFeed.sol:setPrice:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "Byte-identical MockPriceFeed test mock."
+ },
+ {
+  "repo": "aurexcashgit/smstocks-contracts",
+  "key": "src/Synthetic.sol:mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.24, onlyIssuer, and `totalSupply += value` (line 62) is outside the unchecked block."
+ },
+ {
+  "repo": "auronhoodfun/auronhood-web",
+  "key": "contracts/src/AuronhoodFactoryV20.sol:createAuronhood:reentrancy",
+  "verdict": "false",
+  "why": "The _creating flag (set line 487, cleared line 539, checked line 477) acts as a reentrancy guard, and the low-level call targets only the just-deployed token with a selector whitelist."
+ },
+ {
+  "repo": "averageballer13/Hoodz",
+  "key": "contracts/src/pons/CreatorFeeSplitter.sol:distribute:reentrancy",
+  "verdict": "false",
+  "why": "Every external call goes to an immutable trusted contract (wrapped native, router, HOOD, staking, treasury) and the only state written afterwards is cumulative totals."
+ },
+ {
+  "repo": "bagsweep-dev/bagsweep-public",
+  "key": "contracts/contracts/testnet/MockUniversalRouter.sol:setRate:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "testnet/ mock router, documented test only."
+ },
+ {
+  "repo": "bagsweep-dev/bagsweep-public",
+  "key": "contracts/contracts/testnet/MockV3Router.sol:setRate:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "testnet/ mock router, documented test only."
+ },
+ {
+  "repo": "bebop-dex/bebop-rfqa",
+  "key": "contracts/hooks/MockRateToken.sol:setRate:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "MockRateToken is a mock vault share with setRate documented as for testing."
+ },
+ {
+  "repo": "blink-agent/mortals",
+  "key": "contracts/contracts/Game.sol:soulMint:unsafe-math",
+  "verdict": "false",
+  "why": "nonReentrant; the unchecked Fibonacci step can only wrap after ~370 soul mints whose price grows with the same sequence (nextSoulMintCost = 100 + fib * 1 SOUL), so the wrap is unreachable."
+ },
+ {
+  "repo": "blink-agent/mortals",
+  "key": "contracts/contracts/Mortals.sol:_afterTokenTransfers:unsafe-math",
+  "verdict": "false",
+  "why": "_aliveBalance is kept in sync by setDead (lines 224/228) and mint, and _beforeTokenTransfers reverts for dead tokens (line 329), so the unchecked decrement is bounded by the sender's alive count; it only feeds a view."
+ },
+ {
+  "repo": "butternetwork/butter-router-contracts",
+  "key": "contracts/affiliate/AffiliateFeeManager.sol:withdrawFee:unguarded-state-write",
+  "verdict": "false",
+  "why": "_check(info.wallet) requires msg.sender == affiliate wallet or MANAGER_ROLE, and the only state written is that affiliate's own fee ledger."
+ },
+ {
+  "repo": "caliper383-spec/Caliper",
+  "key": "src/CaliperVault.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "one-shot initializer guarded by _initialized, and VaultFactory.sol line 52 calls it in the same transaction as the clone so no unconfigured vault is ever exposed."
+ },
+ {
+  "repo": "chimpfone/rhmos-hook",
+  "key": "src/RhMosToken.sol:mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.30 and totalSupply += amount is outside the unchecked block, so it reverts on overflow; only the balance add is unchecked and it is bounded by totalSupply."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/FundedFarm.sol:deposit:accounting-mismatch",
+  "verdict": "false",
+  "why": "user.amount is credited here and decremented in withdraw() line 160 and zeroed in emergencyWithdraw, so the ledger does decrease."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/FundedFarm.sol:withdraw:accounting-mismatch",
+  "verdict": "false",
+  "why": "require(user.amount >= _amount) then user.amount -= _amount before the safeTransfer, standard MasterChef accounting."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/LaunchpadNative.sol:launch:reentrancy",
+  "verdict": "false",
+  "why": "the only external calls are to the immutable router/factory with a token this function just created, and the state written afterwards (pairOf, allTokens) is per-new-token with nothing for a re-entrant caller to gain."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/cyberia-v3/LaunchpadV3.sol:launch:reentrancy",
+  "verdict": "false",
+  "why": "calls go to the immutable wcyber, factory, position manager and locker; the ETH refund to msg.sender is the last action after every state write, so nothing is left to exploit on re-entry."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/pancake-v3-core/libraries/Tick.sol:cross:unsafe-math",
+  "verdict": "false",
+  "why": "vendored Uniswap V3 Tick library where the feeGrowthOutside subtraction is designed to wrap modulo 2^256 (fee growth is relative), not an attacker-influenced overflow."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/pancake-v3-lm-pool/PancakeV3LmPool.sol:accumulateReward:unsafe-math",
+  "verdict": "false",
+  "why": "onlyPoolOrMasterChef, and rewardGrowthGlobalX128 is a cumulative growth accumulator that is meant to wrap, computed from MasterChef-set rewardPerSecond via FullMath.mulDiv."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/pancake-v3-lm-pool/libraries/LmTick.sol:cross:unsafe-math",
+  "verdict": "false",
+  "why": "same vendored Pancake LM tick library; rewardGrowthOutside = global - outside is the intended wrapping fee-growth arithmetic."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/pancake-v3-periphery/NonfungiblePositionManager.sol:increaseLiquidity:unsafe-math",
+  "verdict": "false",
+  "why": "vendored Pancake/Uniswap V3 periphery; position.liquidity is uint128 bounded by the core pool's own liquidity checks and the feeGrowth subtraction is intended wrapping arithmetic."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/pancake-v3-periphery/lens/PancakeInterfaceMulticall.sol:multicall:reentrancy",
+  "verdict": "false",
+  "why": "the contract has no storage at all, so there is no state a re-entrant call could exploit; it is a read-only lens helper."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/hardhat/contracts/pancake-v3-periphery/lens/PancakeInterfaceMulticall.sol:multicall:unsafe-math",
+  "verdict": "false",
+  "why": "gasLeftBefore is read before the call so gasLeftBefore - gasleft() can never underflow, and the value is only returned, never stored."
+ },
+ {
+  "repo": "cyberia-temple/singularity",
+  "key": "crypto/quickswap-core/contracts/UniswapV2Pair.sol:_update:unsafe-math",
+  "verdict": "false",
+  "why": "vendored Uniswap V2 pair where the uint32 timestamp subtraction and cumulative price additions are deliberately wrapping (the code comments say overflow is desired)."
+ },
+ {
+  "repo": "dev-mht/rmht-contracts",
+  "key": "src/RMHTAirdropCustodian.sol:claimReward:accounting-mismatch",
+  "verdict": "false",
+  "why": "pendingReward[msg.sender] is deleted before the transfer and the function is nonReentrant, so the credit can only be paid once."
+ },
+ {
+  "repo": "devclone20/iIrysframe",
+  "key": "web/public/CloneForge.flat.sol:_burn:unsafe-math",
+  "verdict": "false",
+  "why": "flattened copy of the stock ERC721A _burn, where the unchecked packed add is bounded by the ownership check above it (balance cannot underflow because the token is proven owned)."
+ },
+ {
+  "repo": "devclone20/iIrysframe",
+  "key": "web/public/CloneForge.flat.sol:_mintSpot:unsafe-math",
+  "verdict": "false",
+  "why": "stock ERC721A _mintSpot; the unchecked increment adds exactly 1 to a 64-bit counter field and the token id is checked for non-existence first."
+ },
+ {
+  "repo": "devclone20/iIrysframe",
+  "key": "web/public/CloneForge.flat.sol:mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.20 and devAccrued += (msg.value * devBps) / 10_000 is outside any unchecked block, so it is checked arithmetic and the function is nonReentrant."
+ },
+ {
+  "repo": "dotrobinxyz/robin",
+  "key": "contracts/test-forge/robin/RobinInvariants.t.sol:registerETH:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "Foundry invariant test file under test-forge."
+ },
+ {
+  "repo": "dotrobinxyz/robin",
+  "key": "contracts/test-forge/robin/RobinInvariants.t.sol:renewETH:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "Foundry invariant test file under test-forge."
+ },
+ {
+  "repo": "dotrobinxyz/robin",
+  "key": "contracts/test-forge/robin/RobinInvariants.t.sol:tryRegisterReserved:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "Foundry invariant test file under test-forge."
+ },
+ {
+  "repo": "dotrobinxyz/robin",
+  "key": "contracts/test-forge/robin/RobinRegistrarControllerV2.t.sol:test_renewal_routes_half_to_the_forest:accounting-mismatch",
+  "verdict": "out-of-scope",
+  "why": "Foundry test function in a .t.sol file."
+ },
+ {
+  "repo": "dotrobinxyz/robin",
+  "key": "contracts/test-forge/robin/RobinRegistrarControllerV2Fork.t.sol:test_live_eth_registration_splits_in_half:accounting-mismatch",
+  "verdict": "out-of-scope",
+  "why": "Foundry fork test function in a .t.sol file."
+ },
+ {
+  "repo": "dotrobinxyz/robin",
+  "key": "contracts/test-forge/robin/SwapMocks.sol:setPool:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "SwapMocks.sol is a test mock of the Uniswap v4 pool manager under test-forge, with an open setter by design."
+ },
+ {
+  "repo": "dutchiono/TavernKeeper",
+  "key": "packages/contracts/contracts/TavernKeeperV3.sol:mintTavernKeeper:reentrancy",
+  "verdict": "false",
+  "why": "the ETH call goes to owner() (trusted), nonces[msg.sender]++ is consumed before any external call, and a re-entry through _safeMint's receiver hook would try to mint the same not-yet-incremented tokenId and revert in ERC721."
+ },
+ {
+  "repo": "dutchiono/TavernKeeper",
+  "key": "packages/contracts/contracts/staking/LPStaking.sol:stake:accounting-mismatch",
+  "verdict": "false",
+  "why": "userStake.amount is credited here and decremented in unstake() (userStake.amount -= amount) under a require, both nonReentrant."
+ },
+ {
+  "repo": "dutchiono/TavernKeeper",
+  "key": "packages/contracts/contracts/staking/LPStaking.sol:unstake:accounting-mismatch",
+  "verdict": "false",
+  "why": "require(userStake.amount >= amount) then userStake.amount -= amount before safeTransfer, nonReentrant on the function."
+ },
+ {
+  "repo": "dutchiono/TavernKeeper",
+  "key": "packages/contracts/contracts/v3/TheCellarV3.sol:sweetenPot:reentrancy",
+  "verdict": "false",
+  "why": "wmon is an owner-configured wrapped-native contract, not a user-chosen address, and a re-entry could only add its own msg.value to potBalanceMON again, which is the honest outcome."
+ },
+ {
+  "repo": "elarquitecto65/nlyra-platform",
+  "key": "launchpad/contracts/ArchitectLaunchPool.sol:create:reentrancy",
+  "verdict": "false",
+  "why": "vault.init is called on an ArchitectPoolVault this function just deployed from its own bytecode, and the only state written afterwards is the per-launch registry entry for that new vault."
+ },
+ {
+  "repo": "elarquitecto65/nlyra-platform",
+  "key": "launchpad/contracts/BuybackBurner.sol:burn:reentrancy",
+  "verdict": "false",
+  "why": "treasury is immutable and set in the constructor, and the only state written after the call is lifetime counters (totalEthKept etc.); a re-entrant burn would just spend the remaining balance the same way."
+ },
+ {
+  "repo": "elen-ally/wobl-contracts",
+  "key": "contracts/RevSplitLocker.sol:collect:reentrancy",
+  "verdict": "false",
+  "why": "manual _entered guard set to 2 at entry and reset at exit, protocolWallet is immutable, and no storage depends on the transfer outcome."
+ },
+ {
+  "repo": "emma-neynar/launcher-launcher",
+  "key": "contracts/src/Launcher.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "one-shot initializer guarded by the initialized flag, and LauncherLauncher.createLauncher clones and initializes in the same transaction (LauncherLauncher.sol line 47)."
+ },
+ {
+  "repo": "ereyli/BlueFun",
+  "key": "contracts/src/UniswapV4LiquidityLocker.sol:lockLiquidity:reentrancy",
+  "verdict": "false",
+  "why": "first line requires msg.sender == graduationManager, and the call target is the configured Uniswap V4 position manager, not a user-chosen address."
+ },
+ {
+  "repo": "fefethefly/fefe-contracts",
+  "key": "src/BondingCurve.sol:claimTreasury:unguarded-state-write",
+  "verdict": "false",
+  "why": "treasuryEarned is zeroed before the call and the ETH can only go to the immutable treasury address, so anyone triggering it just pushes the treasury its own money."
+ },
+ {
+  "repo": "fefethefly/fefe-contracts",
+  "key": "src/BondingCurve.sol:graduate:reentrancy",
+  "verdict": "false",
+  "why": "gradHandler is an immutable factory-injected contract, and a re-entrant graduate() fails the backingReserve() >= GRADUATION_ETH check because the ETH has already left, so the pre-write ordering is not exploitable."
+ },
+ {
+  "repo": "gamerdadtcg/terminal-pets",
+  "key": "src/CollectionNFT.sol:_mintTo:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.24 and mintPrice * quantity is outside the unchecked block, so it is checked; the unchecked publicMinted add is bounded by the checked publicSupply() require above it."
+ },
+ {
+  "repo": "gamerdadtcg/terminal-pets",
+  "key": "src/PulseDistributor.sol:pulse:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.24; the only unchecked block is epochCount = id + 1 on a uint256 that advances once per Pulse and cannot realistically wrap, and pulse() is nonReentrant."
+ },
+ {
+  "repo": "gestionale77-crypto/RobinHood-Launcher",
+  "key": "contracts/ReferralRegistry.sol:creditReward:reentrancy",
+  "verdict": "false",
+  "why": "onlyAuthorized caller, the call goes to the trusted owner address (not user-chosen), and the only state written after it is pendingRewards[owner] on a failed send."
+ },
+ {
+  "repo": "giupy997/chipc",
+  "key": "src/RH4StockVault.sol:convert:reentrancy",
+  "verdict": "false",
+  "why": "onlyExecutor, ethForStocks is decremented at line 214 before the WETH deposit, and weth/router are immutable known contracts."
+ },
+ {
+  "repo": "grokblock/rh-intents",
+  "key": "contracts/MockToken.sol:transfer:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "test mock (ReentrantToken in MockToken.sol) that deliberately reenters the vault to prove the vault rejects it."
+ },
+ {
+  "repo": "habibixyz/Goal-Rush",
+  "key": "flattened.sol:claimGrushJackpot:accounting-mismatch",
+  "verdict": "false",
+  "why": "pred.grushClaimed is set before the transfer and each winner is paid grushAmount/winnerVolume of matchGrushJackpot, so claims sum to the pool; the pool is a per-match total, not a drainable credit, and the function is nonReentrant."
+ },
+ {
+  "repo": "hahzterry/hoodfun",
+  "key": "contracts/src/HoodInstantFactory.sol:createToken:reentrancy",
+  "verdict": "false",
+  "why": "createFee goes to the owner-set protocol address and the dust refund to msg.sender happens after all value has moved; the writes after it are a per-launch record a re-entrant call cannot exploit."
+ },
+ {
+  "repo": "heirlabs/famcash-contracts",
+  "key": "src/OfficeHouse.sol:claim:accounting-mismatch",
+  "verdict": "false",
+  "why": "holderReserve is credited in deposit() line 338 and decremented in claim() line 356; pending is zeroed and shareDebt reset before the transfer, nonReentrant."
+ },
+ {
+  "repo": "hugothomas9/ward",
+  "key": "src/FixedRateMarket.sol:repay:accounting-mismatch",
+  "verdict": "false",
+  "why": "availableLiquidity is decremented in borrow() line 85 and p.principal is reduced inside repay itself; nonReentrant."
+ },
+ {
+  "repo": "hugothomas9/ward",
+  "key": "src/FixedRateMarket.sol:withdraw:accounting-mismatch",
+  "verdict": "false",
+  "why": "p.collateral -= amount at line 111 before the transfer, health check after, nonReentrant."
+ },
+ {
+  "repo": "iloveenergydrinks/turret",
+  "key": "contracts/p2p/fork-test/LenderFacilityFork.t.sol:setUp:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "Foundry fork test file; setUp assigns test fixtures."
+ },
+ {
+  "repo": "iloveenergydrinks/turret",
+  "key": "contracts/p2p/fork-test/StandingFacilityFork.t.sol:setUp:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "Foundry fork test file; setUp assigns test fixtures."
+ },
+ {
+  "repo": "iloveenergydrinks/turret",
+  "key": "contracts/rewards/src/TurretLenderRewards.sol:fundCampaign:accounting-mismatch",
+  "verdict": "false",
+  "why": "totalFunded is a lifetime cap counter meant only to grow; the liability ledger reserved is reduced in claim() line 89 and _finalize() line 138, and the function is onlyAdministrator."
+ },
+ {
+  "repo": "iloveenergydrinks/turret",
+  "key": "contracts/rewards/src/TurretLenderRewards.sol:unstake:accounting-mismatch",
+  "verdict": "false",
+  "why": "stakedBalance[msg.sender] -= shares at line 79 before the transfer, nonReentrant, with a post-transfer balance assertion."
+ },
+ {
+  "repo": "imDev2023/pearl-street-game",
+  "key": "contracts/src/VoyageGame.sol:claim:accounting-mismatch",
+  "verdict": "false",
+  "why": "v.claimed is set before payout and payouts are weight/totalWeightOf[day] shares of trancheOf[day], so a day's claims sum to at most its tranche while claimedOf[day] tracks what left."
+ },
+ {
+  "repo": "imDev2023/pearl-street-game",
+  "key": "contracts/src/VoyageGame.sol:sweep:accounting-mismatch",
+  "verdict": "false",
+  "why": "sweptOf[day] is set first and dust = trancheOf - claimedOf; the claim window (day <= v.day+9) and sweep window (currentDay > day+9) are mutually exclusive so claimedOf cannot grow after the sweep."
+ },
+ {
+  "repo": "imDev2023/pearl-street-game",
+  "key": "contracts/src/tokens/ERC20Base.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.30 and totalSupply += value sits outside the unchecked block; only balanceOf += is unchecked and it is bounded by the checked totalSupply."
+ },
+ {
+  "repo": "ironiamison/foragepad",
+  "key": "furnace/src/CurveStaking.sol:withdraw:accounting-mismatch",
+  "verdict": "false",
+  "why": "stakedBalance[msg.sender] -= amount at line 63 and totalStaked at line 64 before the transfer, nonReentrant."
+ },
+ {
+  "repo": "ironiamison/foragepad",
+  "key": "furnace/src/FurnaceLaunchFactory.sol:launchToken:reentrancy",
+  "verdict": "false",
+  "why": "curve.buy targets a BondingCurve the factory deployed in the same call, and the refund to msg.sender is the last statement after launches.push, so a re-entrant call only creates an independent launch."
+ },
+ {
+  "repo": "jihadMo/pipeshift",
+  "key": "contracts/src/NettingEngine.sol:_settleSession:unsafe-math",
+  "verdict": "false",
+  "why": "grossTradesNetted is an observability-only counter written by owner-registered venues; a uint256 wrap has no effect on settlement, which already checked both legs net to zero."
+ },
+ {
+  "repo": "joebigtoe0-sketch/cooppad",
+  "key": "moonpad/evm/src/base/ERC20Base.sol:_update:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.24 and totalSupply += value is checked; the unchecked totalSupply -= on burn is bounded by the fromBalance >= value require at line 56."
+ },
+ {
+  "repo": "kickpadfamily/contract",
+  "key": "src/KickpadFactory.sol:graduate:reentrancy",
+  "verdict": "false",
+  "why": "caller must be the launch's own market (launch.market == msg.sender), launch.graduated is set at line 311 before any external call, and the Pons factory and its curve are the immutable configured counterparties."
+ },
+ {
+  "repo": "lifinance/contracts",
+  "key": "archive/src/Periphery/GasRebateDistributor.sol:claim:accounting-mismatch",
+  "verdict": "out-of-scope",
+  "why": "lives under archive/ (retired code); claim is anyway gated by the _hasClaimed merkle-root version set before the transfer."
+ },
+ {
+  "repo": "lifinance/contracts",
+  "key": "src/Periphery/FeeForwarder.sol:forwardNativeFees:unsafe-math",
+  "verdict": "false",
+  "why": "wrapping totalDistributed would need earlier per-recipient transfers of ~2^256 wei to succeed, which they cannot; the totalDistributed > msg.value check at line 114 then bounds spend to the caller's own value."
+ },
+ {
+  "repo": "lifinance/contracts",
+  "key": "src/Periphery/LiFiDEXAggregator.sol:distributeAndSwap:unsafe-math",
+  "verdict": "false",
+  "why": "share is a uint16 so amount = amountTotal*share/65535 <= amountTotal and amountTotal -= amount cannot underflow; entry points carry the lock modifier."
+ },
+ {
+  "repo": "mattcrypto12/loxley",
+  "key": "contracts/src/MerryMenShare.sol:claim:accounting-mismatch",
+  "verdict": "false",
+  "why": "reserved[token] -= amount at line 218 and claimed[epoch][user] is set before the transfer; per-epoch allocations are paid pro-rata by points once per user and rollForward releases the rest."
+ },
+ {
+  "repo": "mattcrypto12/loxley",
+  "key": "contracts/src/core/LoxleyPair.sol:_update:unsafe-math",
+  "verdict": "false",
+  "why": "Uniswap V2 port; the uint32 timeElapsed wrap and accumulator overflow are intentional, and reserves are bounded by the uint112 require at line 86."
+ },
+ {
+  "repo": "merlo-team/fund1-contracts",
+  "key": "src/Fund1.sol:trade:reentrancy",
+  "verdict": "false",
+  "why": "onlyOwner and the venue is owner-chosen; the owner can already sweep everything with withdrawAll, so a re-entrant venue gains nothing the owner does not already have."
+ },
+ {
+  "repo": "mikeminer/dappster",
+  "key": "contracts/DappsterDeploymentFactory.sol:deploy:reentrancy",
+  "verdict": "false",
+  "why": "the deploying flag is set before create and rejects a nested deploy, and the factory holds no other state or funds (msg.value is forwarded into create)."
+ },
+ {
+  "repo": "mimiclabsapp/mimic",
+  "key": "contracts/src/BountyEscrow.sol:createBountyWithEth:reentrancy",
+  "verdict": "false",
+  "why": "only authorizedPoster can pass _create, and weth.deposit targets the immutable WETH contract, which has no callback."
+ },
+ {
+  "repo": "mnemosphere-org/mnemosphere-protocol",
+  "key": "contracts/MnemosphereVault.sol:executeTokenPull:reentrancy",
+  "verdict": "false",
+  "why": "callable only by the vault itself from claimAsset, which is nonReentrant, so the guard is held during the token call; the token must be factory-allowlisted and balances are verified after."
+ },
+ {
+  "repo": "muriagent/muri-contracts",
+  "key": "src/MuriFlywheelLaunchControllerV2.sol:launch:reentrancy",
+  "verdict": "false",
+  "why": "caller restricted to projectFactory, one-shot via launched, and the call goes to the configured Pons factory whose live config is hash-checked first."
+ },
+ {
+  "repo": "muriagent/muri-contracts",
+  "key": "src/MuriFlywheelProjectFactoryV2.sol:createAndLaunch:reentrancy",
+  "verdict": "false",
+  "why": "caller restricted to launchAuthority with a codehash check, manifest and nonce are marked used at lines 210-211 before the launch call, and the controller is a module this factory just deployed."
+ },
+ {
+  "repo": "muriagent/muri-contracts",
+  "key": "src/MuriMinerLaunchController.sol:launch:reentrancy",
+  "verdict": "false",
+  "why": "caller restricted to projectFactory, one-shot via launched, and the calls go to the configured Pons factory and treasury whose live config is hash-checked first."
+ },
+ {
+  "repo": "muriagent/muri-contracts",
+  "key": "src/MuriMinerStaking.sol:stake:accounting-mismatch",
+  "verdict": "false",
+  "why": "balanceOf[msg.sender] and totalStaked are reduced in withdraw() lines 128-129; nonReentrant with a solvency assert after every move."
+ },
+ {
+  "repo": "navdotfun/NAV",
+  "key": "contracts/src/options/NavOptions.sol:deposit:accounting-mismatch",
+  "verdict": "false",
+  "why": "deposit credits v.assets, v.totalShares and sharesOf, and withdraw() debits all three (v.assets -= amountOut, totalShares -= shares, sharesOf = held - shares) before safeTransfer; nonReentrant on both."
+ },
+ {
+  "repo": "navdotfun/NAV",
+  "key": "contracts/src/options/NavOptions.sol:withdraw:accounting-mismatch",
+  "verdict": "false",
+  "why": "withdraw reduces sharesOf, v.totalShares and v.assets and checks amountOut against free capital before the transfer, nonReentrant, pragma ^0.8.24."
+ },
+ {
+  "repo": "navdotfun/NAV",
+  "key": "contracts/src/pit/PitOracleV2.sol:pushPythSettlement:reentrancy",
+  "verdict": "false",
+  "why": "the pre-write external call goes to the fixed Pyth contract, not a caller-chosen address, and the only call to msg.sender (fee refund) happens after pythSettlement[underlying][expiry] is written and the AlreadySnapped check would block a re-entry."
+ },
+ {
+  "repo": "ophis-fi/ophis",
+  "key": "contracts/echidna/E2EFeeLiquidator.sol:fundEth:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "contracts/echidna/ is an Echidna fuzz harness, not deployed code."
+ },
+ {
+  "repo": "ophis-fi/ophis",
+  "key": "contracts/echidna/E2EFeeLiquidator.sol:fundIn:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "contracts/echidna/ is an Echidna fuzz harness, not deployed code."
+ },
+ {
+  "repo": "ophis-fi/ophis",
+  "key": "contracts/echidna/E2EFeeLiquidator.sol:mint:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "HarnessERC20 inside contracts/echidna/ is a fuzz-test token, not deployed code."
+ },
+ {
+  "repo": "ophis-fi/ophis",
+  "key": "contracts/echidna/E2EFeeLiquidator.sol:sweepIn:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "contracts/echidna/ is an Echidna fuzz harness, not deployed code."
+ },
+ {
+  "repo": "panoptic-labs/hypovault",
+  "key": "src/HypoVault.sol:_mintVirtual:unsafe-math",
+  "verdict": "false",
+  "why": "the unchecked balanceOf += is the solmate pattern; the shares minted are bounded by _internalSupply which was already raised with checked math at line 679 before executeDeposit/cancelWithdrawal hand them out, pragma ^0.8.28."
+ },
+ {
+  "repo": "pendle-finance/pendle-core-v2-public",
+  "key": "contracts/deprecated/VeDistributor/PendleFeeDistributorV2.sol:claimProtocol:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "file lives under contracts/deprecated/; also the claimable values are owner-set via merkle-verified updateProtocolClaimable and asserted against totalAccrued, so the unchecked sum cannot wrap on real balances."
+ },
+ {
+  "repo": "pendle-finance/pendle-core-v2-public",
+  "key": "contracts/deprecated/VeDistributor/PendleFeeDistributorV2.sol:updateProtocolClaimable:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "file lives under contracts/deprecated/; the function is onlyOwner and newTotalAccrued must match a merkle proof, so the unchecked add is not attacker-influenced."
+ },
+ {
+  "repo": "pendle-finance/pendle-core-v2-public",
+  "key": "contracts/offchain-helpers/Multicall2.sol:aggregate:reentrancy",
+  "verdict": "false",
+  "why": "Multicall2 holds no state at all, so there is nothing a re-entrant call could exploit; it is a stateless batching helper."
+ },
+ {
+  "repo": "pendle-finance/pendle-core-v2-public",
+  "key": "contracts/offchain-helpers/PendleMulticallV2.sol:tryAggregate:reentrancy",
+  "verdict": "false",
+  "why": "PendleMulticallV2 has no storage variables, so the arbitrary call has no state to exploit; stateless offchain helper."
+ },
+ {
+  "repo": "penguinpecker/moleswap-pro",
+  "key": "src/MoleHook.sol:_write:unsafe-math",
+  "verdict": "false",
+  "why": "the unchecked uint32 timestamp subtraction is the deliberate Uniswap-v3-oracle modular pattern and the resulting elapsed only feeds a tick cumulative; pragma ^0.8.26 with everything else checked."
+ },
+ {
+  "repo": "penguinpecker/moleswap-pro",
+  "key": "src/MolePositions.sol:_subPoolLiquidity:unsafe-math",
+  "verdict": "false",
+  "why": "the unchecked block is guarded by the ternary amount >= cur ? 0 : cur - amount, so the subtraction can never underflow; pragma ^0.8.26."
+ },
+ {
+  "repo": "primehod/primehod",
+  "key": "contracts/PrimehodFactory.sol:createToken:reentrancy",
+  "verdict": "false",
+  "why": "the transfer target is a PrimehodToken the factory itself just deployed in _mintAndAllocate (new PrimehodToken), not a caller-chosen contract, and launchOf/allTokens are per-launch records with nothing to double-spend."
+ },
+ {
+  "repo": "pyth-network/pyth-crosschain",
+  "key": "target_chains/ethereum/sdk/solidity/MockPyth.sol:updatePriceFeeds:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": "MockPyth is a test mock in the SDK, open price writes are its purpose."
+ },
+ {
+  "repo": "rarible/protocol-contracts",
+  "key": "projects/transfer-manager/contracts/RaribleTransferManager.sol:doTransfersWithFees:unsafe-math",
+  "verdict": "false",
+  "why": "buyerProtocolFee and sellerProtocolFee come from owner-set uint48 fields widened to uint, so their sum cannot overflow a uint256; every other amount goes through SafeMathUpgradeable (.add/.bp)."
+ },
+ {
+  "repo": "relayprotocol/relay-settlement",
+  "key": "smart-contracts/contracts/rate-limiters/RelayUsdRateLimiter.sol:consume:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.28 and the flagged subtraction is outside any unchecked block; the only unchecked block subtracts usdValue after an explicit tokens < usdValue check, and the function is onlyRole(CONSUMER_ROLE)."
+ },
+ {
+  "repo": "riffsmon-bit/dyoor-site",
+  "key": "contracts/DYOOREnergyBank.sol:correctEnergy:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.20, the += is checked, the only unchecked subtraction is guarded by bal < removeAmount revert, and the function is onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant."
+ },
+ {
+  "repo": "robyn-os/robyn-os",
+  "key": "contracts/HyperSpeedFactory.sol:hyperSwap:reentrancy",
+  "verdict": "false",
+  "why": "pool.virtualSolReserve/virtualTokenReserve are updated before the token transfer or the 2300-gas payable.transfer, so checks-effects-interactions holds (note: the sell branch never pulls tokens from msg.sender, which is a separate bug outside the flagged shape)."
+ },
+ {
+  "repo": "ryjin111/HydeEcosystem",
+  "key": "contracts/src/HoodieLauncher.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "one-shot initializer guarded by require(!_initialized) and HoodieMetaFactory.createLauncher clones and calls initialize(ENGINE, msg.sender) in the same transaction (HoodieMetaFactory.sol line 61), so no window for a front-runner."
+ },
+ {
+  "repo": "ryjin111/HydeEcosystem",
+  "key": "contracts/src/HydeERC20.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "totalSupply += amount is checked (pragma ^0.8.24) before the unchecked balance add, the standard solmate invariant, and _mint is init-only."
+ },
+ {
+  "repo": "ryjin111/HydeEcosystem",
+  "key": "contracts/src/HydeHook.sol:afterSwap:unsafe-math",
+  "verdict": "false",
+  "why": "the unchecked uint32 dt is the intended Uniswap-oracle modular timestamp pattern, the function is onlyPoolManager, and swapVolume += is outside the unchecked block."
+ },
+ {
+  "repo": "sablier-labs/evm-monorepo",
+  "key": "bob/src/SablierLidoAdapter.sol:stake:reentrancy",
+  "verdict": "false",
+  "why": "onlySablierBob restricts the caller and the pre-write calls go to fixed WETH/stETH/wstETH addresses, none of which hand control to an attacker."
+ },
+ {
+  "repo": "sablier-labs/evm-monorepo",
+  "key": "bob/src/SablierLidoAdapter.sol:unstakeFullAmount:accounting-mismatch",
+  "verdict": "false",
+  "why": "the WETH sent is the amount actually received from the Lido claim or Curve swap in the same call, not a stored credit; _vaultTotalWstETH is kept as the historical total for the per-user redemption ratio and the function is onlySablierBob, gated by SablierBob's vault state."
+ },
+ {
+  "repo": "sam3dsol/RWA404",
+  "key": "src/dn404/DN404.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "the unchecked block explicitly reverts TotalSupplyOverflow when newTotalSupply < amount or exceeds the uint96 bound, and toBalance is bounded by totalSupply, the upstream DN404 pattern."
+ },
+ {
+  "repo": "schlagopi/up-compounder",
+  "key": "src/KeeperMulticall.sol:batch:reentrancy",
+  "verdict": "false",
+  "why": "onlyOperator gates the caller, targets must pass registry.isCompounder, and the only state written after the calls is totalBatches/totalCompounds/totalEthReceived counters with no payout tied to them."
+ },
+ {
+  "repo": "schlagopi/up-compounder",
+  "key": "src/KeeperMulticall.sol:batchSelect:reentrancy",
+  "verdict": "false",
+  "why": "same as batch: onlyOperator, registry-checked targets, only monotonic counters written afterward."
+ },
+ {
+  "repo": "sean0728/HOODLAUCH",
+  "key": "contracts/BondingCurve.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "one-shot initializer with require(!_initialized) and the implementation self-locks in its constructor; no contract in contracts/ clones BondingCurve (TokenFactory has no curve reference), so the only exposure is a deployer who clones and does not initialize in the same tx."
+ },
+ {
+  "repo": "sean0728/HOODLAUCH",
+  "key": "contracts/CustomToken.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "require(!_initialized) one-shot initializer, implementation locked in constructor, and CustomTokenFactory clones then calls initialize in the same createToken call (lines 408-421 and 606-629)."
+ },
+ {
+  "repo": "sean0728/HOODLAUCH",
+  "key": "contracts/CustomToken.sol:rescueEth:accounting-mismatch",
+  "verdict": "false",
+  "why": "onlyCreator, and the amount is capped to address(this).balance minus unclaimed dividends (totalDividendsDistributed - totalDividendsWithdrawn), so no stored credit is paid twice."
+ },
+ {
+  "repo": "sean0728/HOODLAUCH",
+  "key": "contracts/CustomToken.sol:rescueToken:accounting-mismatch",
+  "verdict": "false",
+  "why": "onlyCreator, and the rescuable amount excludes pendingLiquidity/Marketing/Reflection tokens and unclaimed dividends, so it only moves surplus balance, not a ledger credit."
+ },
+ {
+  "repo": "sherwood-exchange/sherwood",
+  "key": "src/amm/SherwoodV2Pair.sol:_update:unsafe-math",
+  "verdict": "false",
+  "why": "the unchecked block is a faithful port of UniswapV2 _update where uint32 timestamp wrap and cumulative price overflow are intended, and balances are bounded by the uint112 require above it."
+ },
+ {
+  "repo": "sherwoodagent/sherwood-protocol",
+  "key": "src/CallSandbox.sol:sweep:reentrancy",
+  "verdict": "false",
+  "why": "onlyVault restricts the caller to the SyndicateVault whose runSandbox/collectResidue path is nonReentrant, and the post-call writes are only _failedSince/_abandoned bookkeeping flags with no value attached."
+ },
+ {
+  "repo": "sprintertech/sprinter-stash-contracts",
+  "key": "contracts/testing/TestLiquidityPool.sol:repayDirect:accounting-mismatch",
+  "verdict": "out-of-scope",
+  "why": "contracts/testing/TestLiquidityPool.sol is a test fixture."
+ },
+ {
+  "repo": "sprintertech/sprinter-stash-contracts",
+  "key": "contracts/testing/TestRoyco.sol:claimWithdrawal:accounting-mismatch",
+  "verdict": "out-of-scope",
+  "why": "contracts/testing/ is a test double (Test4626 mock) and totalClaimable is a stub credited in the mock withdraw() only."
+ },
+ {
+  "repo": "staccDOTsol/jackpot",
+  "key": "src/BillionToken.sol:_transfer:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.26 and the flagged balanceOf[from] -= value is outside the unchecked block, so it reverts on underflow; only the recipient add is unchecked and cannot exceed total supply."
+ },
+ {
+  "repo": "strato-net/strato-platform",
+  "key": "app/contracts/concrete/Escrow/Escrow.sol:cancelDeposit:reentrancy",
+  "verdict": "false",
+  "why": "only the depositor (require d.sender == msg.sender) can call it on their own deposit, and each index is zeroed (d.tokens[i]=0, d.amounts[i]=0) right after its transfer so a reentrant call cannot be paid a second time for any other token."
+ },
+ {
+  "repo": "strato-net/strato-platform",
+  "key": "app/contracts/concrete/Escrow/Escrow.sol:redeem:reentrancy",
+  "verdict": "false",
+  "why": "the transfer does precede the depositRecipients/quantity writes, but redeem needs a signature from the deposit's ephemeral key (the depositor's), the tokens are the depositor's own, and the d.quantity decrement chain still caps total payout at what was deposited, so nobody else's funds are reachable."
+ },
+ {
+  "repo": "strato-net/strato-platform",
+  "key": "app/contracts/concrete/Lending/SafetyModule.sol:redeem:reentrancy",
+  "verdict": "false",
+  "why": "shares are burned (Token(sToken).burn) before the asset transfer and the asset is a fixed platform token, so a reentrant redeem fails the balanceOf(msg.sender) >= sharesIn check."
+ },
+ {
+  "repo": "strato-net/strato-platform",
+  "key": "app/contracts/concrete/Pools/PoolV3.sol:collectProtocol:reentrancy",
+  "verdict": "false",
+  "why": "lock modifier plus onlyPoolV3Factory, and protocolFees0/token0Balance are decremented before the transfer."
+ },
+ {
+  "repo": "strato-net/strato-platform",
+  "key": "app/contracts/concrete/Pools/PoolV3.sol:flash:reentrancy",
+  "verdict": "false",
+  "why": "lock modifier (require(unlocked); unlocked=false) guards the whole function and repayment is enforced by the balance check after the callback, as in canonical Uniswap V3."
+ },
+ {
+  "repo": "strato-net/strato-platform",
+  "key": "strato/VM/SolidVM/solid-vm/testdata/Ballot.sol:delegate:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "solid-vm/testdata/ is VM test fixture code (the Solidity docs Ballot example, contract named qq)."
+ },
+ {
+  "repo": "strato-net/strato-platform",
+  "key": "strato/core/strato-genesis/resources/contracts/concrete/Rewards/RewardsChef.sol:deposit:accounting-mismatch",
+  "verdict": "false",
+  "why": "standard MasterChef ledger: pending is (amount*accPerToken)-rewardDebt and user.rewardDebt is reset at the end of the same call (line 415), so the credit cannot be paid twice."
+ },
+ {
+  "repo": "strato-net/strato-platform",
+  "key": "strato/core/strato-genesis/resources/contracts/concrete/Rewards/RewardsChef.sol:withdraw:accounting-mismatch",
+  "verdict": "false",
+  "why": "user.amount is decremented (line 437) before the LP transfer and user.rewardDebt is reset at line 447, so the reward credit is consumed each call."
+ },
+ {
+  "repo": "studynakamoto/fletch-cat",
+  "key": "contracts/src/dex/UniswapV2Pair.sol:_update:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.24 with an explicit unchecked block whose uint32 timestamp wrap is the intended Uniswap V2 TWAP behaviour, and _update is private."
+ },
+ {
+  "repo": "teller-protocol/teller-protocol-v2",
+  "key": "packages/contracts/contracts/MarketLiquidityRewards.sol:deallocateRewards:reentrancy",
+  "verdict": "false",
+  "why": "allocator-only (require msg.sender == allocator) and _decrementAllocatedAmount runs before the transfer, so a reentrant call cannot withdraw the same amount twice."
+ },
+ {
+  "repo": "teller-protocol/teller-protocol-v2",
+  "key": "packages/contracts/contracts/libraries/erc4626/ERC20.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma >=0.8.0 and totalSupply += amount is outside the unchecked block (only the recipient balance add is unchecked, which cannot exceed totalSupply); vendored solmate ERC20."
+ },
+ {
+  "repo": "teller-protocol/teller-protocol-v2",
+  "key": "packages/contracts/contracts/libraries/erc4626/ERC20.sol:transfer:unsafe-math",
+  "verdict": "false",
+  "why": "pragma >=0.8.0 and balanceOf[msg.sender] -= amount is checked arithmetic that reverts on insufficient balance; vendored solmate ERC20."
+ },
+ {
+  "repo": "textile-protocol/textile-contracts-v3",
+  "key": "contracts/v3/filler/vendor/solmate/src/tokens/ERC20.sol:_mint:unsafe-math",
+  "verdict": "false",
+  "why": "pragma >=0.8.0 and totalSupply += amount is checked; only the recipient balance add is unchecked and is bounded by totalSupply; vendored solmate."
+ },
+ {
+  "repo": "textile-protocol/textile-contracts-v3",
+  "key": "contracts/v3/filler/vendor/solmate/src/tokens/ERC20.sol:transfer:unsafe-math",
+  "verdict": "false",
+  "why": "pragma >=0.8.0 and balanceOf[msg.sender] -= amount is checked arithmetic that reverts on underflow; vendored solmate."
+ },
+ {
+  "repo": "titan-ecosystem/Titan-Locker-Contracts",
+  "key": "contracts/echidna-tests/EchidnaLockerTest.sol:createLock:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "echidna-tests/ is a fuzzing harness, not deployed code."
+ },
+ {
+  "repo": "tonytheruthla/arclight",
+  "key": "contracts/ArclightLaunchpad.sol:resolveMilestone:reentrancy",
+  "verdict": "false",
+  "why": "onlyResolver modifier, and m.resolved, l.nextMilestone and l.released are all written before the call to l.creator, so re-entry cannot release the same tranche twice."
+ },
+ {
+  "repo": "twofoldfi/twofold-contracts",
+  "key": "audit/canary/Canary.sol:withdraw:reentrancy",
+  "verdict": "out-of-scope",
+  "why": "audit/canary/Canary.sol is a deliberately vulnerable throwaway used to prove mythril runs, documented as never deployed."
+ },
+ {
+  "repo": "tyroneblakestewart-dot/launch-pad",
+  "key": "contracts/HoodlumsTestBondingCurve.invariant.t.sol:buy:reentrancy",
+  "verdict": "out-of-scope",
+  "why": ".invariant.t.sol is a Foundry invariant test handler."
+ },
+ {
+  "repo": "tyroneblakestewart-dot/launch-pad",
+  "key": "contracts/HoodlumsTestBondingCurve.invariant.t.sol:buy:unguarded-state-write",
+  "verdict": "out-of-scope",
+  "why": ".invariant.t.sol is a Foundry invariant test handler; priceBeforeLastTrade is a test-only ghost variable."
+ },
+ {
+  "repo": "up-exchange/up-slipstream",
+  "key": "contracts/core/libraries/Tick.sol:cross:unsafe-math",
+  "verdict": "false",
+  "why": "pragma <0.8 but the feeGrowthOutside subtraction is the intended modular wrap of canonical Uniswap V3 Tick.cross, an internal library only reached through the pool's swap under its lock."
+ },
+ {
+  "repo": "up-exchange/up-slipstream",
+  "key": "contracts/periphery/NonfungiblePositionManager.sol:increaseLiquidity:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.7.6 canonical Uniswap V3 periphery; position.liquidity is uint128 and the added liquidity is what the pool actually minted, which the core caps via maxLiquidityPerTick so it cannot wrap."
+ },
+ {
+  "repo": "up-exchange/up-slipstream",
+  "key": "contracts/periphery/lens/CLInterfaceMulticall.sol:multicall:reentrancy",
+  "verdict": "false",
+  "why": "the contract has no storage at all; it is a stateless Multicall2 fork, so there is no state a reentrant call could exploit."
+ },
+ {
+  "repo": "up-exchange/up-slipstream",
+  "key": "contracts/periphery/lens/CLInterfaceMulticall.sol:multicall:unsafe-math",
+  "verdict": "false",
+  "why": "gasLeftBefore - gasleft() cannot underflow because gasleft() only decreases within the call, and the result is a memory return value with no storage effect."
+ },
+ {
+  "repo": "urufu-labs/urufu-launchpad",
+  "key": "contracts/src/nft/NftMintModule.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "one-shot initializer guarded by the _initialized flag (revert NftMintModule__AlreadyInitialized), which is the intended clone-init pattern."
+ },
+ {
+  "repo": "useomerprotoc/OMER",
+  "key": "contracts/Omer.sol:_move:unsafe-math",
+  "verdict": "false",
+  "why": "pragma ^0.8.24; the flagged (amount * WAD) / index() line is outside unchecked, and the unchecked block is preceded by revert InsufficientShares when shares > sharesOf[from]."
+ },
+ {
+  "repo": "valentinasigns-jpg/pylon-draw",
+  "key": "contracts/PylonDraw.sol:executeDraw:reentrancy",
+  "verdict": "false",
+  "why": "dice is an immutable entropy oracle set in the constructor, not a user-chosen address, and the status write to Requested plus the Committed-status check means a reentrant call for the same draw would just re-request; no funds move to the caller."
+ },
+ {
+  "repo": "valory-xyz/autonolas-registries",
+  "key": "audits/internal5/analysis/contracts/StakingFactory-flatten.sol:createStakingInstance:reentrancy",
+  "verdict": "false",
+  "why": "audit-snapshot flatten of contracts/staking/StakingFactory.sol; a reentrant createStakingInstance from the init call reuses the same nonce and salt so create2 returns address(0) and reverts ProxyCreationFailed, and mapInstanceParams is keyed by the unique instance address."
+ },
+ {
+  "repo": "valory-xyz/autonolas-registries",
+  "key": "audits/internal7/analysis/contracts/RecoveryModule-flatten.sol:recoverAccess:unsafe-math",
+  "verdict": "false",
+  "why": "audit-snapshot flatten; owners come from the service's Gnosis Safe which always has at least one owner, and under 0.8 numOwners - 1 would revert rather than wrap, so there is no attacker-influenced wrap."
+ },
+ {
+  "repo": "valory-xyz/autonolas-registries",
+  "key": "integrations/solana/contracts/ServiceRegistrySolana.sol:changeOwner:unguarded-state-write",
+  "verdict": "false",
+  "why": "requireSigner(owner) on the first line makes it owner-only (Solang signer check)."
+ },
+ {
+  "repo": "valory-xyz/autonolas-registries",
+  "key": "integrations/solana/contracts/ServiceRegistrySolana.sol:registerAgents:reentrancy",
+  "verdict": "false",
+  "why": "Solana program; SystemInstruction.transfer is a CPI to the system program which cannot call back into the registry, so EVM-style reentrancy does not exist here."
+ },
+ {
+  "repo": "valory-xyz/autonolas-tokenomics",
+  "key": "audits/internal13/analysis/contracts/FlatLiquidityManagerETH.sol:_increaseLiquidity:unsafe-math",
+  "verdict": "false",
+  "why": "audit-snapshot flatten compiled on 0.8.x and the slippage line is not inside any unchecked block, so MAX_BPS - maxSlippage reverts rather than wrapping."
+ },
+ {
+  "repo": "valory-xyz/autonolas-tokenomics",
+  "key": "audits/internal13/analysis/contracts/FlatOptimismDepositProcessorL1.sol:sendMessage:reentrancy",
+  "verdict": "false",
+  "why": "callable only by l1Dispenser (revert ManagerOnly), the tx.origin refund ignores failure, and a re-entrant sendMessage from tx.origin would fail the msg.sender == l1Dispenser check before touching stakingBatchNonce."
+ },
+ {
+  "repo": "valory-xyz/autonolas-tokenomics",
+  "key": "contracts/Tokenomics.sol:updateInflationPerSecondAndFractions:reentrancy",
+  "verdict": "false",
+  "why": "owner-only (revert OwnerOnly) and the low-level call goes to the fixed dispenser address set by the owner, not a user-chosen target."
+ },
+ {
+  "repo": "valory-xyz/autonolas-tokenomics",
+  "key": "contracts/Treasury.sol:withdraw:reentrancy",
+  "verdict": "false",
+  "why": "owner-only (revert OwnerOnly) and ETHOwned is decremented before to.call, so a reentrant withdraw cannot spend the same credit."
+ },
+ {
+  "repo": "vesperpad/vesper",
+  "key": "contracts/src/VesperFactory.sol:finalize:reentrancy",
+  "verdict": "false",
+  "why": "cfg.done = true is written at line 106 before the creator ETH call at line 115, so any reentry into finalize reverts on the !cfg.done require."
+ },
+ {
+  "repo": "vibecodermaxi/websitekit",
+  "key": "packages/websitekit-contracts/src/SlotSite.sol:initialize:unguarded-state-write",
+  "verdict": "false",
+  "why": "one-shot initializer guarded by the _initialized flag (reverts SiteAlreadyInitialized at line 300) and it also sets the owner, so it is the constructor of a clone, not an open setter."
+ },
+ {
+  "repo": "vitelk/payd",
+  "key": "contracts/distribution/Distributor.sol:init:unguarded-state-write",
+  "verdict": "false",
+  "why": "one-shot clone initializer guarded by the initialised flag (revert AlreadyInitialised at line 472) and the implementation is marked initialised at deploy."
+ },
+ {
+  "repo": "vitelk/payd",
+  "key": "contracts/modes/BaseModeVault.sol:init:unguarded-state-write",
+  "verdict": "false",
+  "why": "one-shot clone initializer guarded by the initialised flag (revert AlreadyInitialised at line 242) with the implementation pre-marked initialised."
+ },
+ {
+  "repo": "wardenhood/Warden",
+  "key": "foundry/src/StreamEscrow.sol:cancel:reentrancy",
+  "verdict": "false",
+  "why": "sub.active = false and sub.balance = 0 are written at lines 91-92 before the refund call; only totalEscrowed is updated after, and a stale-high totalEscrowed just makes the owner-only withdrawFees cap stricter."
+ },
+ {
+  "repo": "waynelee-btc/fairlaunch-contracts",
+  "key": "src/FairLaunchHook.sol:setRouter:unguarded-state-write",
+  "verdict": "false",
+  "why": "setRouter requires router == address(0) and is called by FairLaunchFactory.createLaunch in the same transaction that deploys the hook (line 137), so there is no window for anyone else to set it."
+ },
+ {
+  "repo": "wazarat/canhav.dev",
+  "key": "contracts/src/TokenFactory.sol:launchToken:accounting-mismatch",
+  "verdict": "false",
+  "why": "the transfer moves a freshly minted supply out of a brand-new token clone; the factory keeps no storage balance for tokens, so there is no ledger to mismatch."
+ },
+ {
+  "repo": "whetstoneresearch/doppler",
+  "key": "src/tokens/DopplerDN404.sol:_transferFromNFT:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.24 and the unchecked frozenBalances[from] -= UNIT only runs when wasFrozen, which requires frozenBalances[from] / UNIT != 0, so it cannot underflow."
+ },
+ {
+  "repo": "ypsono-shipit/peptide-hub-pept",
+  "key": "contracts/src/PeptLpGauge.sol:deposit:accounting-mismatch",
+  "verdict": "false",
+  "why": "u.amount and totalStaked credited here are decremented in withdraw() lines 107-108, and both functions are nonReentrant."
+ },
+ {
+  "repo": "ypsono-shipit/peptide-hub-pept",
+  "key": "contracts/src/PeptLpGauge.sol:withdraw:accounting-mismatch",
+  "verdict": "false",
+  "why": "u.amount -= amount and totalStaked -= amount happen at lines 107-108 before the safeTransfer, after a require(u.amount >= amount), under nonReentrant."
+ },
+ {
+  "repo": "ypsono-shipit/peptide-hub-pept",
+  "key": "contracts/src/Staking.sol:stake:accounting-mismatch",
+  "verdict": "false",
+  "why": "stakedOf[msg.sender] credited in stake is decremented in unstake() line 52 after a sufficiency require, so the balance can decrease."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/Floorboard.sol:_open:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.36; ep is a uint96 added into a uint256 that is only ever a sum of uint96 escrows and is decremented on settle/cancel/withdraw (lines 474, 497, 618, 655), so the unchecked add cannot wrap."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/dao/ClassicalCurveSale.sol:buy:unsafe-math",
+  "verdict": "false",
+  "why": "sold <= cap is maintained because amount is capped to remaining before newSold = sold + amount, so cap - sold cannot underflow."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/dao/ClassicalCurveSale.sol:buyExactIn:unsafe-math",
+  "verdict": "false",
+  "why": "line 638 (msg.value * 10_000 / (10_000 + feeBps)) is outside any unchecked block under pragma ^0.8.36, so it is overflow-checked."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/dao/ClassicalCurveSale.sol:sell:unsafe-math",
+  "verdict": "false",
+  "why": "feeBps <= 10_000 is enforced at configure (line 335) and proceeds is computed from uint128 storage fields, so proceeds * feeBps fits in 256 bits."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/dao/CollectorVault.sol:buy:accounting-mismatch",
+  "verdict": "false",
+  "why": "the shares are paid out of a DAO allowance that IMoloch(dao).spendAllowance debits on every buy; the vault keeps no share ledger, and buy is nonReentrant."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/dao/Moloch.sol:_mint6909:unsafe-math",
+  "verdict": "false",
+  "why": "totalSupply[id] += amount at line 914 sits outside the unchecked block under pragma ^0.8.36, so it is checked; only the per-holder add that it bounds is unchecked."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/dao/Moloch.sol:_updateDelegateVotes:unsafe-math",
+  "verdict": "false",
+  "why": "the subtracted amount is a balance delta already applied by a checked balanceOf[from] -= amount, so the delegate's vote total is always >= amount; this is the OpenZeppelin Votes pattern."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/dao/Moloch.sol:burnFromMoloch:unsafe-math",
+  "verdict": "false",
+  "why": "balanceOf[from] -= amount at line 1118 is outside the unchecked block (checked), and the function is onlyDAO."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/dao/Moloch.sol:ragequit:unsafe-math",
+  "verdict": "false",
+  "why": "both totalSupplies are DAO-minted via checked _mint and shares are checkpointed through toUint96, so their sum cannot wrap; ragequit is nonReentrant and burns before paying."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/dao/Moloch.sol:transfer:unsafe-math",
+  "verdict": "false",
+  "why": "balanceOf[msg.sender][id] -= amount at line 888 is outside the unchecked block under pragma ^0.8.36, so an over-transfer reverts."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/zRouterLiteBase.sol:snwap:reentrancy",
+  "verdict": "false",
+  "why": "the executor call is made by a separate SafeExecutor contract that holds no approvals or balances, output is measured as a balance delta on the recipient, and the only post-call write is a transient self-deposit for chained legs."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/zRouterLiteBase.sol:swapV2:unsafe-math",
+  "verdict": "false",
+  "why": "reserves are uint112 and a wrapped amountIn from an absurd exactOut only produces a swap the V2 pool's K check reverts, so the caller can only fail their own transaction."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/zRouterLiteRobinhood.sol:swapDeep:reentrancy",
+  "verdict": "false",
+  "why": "a depth-counted transient lock (tstore slot 0x01) wraps the fill call, and amounts are measured by balance deltas then bounded by require(amountIn <= received)."
+ },
+ {
+  "repo": "z-fi/zFi",
+  "key": "src/zRouterLiteRobinhood.sol:swapDeep:unsafe-math",
+  "verdict": "false",
+  "why": "received = balanceOf(tokenIn) - held follows a successful safeTransferFrom into this contract, so the balance is >= held for any token that does not lie about its own transfers, and a lying token only affects its own leg."
+ },
+ {
+  "repo": "z0r0z/tacit",
+  "key": "contracts/src/CollateralEngine.sol:drip:unguarded-state-write",
+  "verdict": "false",
+  "why": "drip is permissionless by design: rate is an interest accumulator computed from block time and the owner-set stabilityFeePerSecond (setStabilityFee is onlyOwner), with no caller-supplied input."
+ },
+ {
+  "repo": "z0r0z/tacit",
+  "key": "contracts/src/ConfidentialPool.sol:_insertCdpPositionLeaf:unsafe-math",
+  "verdict": "false",
+  "why": "pragma 0.8.36 and _insertTreeLeaf reverts MerkleTreeFull when idx >= MAX_LEAVES (2^32) before the unchecked idx + 1, so the index cannot wrap."
+ },
+ {
+  "repo": "zentoshi69/deriv.wtf",
+  "key": "audit/single-file/HoodPupsProtocol.flat.sol:_increaseBalance:unsafe-math",
+  "verdict": "out-of-scope",
+  "why": "audit/single-file is a flattened audit artifact and the flagged line is OpenZeppelin ERC721._increaseBalance verbatim (uint128-bounded increment), not project-authored code."
+ },
+ {
+  "repo": "zentralhood/zentral-core",
+  "key": "contracts/ZentralOfficialLauncher.sol:createToken:reentrancy",
+  "verdict": "false",
+  "why": "createToken is onlyOwner and the transfer is of a token this contract just deployed to an owner-named recipient, so no untrusted caller can reach the post-call launchOf write."
+ }
+]
