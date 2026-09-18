@@ -6,7 +6,7 @@
     quorum run --sarif f.sarif  the same run, confirmed findings also written as SARIF
     quorum recall               what the swarm knows before it reads any code
     quorum retire <key>         a human overrules a finding, permanently
-    quorum attest               burn the fee, publish confirmed findings to Robinhood Chain
+    quorum attest               publish confirmed findings through the claim registry on Robinhood Chain
     quorum verify <tx>          check a claim, its evidence in memory, and its fee burn
     quorum reveal <key>         disclose the pattern behind a paid claim
     quorum import <tx>          learn a revealed pattern, only if its claim fee was burned
@@ -224,34 +224,22 @@ def cmd_attest(args) -> int:
     fee = chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS
     held = chain.token_balance() / 10**chain.TOKEN_DECIMALS
     print(f"signer {chain.address()}  {chain.balance_wei()/1e18:.6f} ETH on {chain.chain_name()}  {held:,.0f} QUORUM on Robinhood Chain")
-    print(f"each claim burns {fee:,} QUORUM before it is written. Scanning is free; publishing is not.")
+    print(f"each claim burns {fee:,} QUORUM through the registry, in the same transaction that records it. Scanning is free; publishing is not.")
     for f in pending[: args.limit]:
-        earlier_burn = f.get("fee_burn_tx")  # a fee already paid by an attempt whose claim never landed
-
-        def record(burn, f=f):
-            """Save the burn the moment it is final, so a failed claim cannot lose it."""
-            memory.client.set_entity("finding", f["key"], {**f, "fee_burn_tx": burn["tx"]})
-            memory.log(evaluated={"key": f["key"]}, acted={"burned": burn["tx"]}, forward={"fee": fee})
-
         try:
-            result = chain.attest(f, dry_run=args.dry_run, burn_tx=earlier_burn, on_burn=record)
+            result = chain.attest(f, dry_run=args.dry_run)
         except RuntimeError as exc:
             print(f"  {RED}not published{RESET} {f['key']}: {exc}")
-            saved = (memory.get_finding(f["key"]) or {}).get("fee_burn_tx")
-            if saved:
-                print(f"  {YELLOW}the fee burn is saved{RESET} ({saved[:14]}...). Run attest again and it is reused, not burned twice.")
             return 1
         if args.dry_run:
-            cost = f"would reuse burn {earlier_burn[:14]}..." if earlier_burn else f"would burn {fee:,} QUORUM"
-            print(f"  {YELLOW}dry run{RESET} {f['key']}  digest {result['digest'][:18]}...  {cost}")
+            print(f"  {YELLOW}dry run{RESET} {f['key']}  digest {result['digest'][:18]}...  would burn {fee:,} QUORUM through {result['registry']}")
             continue
-        burn = result["burn"]
-        memory.client.set_entity("finding", f["key"], {**f, "attested_tx": result["tx"], "fee_burn_tx": burn["tx"]})
-        memory.log(evaluated={"key": f["key"]}, acted={"attested": result["tx"], "burned": burn["tx"]},
+        memory.client.set_entity("finding", f["key"], {**f, "attested_tx": result["tx"]})
+        memory.log(evaluated={"key": f["key"]}, acted={"attested": result["tx"], "registry": result["registry"]},
                    forward={"block": result["block"], "fee": fee})
-        label = "reusing the fee burned earlier" if burn.get("reused") else f"burned {fee:,} QUORUM"
-        print(f"  {GREEN}{label}{RESET}\n    {burn['url']}")
-        print(f"  {GREEN}claimed on {chain.chain_name()}{RESET} {f['key']}\n    {result['url']}")
+        if result.get("approve"):
+            print(f"  {DIM}approved {fee:,} QUORUM for the registry{RESET}\n    {result['approve']['url']}")
+        print(f"  {GREEN}claimed through the registry on {chain.chain_name()}{RESET} {f['key']}, {fee:,} QUORUM burned\n    {result['url']}")
     return 0
 
 
@@ -277,7 +265,10 @@ def cmd_verify(args) -> int:
         print(f"  {RED}not a claim{RESET}  {problem}")
         return 1
 
-    if claim.get("burn_tx"):
+    if claim.get("registry"):
+        print(f"  {GREEN}fee burned{RESET}   {claim['fee'] / 10**chain.TOKEN_DECIMALS:,.0f} QUORUM, pulled and burned by the registry "
+              f"{claim['registry']} in this same transaction")
+    elif claim.get("burn_tx"):
         burn = chain.read_burn(claim["burn_tx"])
         amount = burn["amount"] / 10**chain.TOKEN_DECIMALS
         same_signer = burn["from"].lower() == claim["from"].lower()
@@ -339,11 +330,11 @@ def cmd_import(args) -> int:
         print(f"\n  {RED}not imported{RESET}: {problem}")
         return 1
     memory = SwarmMemory(args.db)
-    outcome = memory.import_pattern(fields, r["claim_tx"], r["claim"]["burn_tx"])
+    outcome = memory.import_pattern(fields, r["claim_tx"], r["payment"])
     if outcome == "imported":
         print(f"\n  {GREEN}imported as a hint{RESET}: a sighting of this idiom is flagged, and still needs two local lenses to confirm")
     elif outcome == "burn-used":
-        print(f"\n  {RED}not imported{RESET}: that fee burn already backed an import into this memory. One fee, one pattern.")
+        print(f"\n  {RED}not imported{RESET}: that fee already backed an import into this memory. One fee, one pattern.")
         return 1
     else:
         print(f"\n  {DIM}already known{RESET}")

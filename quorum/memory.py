@@ -267,8 +267,10 @@ class SwarmMemory:
         That proves someone paid; it proves nothing about the pattern. So an imported pattern
         carries trust "imported": a sighting that matches it is shown as a candidate with a note,
         and it still needs two local lenses to confirm. When local quorum lands on the same
-        signature, promote() upgrades it to trust "local". One burn admits one import into this
-        memory, so a single fee cannot seed it with many patterns.
+        signature, promote() upgrades it to trust "local". One fee admits one import into this
+        memory, so a single fee cannot seed it with many patterns: burn_tx is the payment the
+        import is charged against, the burn transaction for a claim written before the registry
+        and the claim transaction itself for one the registry took the fee in.
 
         Returns "imported", "known" (signature already present) or "burn-used".
         """

@@ -18,3 +18,14 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt -e . pytest==9.1.1
       - run: python -m pytest tests -q
+  forge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          submodules: true
+      - uses: foundry-rs/foundry-toolchain@908c540300062bd5a7e473851cdb4282204cee09 # v1
+      - run: forge test -vv
+        working-directory: contracts

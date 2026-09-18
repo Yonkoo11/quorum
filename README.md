@@ -87,8 +87,8 @@ Eight regex-and-brace-matching lenses over Solidity source, coordinated through 
 2. **Corroborate.** A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion. The tally of who agreed lives on the finding in memory (WARM tier), not in any agent's head. Disagreement is kept as a candidate and never published.
 3. **Remember.** A confirmed idiom is promoted to permanent swarm knowledge (REFERENCE tier). Every sighting, promotion, suppression and on-chain claim is appended to the COLD journal.
 4. **Recognise.** In a later session, on a contract the swarm has never read, a confirmed idiom is matched on sight from a single sighting. No quorum needed the second time.
-5. **Claim.** `quorum attest` burns the fee (100,000 QUORUM, destroyed, paid to nobody) and writes the claim digest to Robinhood Chain as a self-addressed 0-value transaction. The finding itself never leaves the machine.
-6. **Verify.** `quorum verify` reads the claim back, checks the burn it points at is a real burn of at least the fee by the same signer, and recomputes the digest from memory. A claim whose fee was never burned does not verify.
+5. **Claim.** `quorum attest` calls the claim registry on Robinhood Chain, which pulls the fee (100,000 QUORUM), burns it through the token's own `burn`, and records the claim digest, all in one transaction. A record cannot exist without its fee. The finding itself never leaves the machine.
+6. **Verify.** `quorum verify` reads the registry's `Claimed` log back, checks the fee left the claimant and the supply in that same transaction, and recomputes the digest from memory. A claim whose fee was never burned cannot exist.
 
 ## Verify it yourself in 60 seconds
 
@@ -272,6 +272,26 @@ The signing key is read from the process environment at call time. It is never l
 
 ### Publishing costs. Scanning does not.
 
+Since 18 September 2026 the claim goes through a contract, the **ClaimRegistry** at [`0xDeA0792cEc959CE6893C24dEeFc6FE9B047a3Ea3`](https://robinhoodchain.blockscout.com/address/0xDeA0792cEc959CE6893C24dEeFc6FE9B047a3Ea3) on Robinhood Chain, deployed at block 66593107 by the claim wallet ([tx](https://robinhoodchain.blockscout.com/tx/0x94a75c58a026e627226f9d42838cf0101dd0aca8ecc38a858e46bc9caf4a01e9)). `claim(digest)` pulls the fee, burns it, and only then records `claimedAt[digest][claimant]`, so a record cannot exist without its own fee and one fee cannot back two records. No owner, no pause, no upgrade, no ether, nothing to sweep; the fee and the token are immutable, so a different fee would be a different registry. Source, 18 Foundry tests, a fuzz and an invariant are in [`contracts/`](contracts/). The first claim through it, made from this machine the same day and read back:
+
+```console
+$ quorum verify 0x2f22250d80352b2633da7e75111bd06c0a811219675bb56626da606d1b5ffc3d
+
+claim on Robinhood Chain  block 66594959  2026-09-18T22:49:36+00:00
+  published by 0xf9946775891a24462cD4ec885d0D4E2675C84355
+  digest       0x87f31bdf56ab844d8709d8bfef7725819f29a8df856134ad901d144393c545b4
+  fee burned   100,000 QUORUM, pulled and burned by the registry 0xDeA0792cEc959CE6893C24dEeFc6FE9B047a3Ea3 in this same transaction
+
+  the evidence for this claim is still in memory
+    OpenFeeSetter.sol:setTreasury:unguarded-state-write
+    corroborated by modifier-lens, sender-lens  (recall)
+    evidence: treasury = newTreasury;
+
+  digest recomputed from memory matches the chain
+```
+
+Its reveal is [tx 0x99195f17…](https://robinhoodchain.blockscout.com/tx/0x99195f17e115f666bca9bdd8537d5af0acdf2784b4f1fbd7e6524cc49ef354e5), imported into an empty memory as a hint the same evening. Claims made before the registry existed (the `QUORUM2` shape below) still read and verify against their separate burn; a self-addressed claim mined after the registry existed is refused.
+
 The claims above form a public registry of "this swarm knew this bug shape at this block". A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone: each claim burns **100,000 QUORUM** through the token contract's own `burn(uint256)` on Robinhood Chain before the claim is written to the same chain, and the claim's calldata (`QUORUM2` shape) carries the burn's transaction hash. `quorum verify` checks both halves: the digest on chain, and that the burn it points at is a real burn of at least the fee by the same signer. Burn and claim share one chain, so one RPC verifies both. A claim whose fee was never burned does not verify.
 
 **One chain, on purpose.** The token pays for one thing: publishing a claim. Claims live on Robinhood Chain because that is where the token is. The tool reads verified code from Ethereum, Base, Arbitrum, Optimism and Polygon, and that is the part of those chains Quorum cares about. The token goes to a second chain only when three things are true at once: a claim registry exists on that chain, a canonical or audited bridge path exists for the token, and someone on that chain wants to publish claims. None of the three is true today. There is no date, and we will not give one.
@@ -334,6 +354,7 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 | **Attacked, 2026-09-13** | Four ways to poison the registry were found by reviewing the tool itself. Fixed: an imported pattern was recalled from one sighting exactly like a locally confirmed one (now a hint until local quorum); one fee burn could admit unlimited imports into a memory (now one per burn); the idiom signature dropped the member name, so `x.delegatecall(y)` and `t.approve(s)` hashed the same and one retirement silenced both (signature v2 keeps it); a claim was accepted even if reverted, not self-addressed, or unpaid after the fee existed (all refused). Not fixed: globally, one burn can still back more than one claim, because nothing on chain ties a burn to a claim. That needs a contract or an indexer and is written here instead of pretended. |
 | The lenses | Deliberately simple: regex-and-brace-matching heuristics over source text, not a compiler front end. They read lines rather than a call graph: a call inside a modifier, a write reached through an internal call, and a guard in the caller are invisible to them, which is why Slither finds far more access-control bugs on old code, and wrap-lens reads the pragma rather than the compiler, so a file with no pragma is treated as checked, and they key a finding by file, function and risk, so two contracts in one file can share a key. The accounting pair sees a balance that only ever grows; it cannot see a sibling function that forgot one debit another function has, because there the balance does go down, on the other path. The point of this project is the coordination and memory layer. |
 | Vulnerability claims | **None.** Quorum publishes *corroborated idioms worth review*, not confirmed vulnerabilities. A quorum means two independent lenses agreed on a shape, nothing more. The Friend.tech recall above is a pattern match on a call idiom, not an allegation about that contract. |
+| The registry | Deployed 2026-09-18, bytecode matched against the local build, one real claim made, verified, revealed and imported the same day. Not yet verified on the block explorer (its API blocks scripts; the browser form is pending). The fork test against the real token never completed on a public node. |
 | The fixtures | [`fixtures/`](fixtures/) are vulnerable on purpose and are not deployed anywhere. |
 | The first claim | On Base, block 51138878, before the fee and the move. It reads back as a v1 claim with no burn to check, and it is accepted only because it predates the fee: an unpaid claim mined anywhere after the fee existed is refused by `verify` and `import`, as is a claim whose transaction reverted or was not self-addressed. |
 | Exploits, proofs of concept, severity | Not claimed, anywhere in this repository. |
@@ -365,6 +386,7 @@ fixtures/        # two teaching contracts, vulnerable on purpose
 docs/            # the site (runquorum.site): five pages, one stylesheet, one script, self-hosted fonts
 brand/           # the cards, marks and fonts the site and the posts are built from
 bench/           # the lenses and Slither scored on two labelled corpora, re-run with one command each
+contracts/       # the ClaimRegistry (Foundry): source, 18 tests, a fuzz and an invariant, the deploy script
 diary/           # the Telegram diary: what the repo did, in plain words, every two hours, silent when nothing happened
 action.yml       # `uses: Yonkoo11/quorum@v0.4.2`: scan, write the page to the job summary, write SARIF, upload to the Security tab
 demo/            # the recorded terminal session and its beats

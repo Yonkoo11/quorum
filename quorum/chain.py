@@ -6,13 +6,17 @@ timestamped first-discovery claim. The claim is a self-addressed 0-value transac
 calldata is the claim digest, so anyone can verify what was known and when
 without the finding itself ever leaving the machine.
 
-Publishing a claim costs a fixed amount of QUORUM, burned through the token
-contract's own burn(uint256) on the same chain before the claim is written.
-The claim carries the burn's transaction hash, so a verifier can check both
-halves: that the digest was published, and that the fee was really destroyed.
+Publishing a claim costs a fixed amount of QUORUM, and nobody receives it.
+Claims now go through the ClaimRegistry contract (contracts/): claim(digest)
+pulls the fee from the claimant and burns it through the token's own
+burn(uint256) in the same transaction that records the claim, so a fee cannot
+back two claims and a claim cannot exist without its fee. Claims written before
+the registry are self-addressed transactions carrying a burn's transaction hash
+(QUORUM2) or, before the fee existed, the digest alone (QUORUM1); read_claim
+still reads both, and a QUORUM2 claim mined after the registry existed is refused.
 The fee exists for one reason: a public registry of known bug patterns needs a
-cost to publish or it fills with junk. Nobody receives the fee. Scanning,
-memory and recall never touch the token; only publishing does.
+cost to publish or it fills with junk. Scanning, memory and recall never touch
+the token; only publishing does.
 
 The token, and so the fee, lives on Robinhood Chain. Claims default to the same
 chain so a verifier needs one RPC, not two. The first claim (Base, block
@@ -68,11 +72,32 @@ def fee_at(block: int) -> int:
     return next(fee for start, fee in reversed(FEE_SCHEDULE) if block >= start)
 TOKEN_EXPLORER = os.getenv("QUORUM_TOKEN_EXPLORER", CHAINS[TOKEN_CHAIN_ID]["explorer"])
 BURN_SELECTOR = Web3.keccak(text="burn(uint256)")[:4]
+
+# The claim registry: one fee, one claim. Lives on the token's chain only. Set once deployed;
+# QUORUM_REGISTRY overrides it (verify prints the address it trusted, so an override is visible).
+# ClaimRegistry, deployed 2026-09-18 at block 66593107 by the claim wallet, tx 0x94a75c58…4a01e9. No owner, no
+# upgrade path: this address and the 100,000 QUORUM fee are final for this registry.
+REGISTRY_DEFAULT: str | None = "0xDeA0792cEc959CE6893C24dEeFc6FE9B047a3Ea3"
+REGISTRY_SINCE: int | None = 1789771591  # block timestamp of the deployment; a self-addressed claim after it is refused
+REGISTRY = Web3.to_checksum_address(os.environ["QUORUM_REGISTRY"]) if os.getenv("QUORUM_REGISTRY") else REGISTRY_DEFAULT
+CLAIMED_TOPIC = Web3.keccak(text="Claimed(bytes32,address,uint256)")
+_REGISTRY_ABI = [
+    {"name": "claim", "type": "function", "stateMutability": "nonpayable",
+     "inputs": [{"name": "digest", "type": "bytes32"}], "outputs": []},
+    {"name": "fee", "type": "function", "stateMutability": "view", "inputs": [], "outputs": [{"type": "uint256"}]},
+    {"name": "claimedAt", "type": "function", "stateMutability": "view",
+     "inputs": [{"name": "digest", "type": "bytes32"}, {"name": "claimant", "type": "address"}],
+     "outputs": [{"type": "uint256"}]},
+]
 _TOKEN_ABI = [
     {"name": "burn", "type": "function", "stateMutability": "nonpayable",
      "inputs": [{"name": "amount", "type": "uint256"}], "outputs": []},
     {"name": "balanceOf", "type": "function", "stateMutability": "view",
      "inputs": [{"name": "a", "type": "address"}], "outputs": [{"type": "uint256"}]},
+    {"name": "approve", "type": "function", "stateMutability": "nonpayable",
+     "inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}], "outputs": [{"type": "bool"}]},
+    {"name": "allowance", "type": "function", "stateMutability": "view",
+     "inputs": [{"name": "owner", "type": "address"}, {"name": "spender", "type": "address"}], "outputs": [{"type": "uint256"}]},
 ]
 
 
@@ -169,24 +194,29 @@ def _send(w3: Web3, acct, tx: dict[str, Any]) -> dict[str, Any]:
             "status": receipt["status"]}
 
 
-def burn_fee() -> dict[str, Any]:
-    """Burn CLAIM_FEE QUORUM through the token's own burn(). Raises if it fails."""
-    w3 = _token_w3()
-    acct = _account(w3)
+def _allowance(w3: Web3, owner: str) -> int:
     token = w3.eth.contract(address=TOKEN, abi=_TOKEN_ABI)
-    held = token.functions.balanceOf(acct.address).call()
-    fee = fee_at(w3.eth.block_number)
-    if held < fee:
-        raise RuntimeError(
-            f"publishing a claim burns {fee // 10**TOKEN_DECIMALS:,} QUORUM; "
-            f"signer holds {held / 10**TOKEN_DECIMALS:,.0f} on Robinhood Chain"
-        )
-    tx = token.functions.burn(fee).build_transaction({"from": acct.address, "chainId": TOKEN_CHAIN_ID})
+    return token.functions.allowance(owner, REGISTRY).call()
+
+
+def approve_fee(w3: Web3, acct) -> dict[str, Any]:
+    """Let the registry pull exactly one fee. The registry is the only spender and can only burn."""
+    token = w3.eth.contract(address=TOKEN, abi=_TOKEN_ABI)
+    tx = token.functions.approve(REGISTRY, CLAIM_FEE).build_transaction({"from": acct.address, "chainId": TOKEN_CHAIN_ID})
     result = _send(w3, acct, tx)
     if result["status"] != 1:
-        raise RuntimeError(f"fee burn reverted: {result['tx']}")
+        raise RuntimeError(f"approve reverted: {result['tx']}")
     result["url"] = TOKEN_EXPLORER + result["tx"]
-    result["amount"] = fee
+    return result
+
+
+def claim_via_registry(w3: Web3, acct, digest: bytes) -> dict[str, Any]:
+    """claim(digest) on the registry: the fee is pulled and burned in this same transaction."""
+    registry = w3.eth.contract(address=REGISTRY, abi=_REGISTRY_ABI)
+    tx = registry.functions.claim(digest).build_transaction({"from": acct.address, "chainId": TOKEN_CHAIN_ID})
+    result = _send(w3, acct, tx)
+    if result["status"] != 1:
+        raise RuntimeError(f"the registry refused the claim: {result['tx']}")
     return result
 
 
@@ -291,47 +321,60 @@ def read_reveal(tx_hash: str) -> dict[str, Any]:
         "revealed_by": tx["from"],
         "digest_matches": recomputed.lower() == claim["digest"].lower(),
         "same_signer": tx["from"].lower() == claim["from"].lower(),
-        "fee_paid": bool(burn and burn["valid"] and burn["from"].lower() == claim["from"].lower()),
+        "fee_paid": bool(claim.get("registry")) or bool(burn and burn["valid"] and burn["from"].lower() == claim["from"].lower()),
+        # what one import is charged against: the claim itself when the registry took the fee, the burn before that
+        "payment": parsed["claim_tx"] if claim.get("registry") else claim.get("burn_tx"),
     }
 
 
-def attest(finding: dict[str, Any], dry_run: bool = False, burn_tx: str | None = None,
-           on_burn=None) -> dict[str, Any]:
-    """Burn the fee on Robinhood Chain, then publish the finding's digest to the claim chain.
+def attest(finding: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
+    """Publish the finding's digest through the claim registry on Robinhood Chain.
 
-    A burn and a claim are two transactions, so the burn can land and the claim
-    can still fail. on_burn, if given, is called with the burn the moment it is
-    final and before the claim is sent, so the caller can record it. burn_tx
-    reuses such a recorded burn on a retry instead of burning a second fee; it
-    must be a valid fee burn by this signer or the claim is refused.
+    The registry pulls the fee and burns it in the transaction that records the claim, so a fee
+    cannot back two claims and a claim cannot exist without its fee. The only separate step is a
+    one-time approve when the allowance is short; a lingering allowance is harmless, the registry
+    can only pull on the claimant's own call and can only burn.
     """
+    if CHAIN_ID != TOKEN_CHAIN_ID:
+        raise RuntimeError(f"claims go through the registry on {chain_name(TOKEN_CHAIN_ID)}; unset QUORUM_CHAIN_ID")
+    if not REGISTRY:
+        raise RuntimeError("no claim registry address: set QUORUM_REGISTRY to the deployed ClaimRegistry")
     w3 = _w3()
     acct = _account(w3)
     digest = claim_digest(finding)
-
+    held = token_balance()
     if dry_run:
         return {"dry_run": True, "from": acct.address, "digest": digest.hex(), "chain_id": CHAIN_ID,
-                "fee": CLAIM_FEE, "token_balance": token_balance(), "reuses_burn": burn_tx}
-
-    if burn_tx:
-        burn = read_burn(burn_tx)
-        if not burn["valid"] or burn["from"].lower() != acct.address.lower():
-            raise RuntimeError(f"{burn_tx} is not a valid fee burn by {acct.address}; not reusing it")
-        burn = {**burn, "tx": burn_tx, "url": TOKEN_EXPLORER + burn_tx, "reused": True}
-    else:
-        burn = burn_fee()
-        if on_burn:
-            on_burn(burn)
-    tx = {
-        "from": acct.address,
-        "to": acct.address,
-        "value": 0,
-        "data": encode_claim(digest, bytes.fromhex(burn["tx"].removeprefix("0x"))),
-        "chainId": CHAIN_ID,
-    }
-    result = _send(w3, acct, tx)
-    result.update({"url": EXPLORER + result["tx"], "digest": digest.hex(), "burn": burn})
+                "fee": CLAIM_FEE, "token_balance": held, "registry": REGISTRY}
+    if held < CLAIM_FEE:
+        raise RuntimeError(f"publishing a claim burns {CLAIM_FEE // 10**TOKEN_DECIMALS:,} QUORUM; "
+                           f"signer holds {held / 10**TOKEN_DECIMALS:,.0f} on {chain_name(TOKEN_CHAIN_ID)}")
+    approve = None
+    if _allowance(w3, acct.address) < CLAIM_FEE:
+        approve = approve_fee(w3, acct)
+    result = claim_via_registry(w3, acct, digest)
+    result.update({"url": EXPLORER + result["tx"], "digest": digest.hex(), "registry": REGISTRY, "approve": approve})
     return result
+
+
+def _registry_claim(cid: int, receipt: dict[str, Any]) -> dict[str, Any] | None:
+    """The Claimed log from the registry, if this receipt carries exactly one. Any other address's log is noise."""
+    if cid != TOKEN_CHAIN_ID or not REGISTRY:
+        return None
+    logs = [log for log in receipt.get("logs", [])
+            if str(log["address"]).lower() == REGISTRY.lower() and log["topics"]
+            and bytes(log["topics"][0]) == CLAIMED_TOPIC]
+    if not logs:
+        return None
+    if len(logs) > 1:
+        raise RuntimeError("not a Quorum claim: one claim per transaction, this one carries several")
+    log = logs[0]
+    if len(log["topics"]) != 3:
+        raise RuntimeError("not a Quorum claim: the registry log has the wrong shape")
+    claimant = Web3.to_checksum_address("0x" + bytes(log["topics"][2])[-20:].hex())
+    fee = int.from_bytes(bytes(log["data"])[-32:], "big") if log.get("data") else 0
+    return {"version": 3, "digest": "0x" + bytes(log["topics"][1]).hex(), "burn_tx": None,
+            "registry": REGISTRY, "fee": fee, "claimant": claimant}
 
 
 def read_claim(tx_hash: str) -> dict[str, Any]:
@@ -339,13 +382,16 @@ def read_claim(tx_hash: str) -> dict[str, Any]:
     cid, w3, tx = _find_tx(tx_hash)
     receipt = w3.eth.get_transaction_receipt(tx_hash)
     block = w3.eth.get_block(receipt["blockNumber"])
-    parsed = decode_claim(bytes(tx["input"]))
+    parsed = _registry_claim(cid, receipt) or decode_claim(bytes(tx["input"]))
+    sender = tx["from"]
     return {
         "chain_id": cid,
         "chain": chain_name(cid),
-        "from": tx["from"],
+        # for a registry claim "from" is the claimant the registry recorded, so every signer check reads the right party
+        "from": parsed.get("claimant", sender),
+        "sender": sender,
         "to": tx.get("to"),
-        "self_addressed": (tx.get("to") or "").lower() == tx["from"].lower(),
+        "self_addressed": (tx.get("to") or "").lower() == sender.lower(),
         "block": receipt["blockNumber"],
         "timestamp": block["timestamp"],
         "status": receipt["status"],
@@ -357,8 +403,12 @@ def claim_problem(claim: dict[str, Any]) -> str | None:
     """Why a claim that decoded fine is still not a claim. None means it stands."""
     if claim["status"] != 1:
         return "the claim transaction reverted"
+    if claim.get("registry"):
+        return None
     if not claim["self_addressed"]:
         return "the claim is not a self-addressed transaction"
+    if claim.get("version") == 2 and REGISTRY_SINCE and claim.get("timestamp", 0) > REGISTRY_SINCE:
+        return "self-addressed claim written after the registry existed; claims now go through the registry"
     if claim.get("burn_tx") is None:
         limit = UNPAID_CLAIMS_UNTIL.get(claim["chain_id"])
         if limit is None or claim["block"] > limit:

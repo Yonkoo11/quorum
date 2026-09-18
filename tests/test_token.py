@@ -9,6 +9,8 @@ import os
 import tempfile
 from unittest import mock
 
+import pytest
+
 from web3.exceptions import TransactionNotFound
 
 from quorum import chain
@@ -67,24 +69,6 @@ def test_burn_is_valid_only_for_the_fee_on_the_token():
     other = "0x" + "11" * 20
     with mock.patch.object(chain, "_token_w3", return_value=_fake_burn_tx(other, chain.CLAIM_FEE)):
         assert not chain.read_burn("0x" + "01" * 32)["valid"]
-
-
-def test_attest_burns_before_it_claims():
-    calls = []
-    with mock.patch.object(chain, "_w3"), mock.patch.object(chain, "_account") as acct, \
-         mock.patch.object(chain, "burn_fee", side_effect=lambda: calls.append("burn") or {"tx": "0x" + "ab" * 32}), \
-         mock.patch.object(chain, "_send", side_effect=lambda *a: calls.append("claim") or {"tx": "0x1", "block": 1, "gas_used": 1, "status": 1}):
-        acct.return_value.address = "0x" + "22" * 20
-        chain.attest(FINDING)
-    assert calls == ["burn", "claim"]
-    with mock.patch.object(chain, "_w3"), mock.patch.object(chain, "_account"), \
-         mock.patch.object(chain, "burn_fee", side_effect=RuntimeError("no QUORUM")), \
-         mock.patch.object(chain, "_send") as send:
-        try:
-            chain.attest(FINDING)
-        except RuntimeError:
-            pass
-        send.assert_not_called()
 
 
 def test_import_learns_a_paid_pattern_once_and_no_memory_never():
@@ -153,46 +137,103 @@ def test_a_missing_claim_is_reported_not_invented():
 SIGNER = "0x" + "22" * 20
 
 
-def _attest_env(burn_valid=True, burn_from=SIGNER):
-    """Patches for attest with no chain: records the order of burn / record / claim."""
+REGISTRY = "0x" + "77" * 20
+FEE_BYTES = chain.CLAIM_FEE.to_bytes(32, "big")
+
+
+def _registry_tx(signer=SIGNER, claimant=SIGNER, digest=DIGEST, registry=REGISTRY, chain_id=chain.TOKEN_CHAIN_ID,
+                 status=1, logs=None, timestamp=1_757_700_000):
+    """A transaction to the registry whose receipt carries the Claimed log (or whatever logs are given)."""
+    if logs is None:
+        logs = [{"address": registry, "topics": [chain.CLAIMED_TOPIC, digest, bytes(12) + bytes.fromhex(claimant[2:])],
+                 "data": FEE_BYTES}]
+    w3 = mock.Mock()
+    w3.eth.chain_id = chain_id
+    w3.eth.get_transaction.return_value = {"from": signer, "to": registry, "input": b"\x12\x34\x56\x78" + digest}
+    w3.eth.get_transaction_receipt.return_value = {"blockNumber": 62_400_000, "status": status, "logs": logs}
+    w3.eth.get_block.return_value = {"timestamp": timestamp}
+    return w3
+
+
+def _on_registry_chain(w3):
+    return mock.patch.multiple(chain, REGISTRY=REGISTRY, REGISTRY_SINCE=1_757_650_000, CHAIN_ID=chain.TOKEN_CHAIN_ID,
+                               _w3=mock.Mock(side_effect=lambda cid=None: w3))
+
+
+def test_registry_claim_reads_from_the_log_and_stands():
+    with _on_registry_chain(_registry_tx()):
+        claim = chain.read_claim("0x" + "01" * 32)
+    assert claim["version"] == 3 and claim["registry"] == REGISTRY and claim["burn_tx"] is None
+    assert claim["from"] == SIGNER and claim["digest"] == "0x" + DIGEST.hex() and claim["fee"] == chain.CLAIM_FEE
+    assert chain.claim_problem(claim) is None
+    assert "reverted" in chain.claim_problem({**claim, "status": 0})
+
+
+def test_a_claimed_log_from_another_address_is_not_a_claim():
+    with _on_registry_chain(_registry_tx(registry="0x" + "66" * 20)):
+        with pytest.raises(RuntimeError) as exc:
+            chain.read_claim("0x" + "01" * 32)
+    assert "not a Quorum claim" in str(exc.value)
+
+
+def test_two_claimed_logs_in_one_transaction_are_refused():
+    log = {"address": REGISTRY, "topics": [chain.CLAIMED_TOPIC, DIGEST, bytes(12) + bytes.fromhex(SIGNER[2:])], "data": FEE_BYTES}
+    with _on_registry_chain(_registry_tx(logs=[log, dict(log)])):
+        with pytest.raises(RuntimeError) as exc:
+            chain.read_claim("0x" + "01" * 32)
+    assert "one claim per transaction" in str(exc.value)
+
+
+def test_a_self_addressed_claim_after_the_registry_is_refused_and_one_before_stands():
+    v2 = {"chain_id": 4663, "block": 60762176, "status": 1, "self_addressed": True, "burn_tx": "0x" + "ab" * 32,
+          "version": 2, "timestamp": 1_757_600_000}
+    with mock.patch.object(chain, "REGISTRY_SINCE", 1_757_650_000):
+        assert chain.claim_problem(v2) is None
+        assert "after the registry" in chain.claim_problem({**v2, "timestamp": 1_757_700_000})
+    with mock.patch.object(chain, "REGISTRY_SINCE", None):
+        assert chain.claim_problem({**v2, "timestamp": 1_757_700_000}) is None
+
+
+def test_attest_approves_only_when_short_then_claims_through_the_registry():
     calls = []
-    patches = [
-        mock.patch.object(chain, "_w3"),
-        mock.patch.object(chain, "_account"),
-        mock.patch.object(chain, "burn_fee", side_effect=lambda: calls.append("burn") or {"tx": "0x" + "ab" * 32, "url": "u"}),
-        mock.patch.object(chain, "read_burn", return_value={"from": burn_from, "amount": chain.CLAIM_FEE, "block": 1, "status": 1, "valid": burn_valid}),
-        mock.patch.object(chain, "_send", side_effect=lambda *a: calls.append("claim") or {"tx": "0x1", "block": 1, "gas_used": 1, "status": 1}),
-    ]
-    return calls, patches
-
-
-def test_attest_records_the_burn_before_the_claim_is_sent():
-    calls, patches = _attest_env()
-    with patches[0], patches[1] as acct, patches[2], patches[3], patches[4]:
+    common = dict(REGISTRY=REGISTRY, CHAIN_ID=chain.TOKEN_CHAIN_ID, _w3=mock.Mock(), token_balance=mock.Mock(return_value=chain.CLAIM_FEE),
+                  approve_fee=mock.Mock(side_effect=lambda w3, acct: calls.append("approve") or {"tx": "0xa", "url": "u", "block": 1, "status": 1}),
+                  claim_via_registry=mock.Mock(side_effect=lambda w3, acct, d: calls.append("claim") or {"tx": "0xc", "block": 2, "gas_used": 1, "status": 1}))
+    with mock.patch.multiple(chain, _allowance=mock.Mock(return_value=0), **common), mock.patch.object(chain, "_account") as acct:
         acct.return_value.address = SIGNER
-        chain.attest(FINDING, on_burn=lambda burn: calls.append("record"))
-    assert calls == ["burn", "record", "claim"]
-
-
-def test_attest_reuses_a_saved_burn_instead_of_burning_twice():
-    calls, patches = _attest_env()
-    with patches[0], patches[1] as acct, patches[2], patches[3], patches[4]:
+        result = chain.attest(FINDING)
+    assert calls == ["approve", "claim"] and result["registry"] == REGISTRY and result["approve"]["tx"] == "0xa"
+    calls.clear()
+    with mock.patch.multiple(chain, _allowance=mock.Mock(return_value=chain.CLAIM_FEE), **common), mock.patch.object(chain, "_account") as acct:
         acct.return_value.address = SIGNER
-        result = chain.attest(FINDING, burn_tx="0x" + "ab" * 32)
-    assert calls == ["claim"] and result["burn"]["reused"] and result["burn"]["tx"] == "0x" + "ab" * 32
+        result = chain.attest(FINDING)
+    assert calls == ["claim"] and result["approve"] is None
 
 
-def test_attest_refuses_to_reuse_a_burn_that_is_not_the_signers_fee():
-    for kwargs in ({"burn_valid": False}, {"burn_from": "0x" + "33" * 20}):
-        calls, patches = _attest_env(**kwargs)
-        with patches[0], patches[1] as acct, patches[2], patches[3], patches[4]:
-            acct.return_value.address = SIGNER
-            try:
-                chain.attest(FINDING, burn_tx="0x" + "ab" * 32)
-                assert False, "should have refused"
-            except RuntimeError as exc:
-                assert "not reusing" in str(exc)
-        assert calls == []
+def test_attest_refuses_without_a_registry_or_off_its_chain_or_without_the_fee():
+    with mock.patch.multiple(chain, REGISTRY=None, CHAIN_ID=chain.TOKEN_CHAIN_ID), pytest.raises(RuntimeError) as exc:
+        chain.attest(FINDING)
+    assert "QUORUM_REGISTRY" in str(exc.value)
+    with mock.patch.multiple(chain, REGISTRY=REGISTRY, CHAIN_ID=8453), pytest.raises(RuntimeError) as exc:
+        chain.attest(FINDING)
+    assert "unset QUORUM_CHAIN_ID" in str(exc.value)
+    with mock.patch.multiple(chain, REGISTRY=REGISTRY, CHAIN_ID=chain.TOKEN_CHAIN_ID, _w3=mock.Mock(),
+                             token_balance=mock.Mock(return_value=chain.CLAIM_FEE - 1), claim_via_registry=mock.Mock()) as patched, \
+         mock.patch.object(chain, "_account"), pytest.raises(RuntimeError) as exc:
+        chain.attest(FINDING)
+    assert "burns" in str(exc.value)
+
+
+def test_a_reveal_of_a_registry_claim_is_paid_by_construction_and_charged_to_the_claim():
+    fields = chain.reveal_fields(FINDING)
+    claim = {"chain_id": 4663, "chain": "Robinhood Chain", "from": SIGNER, "digest": "0x" + DIGEST.hex(), "burn_tx": None,
+             "registry": REGISTRY, "version": 3, "status": 1, "block": 1, "timestamp": 1}
+    reveal_tx = {"from": SIGNER, "input": chain.encode_reveal(bytes.fromhex("cd" * 32), fields)}
+    with mock.patch.object(chain, "_find_tx", return_value=(4663, mock.Mock(), reveal_tx)), \
+         mock.patch.object(chain, "read_claim", return_value=claim), mock.patch.object(chain, "read_burn") as burn:
+        r = chain.read_reveal("0x" + "ef" * 32)
+    burn.assert_not_called()
+    assert r["fee_paid"] and r["same_signer"] and r["digest_matches"] and r["payment"] == "0x" + "cd" * 32
 
 
 def test_send_returns_a_0x_prefixed_hash():
