@@ -24,7 +24,11 @@ from quorum.memory import SwarmMemory  # noqa: E402
 from quorum.swarm import run_swarm  # noqa: E402
 
 HEY = "https://heyresearch.xyz/api"
-SKIP = ("/lib/", "/node_modules/", "/test/", "/tests/", "/script/", "/scripts/", "/mocks/", "/mock/", "/forge-std/", "/openzeppelin", "/.git/")
+SKIP = ("/lib/", "/node_modules/", "/test/", "/tests/", "/script/", "/scripts/", "/mocks/", "/mock/", "/forge-std/", "/openzeppelin", "/.git/",
+        "/fixtures/", "/fixture/", "/testing/", "/harness/", "/echidna/", "/deprecated/", "/audit/", "/testdata/", "/templates/", "/testnet/", "/examples/")
+# Files that are tests, mocks or copies whatever folder they sit in. 50 of the 281 confirmations of the first
+# run were these (bench/ROBINHOOD.md).
+SKIP_NAME = re.compile(r"(\.t\.sol|\.s\.sol|\.flat\.sol|-flatten\.sol|\.invariant\.\w*\.sol|\.fuzz\.\w*\.sol|Test\w*\.sol|\w*Tests?\.sol|Mock\w*\.sol|\w*Mocks?\.sol|\w*Harness\.sol|\w*Canary\.sol)$")
 
 
 def get(url: str):
@@ -86,7 +90,8 @@ def clone(repo: str, dest: Path) -> bool:
 
 
 def scan(dest: Path, db: Path) -> dict:
-    files = [f for f in dest.rglob("*.sol") if not any(s in ("/" + str(f.relative_to(dest)).lower() + "/") for s in SKIP)]
+    files = [f for f in dest.rglob("*.sol")
+             if not any(s in ("/" + str(f.relative_to(dest)).lower() + "/") for s in SKIP) and not SKIP_NAME.search(f.name)]
     targets = {}
     for f in files:
         try:

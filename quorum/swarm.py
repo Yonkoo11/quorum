@@ -61,6 +61,17 @@ def run_swarm(
     return report
 
 
+def _split_witness(body: dict) -> bool:
+    """For unsafe-math the two readings must be of the same sum: wrap-lens on one line and bound-lens on
+    another is two candidates, not a finding. Every other pair agrees on a function. Added after the
+    Robinhood Chain run, where most false unsafe-math confirmations were a checked `+=` on one line and
+    an `unchecked` add on another (bench/ROBINHOOD.md)."""
+    if body.get("risk") != "unsafe-math":
+        return False
+    lines = {w.get("line") for w in (body.get("witnesses") or {}).values()}
+    return len(lines) > 1
+
+
 def _handle(memory: SwarmMemory, s: Sighting, threshold: int, report: RunReport) -> None:
     sig = s.signature
 
@@ -96,7 +107,7 @@ def _handle(memory: SwarmMemory, s: Sighting, threshold: int, report: RunReport)
         # candidate, not a confirmation: the finding still needs two local lenses.
         body = {**body, "hint": known.get("imported_from", {})}
 
-    if body["corroborations"] >= threshold:
+    if body["corroborations"] >= threshold and not _split_witness(body):
         memory.promote(s.key, body)
         report.promoted.append(body)
         memory.log(evaluated={"key": s.key}, acted={"quorum": body["seen_by"]}, forward={"pattern": sig})

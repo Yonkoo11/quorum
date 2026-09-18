@@ -42,7 +42,14 @@ The three true findings, and three more bugs the readers found next to a flagged
 4. **Test files outside test folders.** 50 out-of-scope findings came from `.t.sol`, `Mock*`, `Test*`, `fixtures/`, `harness`, `deprecated/` and `.flat.sol` audit copies that the path filter did not know. The filter learns the names.
 5. **Reentrancy through a private helper.** The one exploitable reentrancy the readers found sits in a private function called by three external ones; the lenses only sight external functions and flagged the wrong shape on the neighbour. The call-order lens should follow one level of internal calls.
 
-Every one of those becomes a change to the lenses, re-measured on the labelled corpora before and after, and this run is re-done after, with the before file kept in `history/`.
+Every one of those became a change to the lenses the same day, measured on the labelled corpora before and after (before files in `history/2026-09-18-*`):
+
+| | SmartBugs recall | SmartBugs precision | held-out recall | held-out precision |
+|---|---|---|---|---|
+| before | 63% | 48% | 50% | 62% |
+| after | 62% | 49% | 50% | 62% |
+
+The labelled corpora barely move, which is the point: they were built from the bugs the lenses were written for. The wild run is where the change shows, and it is being re-done with the new lenses; its numbers are appended here when it finishes.
 
 ## Reproduce
 

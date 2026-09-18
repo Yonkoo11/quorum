@@ -47,3 +47,5 @@ scanned 40 lens-units | confirmed 0 | recalled 0 | candidates 20 | suppressed 0 
 $ quorum --db fresh.db run --targets targets/Router.sol targets/WETH9.sol targets/TransparentUpgradeableProxy.sol
 scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 9 | suppressed 0 | duplicate work avoided 0
 ```
+
+Added 2026-09-18, when the baseline re-run confirmed a fifth SmartBugs function: `smart_billions.sol` `invest` sends back only the part of `msg.value` above the funding cap and credits shares for the part it keeps; every credit is matched by ether received. False.

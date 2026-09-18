@@ -449,3 +449,114 @@ def test_accounting_pair_confirms_only_together():
     assert run_swarm(NoMemory(_db()), {"R.sol": ONE_WAY_VAULT}).promoted == []
     fixed = run_swarm(SwarmMemory(_db()), {"R.sol": FIXED_VAULT}).promoted
     assert not [f for f in fixed if f["risk"] == "accounting-mismatch"]
+
+
+# ---- after the Robinhood Chain run (bench/ROBINHOOD.md): five changes, each with the shape that taught it ----
+
+HELPER_VAULT = """
+pragma solidity ^0.8.24;
+contract Vault {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => uint256) public rewardDebt;
+    uint256 public accRewardPerShare;
+    function claim() external returns (uint256 amount) { amount = _claim(msg.sender); }
+    function _claim(address user) private returns (uint256 amount) {
+        uint256 accumulated = balanceOf[user] * accRewardPerShare;
+        amount = accumulated - rewardDebt[user];
+        (bool ok, ) = payable(user).call{value: amount}("");
+        require(ok);
+        rewardDebt[user] = accumulated;
+    }
+}
+"""
+
+OWNER_PAYS = """
+pragma solidity ^0.8.24;
+contract Treasury {
+    address public owner;
+    uint256 public paid;
+    modifier onlyOwner() { require(msg.sender == owner); _; }
+    function pay(address to, uint256 amount) external onlyOwner {
+        (bool ok, ) = to.call{value: amount}("");
+        require(ok);
+        paid += amount;
+    }
+}
+"""
+
+ALIAS_LEDGER = """
+pragma solidity ^0.8.24;
+contract Staking {
+    struct Info { uint256 amount; }
+    mapping(address => Info) public users;
+    function stake(uint256 amount) external { users[msg.sender].amount += amount; }
+    function unstake(uint256 amount) external {
+        Info storage u = users[msg.sender];
+        u.amount -= amount;
+        payable(msg.sender).transfer(amount);
+    }
+}
+"""
+
+ONE_LINE_DEBIT = """
+pragma solidity ^0.8.24;
+contract Pool {
+    mapping(address => uint256) public staked;
+    function stake() external payable { staked[msg.sender] += msg.value; }
+    function unstake(uint256 amount) external {
+        unchecked { staked[msg.sender] -= amount; }
+        payable(msg.sender).transfer(amount);
+    }
+}
+"""
+
+SPLIT_SUM = """
+pragma solidity ^0.8.20;
+contract Token {
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    function mint(address to, uint256 amount) external {
+        totalSupply += amount;
+        unchecked { balanceOf[to] += amount; }
+    }
+}
+"""
+
+
+def _reentrancy_lenses_on(src: str, function: str) -> set[str]:
+    from quorum.agents import callorder_lens, guard_lens
+
+    return {s.lens for s in callorder_lens("C.sol", src) + guard_lens("C.sol", src)
+            if s.function == function and s.risk == "reentrancy"}
+
+
+def test_reentrancy_seen_through_a_private_helper():
+    """The Sherwood vault shape: the paying line lives in a private function three external ones call."""
+    assert _reentrancy_lenses_on(HELPER_VAULT, "claim") == {"callorder-lens", "guard-lens"}
+    assert _reentrancy_lenses_on(HELPER_VAULT, "_claim") == set()  # the helper is not an entry point
+
+
+def test_owner_only_function_is_not_a_reentrancy_target():
+    assert _reentrancy_lenses_on(OWNER_PAYS, "pay") == set()
+
+
+def test_ledger_reduced_through_a_storage_alias_is_two_way():
+    from quorum.agents import one_way_ledgers
+
+    assert one_way_ledgers(ALIAS_LEDGER) == set()
+    assert _accounting_lenses_on(ALIAS_LEDGER, "unstake") == set()
+
+
+def test_ledger_reduced_on_a_one_line_block_is_two_way():
+    from quorum.agents import one_way_ledgers
+
+    assert one_way_ledgers(ONE_LINE_DEBIT) == set()
+
+
+def test_unsafe_math_needs_both_readings_of_the_same_sum():
+    """wrap-lens on the unchecked add, bound-lens on the checked add above it: two candidates, no finding."""
+    assert _math_lenses_on(SPLIT_SUM, "mint") == {"wrap-lens", "bound-lens"}
+    with tempfile.TemporaryDirectory() as d:
+        report = run_swarm(SwarmMemory(os.path.join(d, "m.db")), {"Token.sol": SPLIT_SUM})
+    assert not [f for f in report.promoted if f["risk"] == "unsafe-math"]
+    assert [c for c in report.candidates if c["risk"] == "unsafe-math"]
