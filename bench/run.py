@@ -1,4 +1,4 @@
-"""Measure the six lenses and the quorum rule against a labelled corpus.
+"""Measure the lenses and the quorum rule against a labelled corpus.
 
     python bench/run.py /tmp/smartbugs-curated > bench/BENCHMARK.md
     python bench/run.py /tmp/DeFiVulnLabs --labels bench/labels/defivulnlabs.json > bench/HELDOUT.md

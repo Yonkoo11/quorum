@@ -1,4 +1,4 @@
-"""Measure the eight lenses against findings from recent public audit contests.
+"""Measure the lenses against findings from recent public audit contests.
 
     python bench/modern.py <workdir> --labels bench/labels/modern-c4.json > bench/MODERN.md
 

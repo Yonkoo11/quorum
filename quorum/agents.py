@@ -1,4 +1,4 @@
-"""Eight independent lenses, paired two-per-risk.
+"""Nine independent lenses, grouped by risk: two readings each for three risks, three for the access risk.
 
 Each lens is a narrow, deterministic reading of Solidity source. No lens can
 confirm anything on its own: a finding is only promoted when two lenses that
@@ -403,6 +403,131 @@ def sender_lens(contract: str, src: str, project: "Project | None" = None) -> li
     return out
 
 
+# A caller check, inline rather than as a modifier. It has to COMPARE the caller with something, or ask a
+# role: `require(balances[msg.sender] >= amount)` mentions the caller and authorises nothing.
+SENDER_CHECK = re.compile(r"(require|revert|if)\s*\([^;{]*"
+                          r"(msg\.sender\s*[!=]=|[!=]=\s*msg\.sender|_msgSender\(\)\s*[!=]=|[!=]=\s*_msgSender\(\)|"
+                          r"_checkOwner|hasRole\s*\(|_checkRole|onlyOwner)")
+# `ledger[msg.sender] = x` is the caller writing their own slot, which needs no permission at all.
+CALLER_KEYED = re.compile(r"^[^=]*\[[^\]]*(msg\.sender|_msgSender\(\))")
+
+
+# This risk is about who may call, so only a guard about the caller counts. `nonReentrant` and
+# `whenNotPaused` restrict when, not who, and reading them as authorisation was most of the first cut's
+# false confirmations.
+AUTH_MODIFIER = re.compile(r"^(only(?!Initializing$)\w*|auth|requiresAuth|restricted|permissioned|\w*Role\w*|"
+                           r"\w*Auth\w*|\w*Owner\w*|\w*Admin\w*|\w*Governance\w*|\w*Governor\w*)$", re.I)
+
+
+def _guards(fn: Function, parts: list[Function]) -> set[str]:
+    """What stands between an arbitrary CALLER and this function: an authorising modifier, or a sender check."""
+    g = {m for m in _modifiers(fn) if AUTH_MODIFIER.match(m)}
+    if any(SENDER_CHECK.search(p.body) for p in parts):
+        g.add("a sender check")
+    return g
+
+
+PARAMS = re.compile(r"\(([^)]*)\)")
+
+
+def _parameters(fn: Function) -> set[str]:
+    """The names a caller supplies. The last word of each declaration in the parameter list."""
+    m = PARAMS.search(fn.header)
+    if not m:
+        return set()
+    out = set()
+    for part in m.group(1).split(","):
+        words = re.findall(r"[A-Za-z_]\w*", part)
+        if len(words) > 1:
+            out.add(words[-1])
+    return out
+
+
+def _state_writes(parts: list[Function], svars: set[str], chosen_only: bool = False) -> dict[str, tuple[int, str]]:
+    """Every state variable these parts write, with the first line that writes it.
+
+    With chosen_only, a write counts only where the caller reaches it: the value written, or the slot it is
+    written to. A setter that copies a value out of a trusted contract into a fixed slot takes no permission
+    to call, because the caller decides neither, and that shape was a repeated false confirmation here.
+    """
+    out: dict[str, tuple[int, str]] = {}
+    params = {p for part in parts for p in _parameters(part)} if chosen_only else set()
+    for part in parts:
+        for ln, text in _lines(part):
+            m = STATE_WRITE.match(text) or DELETE.match(text)
+            if not m or m.group(1) not in svars or CALLER_KEYED.match(text):
+                continue
+            if chosen_only:
+                tail = text[m.end(1):]  # the index and the value, not the variable's own name
+                if not any(re.search(rf"\b{re.escape(p)}\b", tail) for p in params):
+                    continue
+            out.setdefault(m.group(1), (ln, text))
+    return out
+
+
+ONE_SHOT = re.compile(r"\b(initializer|reinitializer\s*\()")
+# A test the function itself applies to its caller. Wider than SENDER_CHECK, which wants a comparison:
+# `require(nft.isApprovedOrOwner(msg.sender, id))` names no operator and is still a caller check. This
+# lens claims a function carries none of the guard its siblings share, and a function making its own
+# decision about who is calling is not that; five of the hand-read false confirmations were this shape.
+OWN_CALLER_TEST = re.compile(r"\b(require|revert|assert)\s*\([^;{]*(msg\.sender|_msgSender\(\))"
+                             r"|\bif\s*\([^;{]*(msg\.sender|_msgSender\(\))[^;{]*\)\s*\{?\s*(revert|require)")
+
+
+def consistency_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
+    """Evidence: this function writes state that its siblings write only behind a guard it does not carry.
+
+    The other reading of this risk asks whether a function carries a modifier at all, and the one before
+    this asked whether the variable's name looks privileged. Neither reads the contract's own intent, and
+    modern code does not name its state fee or owner (bench/MODERN.md). This one lets the contract say what
+    the guard for a variable is: if every other externally callable function that writes it agrees on a
+    modifier, and this one carries no guard at all, that disagreement is the evidence. Carrying a
+    different guard is not enough. An admin setter beside a sibling that checks the caller in its own
+    body is guarded, only differently, and reading that as a finding was noise on every corpus here.
+    """
+    out = []
+    fns = parse_functions(src)
+    own = state_vars(src)
+
+    def open_to_callers(f: Function) -> bool:
+        # A one-shot initializer is guarded by the modifier that makes it one-shot: after deployment
+        # nobody can call it at all, so its siblings' modifiers say nothing about it.
+        if ONE_SHOT.search(f.header.split(")")[-1] or f.header):
+            return False
+        return _is_external(f) and not _is_readonly(f) and not _is_constructor(f) and bool(f.name)
+
+    for cname in {f.contract for f in fns if f.contract}:
+        family = [f for f in fns if f.contract == cname]
+        if project:
+            family += project.functions_of(cname)
+        svars = own | (project.vars_of(cname) if project else set())
+        helpers = _helpers(family)
+        if project:
+            helpers = {**project.helpers_of(cname), **helpers}
+        reach = {id(f): _with_helpers(f, helpers) for f in family if open_to_callers(f)}
+        writes = {id(f): _state_writes(reach[id(f)], svars) for f in family if open_to_callers(f)}
+        # A sibling only has to show that the variable is guarded somewhere, so every write of it counts
+        # there. The function being sighted is the one the caller has to be able to reach.
+        chosen = {id(f): _state_writes(reach[id(f)], svars, chosen_only=True) for f in family if open_to_callers(f)}
+        guards = {id(f): _guards(f, reach[id(f)]) for f in family if open_to_callers(f)}
+
+        for fn in fns:
+            if fn.contract != cname or not open_to_callers(fn):
+                continue
+            if OWN_CALLER_TEST.search(fn.body):
+                continue
+            mine = guards[id(fn)]
+            for var, (ln, text) in chosen[id(fn)].items():
+                siblings = [f for f in family if f is not fn and open_to_callers(f) and var in writes[id(f)]]
+                if not siblings:
+                    continue
+                shared = set.intersection(*(guards[id(f)] for f in siblings))
+                if shared and not mine:
+                    out.append(Sighting("consistency-lens", "unguarded-state-write", contract, fn.name, ln, text))
+                    break
+    return out
+
+
 # --------------------------- risk: unsafe-math ---------------------------
 #
 # One bug, two readings. The bug is storage arithmetic that can wrap round. wrap-lens reads the
@@ -609,6 +734,7 @@ LENSES = {
     "guard-lens": guard_lens,
     "modifier-lens": modifier_lens,
     "sender-lens": sender_lens,
+    "consistency-lens": consistency_lens,
     "wrap-lens": wrap_lens,
     "bound-lens": bound_lens,
     "ledger-lens": ledger_lens,

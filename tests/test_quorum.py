@@ -745,3 +745,82 @@ def test_an_inherited_balance_is_read_and_its_inherited_debit_is_read_with_it():
         report = run_swarm(SwarmMemory(os.path.join(d, "m.db")),
                            {"VaultBase.sol": BASE_VAULT, "Vault.sol": CHILD_VAULT})
     assert not [f for f in report.promoted if f["risk"] == "accounting-mismatch"]
+
+
+CONSISTENT_REGISTRY = """
+pragma solidity ^0.8.20;
+
+interface IConfig { function admin() external view returns (address); }
+
+contract Registry {
+    mapping(address => bool) public members;
+    mapping(address => uint256) public quota;
+    address public admin;
+    address public config;
+
+    modifier onlyAdmin() { require(msg.sender == admin, "not admin"); _; }
+
+    function addMember(address who) external onlyAdmin { members[who] = true; }
+
+    function dropMember(address who) external onlyAdmin { members[who] = false; }
+
+    function joinMember(address who) external { members[who] = true; }
+
+    function releaseQuota(address who) external {
+        require(msg.sender == who, "not you");
+        quota[who] = 0;
+    }
+
+    function claimSeat(address who) external initializer { members[who] = true; }
+
+    function setQuotaFor(address who, uint256 amount) external onlyAdmin { quota[who] = amount; }
+
+    function setQuota(uint256 amount) external { quota[msg.sender] = amount; }
+
+    function setAdmin(address who) external onlyAdmin { admin = who; }
+
+    function refreshAdmin() external { admin = IConfig(config).admin(); }
+}
+"""
+
+
+def _consistency(src):
+    from quorum.agents import consistency_lens
+
+    return {s.function for s in consistency_lens("Registry.sol", src)}
+
+
+def test_the_contract_says_what_the_guard_for_a_variable_is():
+    """Two functions write `members` behind onlyAdmin and one writes it behind nothing. The variable is
+    named nothing like a fee or an owner, so the older reading of this risk cannot see it; the
+    disagreement between siblings is the evidence."""
+    assert "joinMember" in _consistency(CONSISTENT_REGISTRY)
+
+
+def test_the_siblings_that_agree_are_not_themselves_sighted():
+    seen = _consistency(CONSISTENT_REGISTRY)
+    assert "addMember" not in seen and "dropMember" not in seen and "setQuotaFor" not in seen
+
+
+def test_a_function_that_tests_its_own_caller_is_not_missing_the_guard():
+    """`releaseQuota` carries no modifier at all, and is nobody's access-control gap: it decides for
+    itself who may call it. Five of the hand-read false confirmations in bench/MODERN.md were this."""
+    assert "releaseQuota" not in _consistency(CONSISTENT_REGISTRY)
+
+
+def test_a_one_shot_initializer_is_guarded_by_being_one_shot():
+    """After deployment nobody can call it, so what its siblings carry says nothing about it. Ten of
+    the confirmations on the modern corpus were an initializer beside a guarded setter."""
+    assert "claimSeat" not in _consistency(CONSISTENT_REGISTRY)
+
+
+def test_a_caller_writing_only_their_own_slot_is_not_the_shape():
+    """`quota[msg.sender]` is the caller's own row. `setQuotaFor` writes any row and is guarded; that
+    difference is the design, not a disagreement."""
+    assert "setQuota" not in _consistency(CONSISTENT_REGISTRY)
+
+
+def test_a_write_the_caller_cannot_reach_is_not_the_shape():
+    """`refreshAdmin` copies a value out of a contract the protocol chose, into a slot the caller does
+    not pick. Taking no permission to call it costs an attacker nothing, because they decide nothing."""
+    assert "refreshAdmin" not in _consistency(CONSISTENT_REGISTRY)

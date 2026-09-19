@@ -1,4 +1,4 @@
-# Benchmark — the 9 lenses on DeFiVulnLabs
+# Benchmark — the 8 lenses on DeFiVulnLabs
 
 Run 2026-09-19 · corpus commit `f61f6ee` · 57 files scanned · 10 targets · quorum threshold 2 · `python bench/run.py <corpus> --labels bench/labels/defivulnlabs.json`
 
@@ -20,7 +20,6 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | guard-lens | 43 | 2 |
 | modifier-lens | 59 | 1 |
 | sender-lens | 1 | 1 |
-| consistency-lens | 0 | 0 |
 | wrap-lens | 7 | 2 |
 | bound-lens | 17 | 2 |
 | ledger-lens | 0 | 0 |

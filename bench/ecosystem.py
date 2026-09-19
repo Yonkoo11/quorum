@@ -1,4 +1,4 @@
-"""Run the eight lenses over every public Solidity repo HEY Research lists for Robinhood Chain.
+"""Run the lenses over every public Solidity repo HEY Research lists for Robinhood Chain.
 
     .venv/bin/python bench/ecosystem.py <workdir>            # list, clone (depth 1), scan, write <workdir>/ecosystem.json
     .venv/bin/python bench/ecosystem.py <workdir> --report   # ROBINHOOD.md from the json (findings read by hand afterwards)
@@ -157,7 +157,7 @@ def report(work: Path) -> None:
         if v.get("skip"):
             skips[v["skip"].split(":")[0]] = skips.get(v["skip"].split(":")[0], 0) + 1
     print("# Every public Solidity repo on Robinhood Chain, scanned\n")
-    print(f"Run started {state['started']}. Listing: heyresearch.xyz/api, projects with a public GitHub repo, every GitHub repo in each project's sources. Repos whose GitHub language list includes Solidity or Vyper were cloned at depth 1 and read by the eight lenses with a fresh memory per repo; tests, libraries, scripts and mocks excluded. Command: `python bench/ecosystem.py <workdir>`.\n")
+    print(f"Run started {state['started']}. Listing: heyresearch.xyz/api, projects with a public GitHub repo, every GitHub repo in each project's sources. Repos whose GitHub language list includes Solidity or Vyper were cloned at depth 1 and read by the lenses with a fresh memory per repo; tests, libraries, scripts and mocks excluded. Command: `python bench/ecosystem.py <workdir>`.\n")
     print("| | count |\n|---|---|")
     print(f"| projects HEY lists with a public repo | {len(ps)} |")
     print(f"| distinct GitHub repos in their sources | {len(repos)} |")

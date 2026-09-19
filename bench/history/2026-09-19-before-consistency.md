@@ -1,4 +1,4 @@
-# Benchmark — the 9 lenses on SmartBugs-curated
+# Benchmark — the 8 lenses on SmartBugs-curated
 
 Run 2026-09-19 · corpus commit `230e649` · 143 files scanned · 73 targets · quorum threshold 2 · `python bench/run.py <corpus>`
 
@@ -7,10 +7,10 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
 | reentrancy | 31 | 91 | 28 | 31% | 90% | **39** | 28 | **72%** | **90%** |
-| unguarded-state-write | 21 | 216 | 9 | 4% | 43% | **5** | 2 | **40%** | **10%** |
+| unguarded-state-write | 21 | 214 | 9 | 4% | 43% | **1** | 1 | **100%** | **5%** |
 | unsafe-math | 21 | 172 | 21 | 12% | 100% | **49** | 17 | **35%** | **81%** |
-| accounting-mismatch | 0 | 43 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
-| **all** | 73 | 522 | 58 | 11% | 79% | **97** | 47 | **48%** | **64%** |
+| accounting-mismatch | 0 | 39 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
+| **all** | 73 | 516 | 58 | 11% | 79% | **93** | 46 | **49%** | **63%** |
 
 ## Per lens
 
@@ -20,13 +20,12 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | guard-lens | 91 | 28 |
 | modifier-lens | 208 | 9 |
 | sender-lens | 7 | 1 |
-| consistency-lens | 6 | 1 |
 | wrap-lens | 172 | 21 |
 | bound-lens | 49 | 17 |
 | ledger-lens | 7 | 0 |
-| payout-lens | 40 | 0 |
+| payout-lens | 36 | 0 |
 
-Candidates held back by the rule (one lens only): 425, of which on a target: 11.
+Candidates held back by the rule (one lens only): 423, of which on a target: 12.
 
 ## Confirmed findings that are not on a labelled target
 
@@ -38,7 +37,6 @@ Candidates held back by the rule (one lens only): 425, of which on a target: 11.
 - `0x19cf8481ea15427a98ba3cdd6d9e14690011ab10.sol` `refundTRA` unsafe-math — bound-lens, wrap-lens
 - `0x19cf8481ea15427a98ba3cdd6d9e14690011ab10.sol` `setBonusCreationRate` unsafe-math — bound-lens, wrap-lens
 - `0x663e4229142a27f00bafb5d087e1e730648314c3.sol` `_triggerCooldown` unsafe-math — bound-lens, wrap-lens
-- `0x663e4229142a27f00bafb5d087e1e730648314c3.sol` `bidERC20` unguarded-state-write — consistency-lens, modifier-lens
 - `0x663e4229142a27f00bafb5d087e1e730648314c3.sol` `withdrawBalance` unsafe-math — bound-lens, wrap-lens
 - `0x663e4229142a27f00bafb5d087e1e730648314c3.sol` `withdrawERC20Balance` accounting-mismatch — ledger-lens, payout-lens
 - `0x7d09edb07d23acb532a82be3da5c17d9d85806b4.sol` `donate` reentrancy — callorder-lens, guard-lens
@@ -68,8 +66,6 @@ Candidates held back by the rule (one lens only): 425, of which on a target: 11.
 - `lucky_doubler.sol` `join` unsafe-math — bound-lens, wrap-lens
 - `odds_and_evens.sol` `andTheWinnerIs` unsafe-math — bound-lens, wrap-lens
 - `parity_wallet_bug_1.sol` `confirm` reentrancy — callorder-lens, guard-lens
-- `parity_wallet_bug_1.sol` `initDaylimit` unguarded-state-write — consistency-lens, modifier-lens
-- `parity_wallet_bug_1.sol` `initMultiowned` unguarded-state-write — consistency-lens, modifier-lens
 - `parity_wallet_bug_1.sol` `initMultiowned` unsafe-math — bound-lens, wrap-lens
 - `parity_wallet_bug_2.sol` `confirm` reentrancy — callorder-lens, guard-lens
 - `parity_wallet_bug_2.sol` `initMultiowned` unsafe-math — bound-lens, wrap-lens
@@ -93,6 +89,7 @@ Candidates held back by the rule (one lens only): 425, of which on a target: 11.
 - `insecure_transfer.sol` `transfer` unsafe-math — seen by wrap-lens
 - `mapping_write.sol` `set` unguarded-state-write — seen by no lens
 - `modifier_reentrancy.sol` `airDrop` reentrancy — seen by no lens
+- `multiowned_vulnerable.sol` `newOwner` unguarded-state-write — seen by modifier-lens
 - `mycontract.sol` `sendTo` unguarded-state-write — seen by no lens
 - `parity_wallet_bug_1.sol` `fallback` unguarded-state-write — seen by no lens
 - `parity_wallet_bug_1.sol` `initWallet` unguarded-state-write — seen by no lens

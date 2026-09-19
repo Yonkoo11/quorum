@@ -60,8 +60,8 @@ built from the bugs these lenses were written for.
 | | SmartBugs-curated (73 targets) | | DeFiVulnLabs, held out (10 targets) | |
 |---|---|---|---|---|
 | | recall | precision | recall | precision |
-| lenses, any single lens | 78% | 12% | 50% | 5% |
-| **lenses, two-witness rule** | **63%** | **49%** | **50%** | **62%** |
+| lenses, any single lens | 79% | 11% | 50% | 4% |
+| **lenses, two-witness rule** | **64%** | **48%** | **50%** | **62%** |
 | Slither, strict | 48% | 41% | 40% | 20% |
 | Slither, loose | 49% | 24% | 40% | 7% |
 
@@ -69,9 +69,9 @@ Per risk, two-witness against Slither strict (recall / precision):
 
 | risk | two-witness, SmartBugs | Slither, SmartBugs | two-witness, held out | Slither, held out |
 |---|---|---|---|---|
-| reentrancy | 94% / 69% | 90% / 62% | 2 of 4, 67% | 2 of 4, 40% |
-| unguarded-state-write | 5% / 100% | 33% / 19% | 1 of 2, 100% | 1 of 2, 8% |
-| unsafe-math | 76% / 33% | 0% | 2 of 4, 50% | 1 of 4, 50% |
+| reentrancy | 90% / 72% | 90% / 62% | 2 of 4, 67% | 2 of 4, 40% |
+| unguarded-state-write | 10% / 40% | 33% / 19% | 1 of 2, 100% | 1 of 2, 8% |
+| unsafe-math | 81% / 35% | 0% | 2 of 4, 50% | 1 of 4, 50% |
 | accounting-mismatch | no labels; 4 confirmed, all counted false | no detector for this shape | no labels; 0 confirmed | no detector for this shape |
 
 Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLITHER.md),
@@ -90,9 +90,10 @@ Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLIT
 | [2026-09-16 seventh](history/2026-09-18-before-robinhood-fixes.md) | the accounting pair: `ledger-lens` (a balance with no way down anywhere in the contract) and `payout-lens` (value leaves against a balance this function never reduces). Names that count rather than hold (…Id, …Count, …Index, …Nonce) are not ledgers; that rule came after reading the first cut's seven confirmations here (three were an id or a count), so it is tuned. Four confirmations, all on functions the corpus labels for other bugs, all counted false | 63% | 48% | 94% | 69% |
 | [2026-09-18 eighth](history/2026-09-19-before-modern.md) | after the Robinhood Chain run ([ROBINHOOD.md](ROBINHOOD.md), 281 confirmations read by hand, 3 true): functions only the owner can call are not reentrancy targets; the reentrancy pair reads one level into the private helpers a function calls; a write anywhere on a line (`unchecked { x -= y; }`, `if (ok) t -= x;`) and a write through a storage alias count for the ledger check; `unchecked { x += y; }` on one line is read by the arithmetic pair; unsafe-math confirms only when both readings are of the same line. One SmartBugs target lost (an owner-only `WithdrawToHolder` that pays a caller-chosen address; the re-entry needs a second owner call), reentrancy false confirmations 13 → 11. The baseline re-run today before any change confirmed 96, one more than the file published on the 16th; the extra one (`smart_billions.sol` `invest`) is read in [ACCOUNTING.md](ACCOUNTING.md) and is false. Only names that mean one privileged party count as owner-only (`onlyMember`, `onlyStaker` stay in scope), which keeps two false reentrancy confirmations | 62% | 48% | 90% | 72% |
 | [2026-09-19 ninth](history/2026-09-19-before-crossfile.md) | three defects found by building [MODERN.md](MODERN.md), the first measurement against recent audit contests: a return clause (`external returns (address)`) was read as a modifier, so every returning function was invisible to `modifier-lens`; the access pair now follows the helpers a function calls, as the reentrancy pair already did; `modifier lock()` over an `_unlocked` flag counts as a reentrancy guard, which is the Uniswap V2 Pair idiom. Recall unchanged, one fewer false confirmation | 62% | 49% | 90% | 72% |
-| [2026-09-19 tenth](BENCHMARK.md) | a lens stops reading one file at a time: a contract is now read with the state and the internal helpers it inherits, resolved through the inheritance graph of the whole run and nothing wider. Nested mappings (`mapping(a => mapping(b => c))`) are declarations at last; the first cut stopped at the first closing bracket, so a balance keyed by two things was not state at all. Both came from [MODERN.md](MODERN.md), where four of the seven targets went from invisible to candidates. Recall 62% to 63% with precision held | 63% | 49% | 90% | 72% |
+| [2026-09-19 tenth](history/2026-09-19-before-consistency.md) | a lens stops reading one file at a time: a contract is now read with the state and the internal helpers it inherits, resolved through the inheritance graph of the whole run and nothing wider. Nested mappings (`mapping(a => mapping(b => c))`) are declarations at last; the first cut stopped at the first closing bracket, so a balance keyed by two things was not state at all. Both came from [MODERN.md](MODERN.md), where four of the seven targets went from invisible to candidates. Recall 62% to 63% with precision held | 63% | 49% | 90% | 72% |
+| [2026-09-19 eleventh](BENCHMARK.md) | `consistency-lens`, a ninth lens and a third reading of the access risk: a function that writes state its siblings only write behind a guard, and carries no guard itself. The contract says what the guard for a variable is, so a name that looks nothing like a fee or an owner is still readable. Built against [MODERN.md](MODERN.md), where it takes the recall on recent audit findings from 0% to 29% and which it therefore stops holding out; three rules narrow it, each from a false confirmation there (a one-shot `initializer` is guarded by being one-shot, a function that tests its own caller is not missing a guard, the caller must be able to reach the write). One more labelled SmartBugs target confirmed (`multiowned_vulnerable.sol` `newOwner`), four more false confirmations, and the held-out corpus did not move at all | 64% | 48% | 90% | 72% |
 
-All seven changes were made after looking at this corpus, so every row after the first is a tuned
+All ten changes were made after looking at this corpus, so every row after the first is a tuned
 number. The seventh added a pair for a bug this corpus does not label, so its four confirmations
 there can only count as false; the row records what the pair costs, not what it finds. The held-out run above is the untuned one. It did not move for the third and fourth
 changes; the fifth moved it from 30% / 60% to 40% / 44%, because the old arithmetic pair
@@ -102,14 +103,14 @@ could not confirm anything there and the new one confirms four; the sixth moved 
 ## What the numbers say
 
 - The two-witness rule is a precision filter and it costs recall, on both corpora. SmartBugs
-  reentrancy: the lenses alone reach 94% recall at 27% precision; the rule gives 69% precision at
-  the same 94% recall. Arithmetic: 95% at 12% alone, 76% at 33% with the rule. Held out: any lens
-  5% precision, the rule 62%.
+  reentrancy: the lenses alone reach 90% recall at 31% precision; the rule gives 72% precision at
+  the same 90% recall. Arithmetic: 100% at 12% alone, 81% at 35% with the rule. Held out: any lens
+  4% precision, the rule 62%.
 - The sixth run changed the comparison with Slither. Until then Slither was more precise on
   reentrancy (62% against 44%); the difference was one rule Slither has always applied, that a
-  2300-gas `transfer`/`send` cannot re-enter. With the same rule the two-witness pair finds 29 of
-  31 at 69% against Slither's 28 at 62%. Slither still finds far more access-control bugs on this
-  corpus (33% against 5%) and follows calls and storage, which the lenses do not: a call inside a
+  2300-gas `transfer`/`send` cannot re-enter. With the same rule the two-witness pair finds 28 of
+  31 at 72% against Slither's 28 at 62%. Slither still finds more access-control bugs on this
+  corpus (33% against 10%) and follows calls and storage, which the lenses do not: a call inside a
   modifier, a write reached through an internal call, and a guard in the caller are all invisible
   to them.
 - On the modern corpus the rule is the more precise of the two (62% against 20%) at higher recall
@@ -124,8 +125,8 @@ could not confirm anything there and the new one confirms four; the sixth moved 
   storage arithmetic that can wrap from the compiler's side (`wrap-lens`: a pre-0.8 pragma or an
   `unchecked` block) and from the code's side (`bound-lens`: no `require`, `assert` or `if` with a
   comparison on the operands before the write). Checked arithmetic with no guard is a candidate;
-  unchecked arithmetic behind a guard is a candidate; only both together confirm. 76% recall at
-  33% precision on 2017 code, where Slither has no overflow detector at all. Division before
+  unchecked arithmetic behind a guard is a candidate; only both together confirm. 81% recall at
+  35% precision on 2017 code, where Slither has no overflow detector at all. Division before
   multiplication is no longer covered by any lens; `Divmultiply.sol` and `Precision-loss.sol` are
   now honest misses.
 - What the arithmetic pair still misses: `BECToken.sol:batchTransfer` computes `cnt * _value`
