@@ -1,16 +1,16 @@
 # Benchmark — the 8 lenses on SmartBugs-curated
 
-Run 2026-09-19 · corpus commit `230e649` · 143 files scanned · 73 targets · quorum threshold 2 · `python bench/run.py <corpus>`
+Run 2026-09-18 · corpus commit `230e649` · 143 files scanned · 73 targets · quorum threshold 2 · `python bench/run.py <corpus>`
 
 Unit: a (file, function, risk). A target is a labelled function whose bug maps to a risk Quorum covers. Precision counts every finding not on a target as false, including hits on files the corpus labels for some other bug.
 
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
 | reentrancy | 31 | 91 | 28 | 31% | 90% | **39** | 28 | **72%** | **90%** |
-| unguarded-state-write | 21 | 208 | 9 | 4% | 43% | **1** | 1 | **100%** | **5%** |
+| unguarded-state-write | 21 | 179 | 8 | 4% | 38% | **1** | 1 | **100%** | **5%** |
 | unsafe-math | 21 | 171 | 20 | 12% | 95% | **48** | 16 | **33%** | **76%** |
-| accounting-mismatch | 0 | 37 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
-| **all** | 73 | 507 | 57 | 11% | 78% | **92** | 45 | **49%** | **62%** |
+| accounting-mismatch | 0 | 39 | 0 | 0% | n/a | **5** | 0 | **0%** | **n/a** |
+| **all** | 73 | 480 | 56 | 12% | 77% | **93** | 45 | **48%** | **62%** |
 
 ## Per lens
 
@@ -18,14 +18,14 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 |---|---|---|
 | callorder-lens | 39 | 28 |
 | guard-lens | 91 | 28 |
-| modifier-lens | 202 | 9 |
+| modifier-lens | 173 | 8 |
 | sender-lens | 7 | 1 |
 | wrap-lens | 171 | 20 |
 | bound-lens | 48 | 16 |
 | ledger-lens | 7 | 0 |
-| payout-lens | 34 | 0 |
+| payout-lens | 37 | 0 |
 
-Candidates held back by the rule (one lens only): 415, of which on a target: 12.
+Candidates held back by the rule (one lens only): 387, of which on a target: 11.
 
 ## Confirmed findings that are not on a labelled target
 
@@ -72,6 +72,7 @@ Candidates held back by the rule (one lens only): 415, of which on a target: 12.
 - `rubixi.sol` `addPayout` unsafe-math — bound-lens, wrap-lens
 - `smart_billions.sol` `commitDividend` unsafe-math — bound-lens, wrap-lens
 - `smart_billions.sol` `disinvest` unsafe-math — bound-lens, wrap-lens
+- `smart_billions.sol` `invest` accounting-mismatch — ledger-lens, payout-lens
 - `smart_billions.sol` `invest` unsafe-math — bound-lens, wrap-lens
 - `smart_billions.sol` `pay` unsafe-math — bound-lens, wrap-lens
 - `smart_billions.sol` `playSystem` unsafe-math — bound-lens, wrap-lens
@@ -90,7 +91,7 @@ Candidates held back by the rule (one lens only): 415, of which on a target: 12.
 - `insecure_transfer.sol` `transfer` unsafe-math — seen by wrap-lens
 - `mapping_write.sol` `set` unguarded-state-write — seen by no lens
 - `modifier_reentrancy.sol` `airDrop` reentrancy — seen by no lens
-- `multiowned_vulnerable.sol` `newOwner` unguarded-state-write — seen by modifier-lens
+- `multiowned_vulnerable.sol` `newOwner` unguarded-state-write — seen by no lens
 - `mycontract.sol` `sendTo` unguarded-state-write — seen by no lens
 - `parity_wallet_bug_1.sol` `fallback` unguarded-state-write — seen by no lens
 - `parity_wallet_bug_1.sol` `initWallet` unguarded-state-write — seen by no lens

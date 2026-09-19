@@ -99,15 +99,15 @@ cannot corroborate, recognise or forget.</pre>
         <p class="label">The numbers</p>
         <h2 class="display" id="h-numbers"><span class="line">Measured.</span> <span class="line">Every file kept.</span></h2>
       </div>
-      <p class="intro">Eight lenses over 143 contracts with known bugs, a second set of ten bugs they were never tuned on, and Slither run on the same files with the same rule. Each panel links to the file that produced it.</p>
+      <p class="intro">Eight lenses over 143 contracts with known bugs, a second set of ten bugs they were never tuned on, and Slither run on the same files with the same rule. Each panel links to the file that produced it. Measured against recent audits as well: of 131 findings across 16 contests, the four risks here are 5% of what was reported, and the rule confirmed none of those 7. <a href="https://github.com/Yonkoo11/quorum/blob/main/bench/MODERN.md">That file</a> names every miss.</p>
     </header>
     <div class="band c-5-4-3">
       <section class="panel raised p-precision" aria-labelledby="h-precision">
         <header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-precision">Right when it flags</h2><span class="aside">reentrancy</span></header>
-        <p class="big">69%</p>
+        <p class="big">72%</p>
         <dl class="bars">
-          <div><dt>One lens alone</dt><dd><span class="bar-track"><span class="bar-fill" style="--v:27"></span></span><span class="bar-n">27%</span></dd></div>
-          <div class="win"><dt>Two must agree</dt><dd><span class="bar-track"><span class="bar-fill" style="--v:69"></span></span><span class="bar-n">69%</span></dd></div>
+          <div><dt>One lens alone</dt><dd><span class="bar-track"><span class="bar-fill" style="--v:31"></span></span><span class="bar-n">31%</span></dd></div>
+          <div class="win"><dt>Two must agree</dt><dd><span class="bar-track"><span class="bar-fill" style="--v:72"></span></span><span class="bar-n">72%</span></dd></div>
         </dl>
         <p>Of the flags Quorum raises for the most common bug, on 143 contracts with known bugs, this many are right.</p>
         <a class="more" href="https://github.com/Yonkoo11/quorum/blob/main/bench/BENCHMARK.md">The file</a>
@@ -115,12 +115,12 @@ cannot corroborate, recognise or forget.</pre>
       <section class="panel p-history" aria-labelledby="h-history">
         <header class="plabel"><svg class="mark" data-mark="agreed" viewBox="0 0 56 38" aria-hidden="true" focusable="false"><g clip-path="url(#lens-clip)"><circle class="vesica" cx="37" cy="19" r="17"/></g><circle cx="19" cy="19" r="17"/><circle cx="37" cy="19" r="17"/></svg><h2 id="h-history">Bugs found</h2><span class="aside">seven runs</span></header>
         <p class="chart__ends"><span class="chart__from">1%</span><span class="chart__to g">62%</span></p>
-        <svg class="chart" viewBox="0 0 340 100" role="img" aria-label="Recall across eight benchmark runs: 1, 23, 31, 40, 62, 63, 63 and 62 percent">
-          <polygon class="chart__area" points="16,98 16,92.2 56,92.2 56,74.6 96,74.6 96,68.2 136,68.2 136,61 176,61 176,43.4 216,43.4 216,42.6 256,42.6 256,42.6 296,42.6 296,43.4 336,43.4 336,98"/>
-          <path class="chart__line" pathLength="1" d="M16,92.2 H56 V74.6 H96 V68.2 H136 V61 H176 V43.4 H216 V42.6 H256 V42.6 H296 V43.4 H336"/>
-          <circle class="chart__dot" cx="336" cy="43.4" r="5"/>
+        <svg class="chart" viewBox="0 0 380 100" role="img" aria-label="Recall across nine benchmark runs: 1, 23, 31, 40, 62, 63, 63, 62 and 62 percent">
+          <polygon class="chart__area" points="16,98 16,92.2 56,92.2 56,74.6 96,74.6 96,68.2 136,68.2 136,61 176,61 176,43.4 216,43.4 216,42.6 256,42.6 256,42.6 296,42.6 296,43.4 336,43.4 376,43.4 376,98"/>
+          <path class="chart__line" pathLength="1" d="M16,92.2 H56 V74.6 H96 V68.2 H136 V61 H176 V43.4 H216 V42.6 H256 V42.6 H296 V43.4 H376"/>
+          <circle class="chart__dot" cx="376" cy="43.4" r="5"/>
         </svg>
-        <p class="chart__axis label"><span>first run</span><span>eighth run</span></p>
+        <p class="chart__axis label"><span>first run</span><span>ninth run</span></p>
         <p>Recall on the same 143 contracts, from the hackathon build to today. Every before-file is in the repo.</p>
         <a class="more" href="https://github.com/Yonkoo11/quorum/blob/main/bench/README.md">The file</a>
       </section>
@@ -129,7 +129,7 @@ cannot corroborate, recognise or forget.</pre>
         <table class="vs">
           <thead><tr><th scope="col"><span class="visually-hidden">Measure</span></th><th scope="col">Quorum</th><th scope="col">Slither</th></tr></thead>
           <tbody>
-            <tr><th scope="row">Reentrancy, flags right</th><td class="g">69%</td><td>62%</td></tr>
+            <tr><th scope="row">Reentrancy, flags right</th><td class="g">72%</td><td>62%</td></tr>
             <tr><th scope="row">Access control, found</th><td>5%</td><td class="g">33%</td></tr>
             <tr><th scope="row">Arithmetic, found</th><td class="g">76%</td><td>0%</td></tr>
           </tbody>

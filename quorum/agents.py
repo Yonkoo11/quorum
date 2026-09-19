@@ -226,6 +226,19 @@ def callorder_lens(contract: str, src: str) -> list[Sighting]:
     return out
 
 
+# A reentrancy guard, by the name of the modifier or by the flag it sets. `modifier lock()` over a
+# `_unlocked` flag is the Uniswap V2 Pair idiom and the most forked guard in Solidity; reading only
+# OpenZeppelin's spelling made every fork of it look unguarded (bench/MODERN.md).
+GUARD_MODIFIER = re.compile(r"^(non_?reentrant|lock|locked|mutex|no_?reentry|reentrancy_?guard|synchronized)$", re.I)
+GUARD_FLAG = re.compile(r"nonReentrant|ReentrancyGuard|_?locked\b|_?unlocked\b|_?notEntered\b|_status\b")
+
+
+def _guarded(parts: list[Function]) -> bool:
+    if any(GUARD_MODIFIER.match(m) for p in parts for m in _modifiers(p)):
+        return True
+    return bool(GUARD_FLAG.search("".join(p.header + p.body for p in parts)))
+
+
 def guard_lens(contract: str, src: str) -> list[Sighting]:
     """Evidence: a function (or a helper it runs) moves value out and carries no reentrancy guard."""
     out = []
@@ -235,7 +248,7 @@ def guard_lens(contract: str, src: str) -> list[Sighting]:
         if _is_readonly(fn) or not _is_external(fn) or _owner_only(fn):
             continue
         parts = _with_helpers(fn, helpers)
-        if re.search(r"nonReentrant|ReentrancyGuard|_locked|lock\(\)", "".join(p.header + p.body for p in parts)):
+        if _guarded(parts):
             continue
         for part in parts:
             hit = next(((ln, text) for ln, text in _lines(part)
@@ -248,21 +261,38 @@ def guard_lens(contract: str, src: str) -> list[Sighting]:
 
 # ---------------------- risk: unguarded-state-write ----------------------
 
+# Everything between the parameter list and the body that is not a modifier: visibility, mutability,
+# inheritance keywords, and the return clause. `external returns (address)` is not a guard, and reading
+# `address` as one hid every returning function from this lens until the contest benchmark showed it
+# (bench/MODERN.md).
+_NOT_A_MODIFIER = {"external", "public", "internal", "private", "payable", "pure", "view", "constant",
+                   "virtual", "override", "returns", "memory", "calldata", "storage"}
+
+
+def _modifiers(fn: Function) -> set[str]:
+    """The modifier names a function carries, with the return clause and the keywords removed."""
+    tail = fn.header.split(")", 1)[-1]
+    tail = re.sub(r"\breturns\s*\([^)]*\)?", " ", tail)      # the return clause, closing brace optional
+    tail = re.sub(r"\boverride\s*\([^)]*\)?", " ", tail)     # override(A, B)
+    return {w for w in re.findall(r"\b[a-zA-Z_]\w*\b", tail)} - _NOT_A_MODIFIER
+
+
 def modifier_lens(contract: str, src: str) -> list[Sighting]:
     """Evidence: externally callable, writes storage, carries no modifier at all."""
     out, svars = [], state_vars(src)
-    known = {"external", "public", "payable", "returns", "virtual", "override", "memory", "calldata", "storage"}
-    for fn in parse_functions(src):
+    fns = parse_functions(src)
+    helpers = _helpers(fns)
+    for fn in fns:
         if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
             continue
-        tail = fn.header.split(")", 1)[-1]
-        mods = {w for w in re.findall(r"\b[a-zA-Z_]\w*\b", tail)} - known
+        mods = _modifiers(fn)
         if mods:
             continue
-        for ln, text in _lines(fn):
-            m = STATE_WRITE.match(text)
-            if m and m.group(1) in svars:
-                out.append(Sighting("modifier-lens", "unguarded-state-write", contract, fn.name, ln, text))
+        for part in _with_helpers(fn, helpers):
+            hit = next(((ln, text) for ln, text in _lines(part)
+                        for m in [STATE_WRITE.match(text)] if m and m.group(1) in svars), None)
+            if hit:
+                out.append(Sighting("modifier-lens", "unguarded-state-write", contract, fn.name, hit[0], hit[1]))
                 break
     return out
 
@@ -270,15 +300,21 @@ def modifier_lens(contract: str, src: str) -> list[Sighting]:
 def sender_lens(contract: str, src: str) -> list[Sighting]:
     """Evidence: writes a privileged-looking variable with no msg.sender check anywhere."""
     out, svars = [], state_vars(src)
-    for fn in parse_functions(src):
+    fns = parse_functions(src)
+    helpers = _helpers(fns)
+    for fn in fns:
         if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
             continue
-        if re.search(r"msg\.sender|_checkOwner|onlyOwner|hasRole|_msgSender", fn.body + fn.header):
+        parts = _with_helpers(fn, helpers)
+        if re.search(r"msg\.sender|_checkOwner|onlyOwner|hasRole|_msgSender",
+                     "".join(p.body + p.header for p in parts)):
             continue
-        for ln, text in _lines(fn):
-            m = STATE_WRITE.match(text)
-            if m and m.group(1) in svars and PRIVILEGED.search(m.group(1)):
-                out.append(Sighting("sender-lens", "unguarded-state-write", contract, fn.name, ln, text))
+        for part in parts:
+            hit = next(((ln, text) for ln, text in _lines(part)
+                        for m in [STATE_WRITE.match(text)]
+                        if m and m.group(1) in svars and PRIVILEGED.search(m.group(1))), None)
+            if hit:
+                out.append(Sighting("sender-lens", "unguarded-state-write", contract, fn.name, hit[0], hit[1]))
                 break
     return out
 

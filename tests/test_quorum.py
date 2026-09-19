@@ -580,3 +580,82 @@ def test_summary_page_names_both_witnesses_and_counts_candidates():
     assert f"{len(report.candidates)} candidate(s)" in page
     quiet = markdown(run_swarm(SwarmMemory(os.path.join(d, "n.db")), {"Empty.sol": "pragma solidity ^0.8.0; contract E {}"}), {})
     assert "Nothing confirmed" in quiet
+
+
+RETURNING_SETTER = """
+pragma solidity ^0.8.20;
+contract Factory {
+    address public last;
+    function create(address pool) external returns (address) {
+        last = pool;
+        return last;
+    }
+    function createGuarded(address pool) external onlyOwner returns (address) {
+        last = pool;
+        return last;
+    }
+}
+"""
+
+WRITES_IN_A_HELPER = """
+pragma solidity ^0.8.20;
+contract Registry {
+    mapping(uint256 => address) public validators;
+    uint256 public feeRate;
+    function addValidator(uint256 id, address v) public {
+        _add(id, v);
+    }
+    function _add(uint256 id, address v) internal {
+        validators[id] = v;
+        feeRate = 1;
+    }
+}
+"""
+
+
+def _access_lenses_on(src: str, function: str) -> set[str]:
+    from quorum.agents import modifier_lens, sender_lens
+
+    return {s.lens for s in modifier_lens("C.sol", src) + sender_lens("C.sol", src)
+            if s.function == function and s.risk == "unguarded-state-write"}
+
+
+def test_a_return_clause_is_not_a_modifier():
+    """`external returns (address)` read as a guard hid every returning function (bench/MODERN.md)."""
+    assert "modifier-lens" in _access_lenses_on(RETURNING_SETTER, "create")
+    assert _access_lenses_on(RETURNING_SETTER, "createGuarded") == set()
+
+
+def test_access_pair_sees_a_write_made_by_a_helper():
+    assert _access_lenses_on(WRITES_IN_A_HELPER, "addValidator") == {"modifier-lens", "sender-lens"}
+
+
+PAIR_WITH_LOCK = """
+pragma solidity 0.8.13;
+contract Pair {
+    uint internal _unlocked = 1;
+    mapping(address => uint) public balanceOf;
+    modifier lock() {
+        require(_unlocked == 1, "LOCKED");
+        _unlocked = 2;
+        _;
+        _unlocked = 1;
+    }
+    function swap(address to, uint amount) external lock {
+        (bool ok, ) = to.call{value: amount}("");
+        require(ok);
+        balanceOf[to] -= amount;
+    }
+    function drain(address to, uint amount) external {
+        (bool ok, ) = to.call{value: amount}("");
+        require(ok);
+        balanceOf[to] -= amount;
+    }
+}
+"""
+
+
+def test_a_lock_modifier_is_a_reentrancy_guard():
+    """`modifier lock()` over an `_unlocked` flag is the Uniswap V2 Pair idiom (bench/MODERN.md)."""
+    assert _reentrancy_lenses_on(PAIR_WITH_LOCK, "swap") == {"callorder-lens"}
+    assert _reentrancy_lenses_on(PAIR_WITH_LOCK, "drain") == {"callorder-lens", "guard-lens"}
