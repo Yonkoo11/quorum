@@ -7,10 +7,10 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
 | reentrancy | 31 | 91 | 28 | 31% | 90% | **39** | 28 | **72%** | **90%** |
-| unguarded-state-write | 21 | 214 | 9 | 4% | 43% | **1** | 1 | **100%** | **5%** |
-| unsafe-math | 21 | 172 | 21 | 12% | 100% | **49** | 17 | **35%** | **81%** |
-| accounting-mismatch | 0 | 39 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
-| **all** | 73 | 516 | 58 | 11% | 79% | **93** | 46 | **49%** | **63%** |
+| unguarded-state-write | 21 | 208 | 9 | 4% | 43% | **1** | 1 | **100%** | **5%** |
+| unsafe-math | 21 | 171 | 20 | 12% | 95% | **48** | 16 | **33%** | **76%** |
+| accounting-mismatch | 0 | 37 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
+| **all** | 73 | 507 | 57 | 11% | 78% | **92** | 45 | **49%** | **62%** |
 
 ## Per lens
 
@@ -18,14 +18,14 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 |---|---|---|
 | callorder-lens | 39 | 28 |
 | guard-lens | 91 | 28 |
-| modifier-lens | 208 | 9 |
+| modifier-lens | 202 | 9 |
 | sender-lens | 7 | 1 |
-| wrap-lens | 172 | 21 |
-| bound-lens | 49 | 17 |
+| wrap-lens | 171 | 20 |
+| bound-lens | 48 | 16 |
 | ledger-lens | 7 | 0 |
-| payout-lens | 36 | 0 |
+| payout-lens | 34 | 0 |
 
-Candidates held back by the rule (one lens only): 423, of which on a target: 12.
+Candidates held back by the rule (one lens only): 415, of which on a target: 12.
 
 ## Confirmed findings that are not on a labelled target
 
@@ -80,6 +80,7 @@ Candidates held back by the rule (one lens only): 423, of which on a target: 12.
 ## Targets the rule missed
 
 - `0x627fa62ccbb1c1b04ffaecd72a53e37fc0e17839.sol` `WithdrawToHolder` reentrancy — seen by no lens
+- `BECToken.sol` `batchTransfer` unsafe-math — seen by no lens
 - `FibonacciBalance.sol` `fallback` unguarded-state-write — seen by no lens
 - `FibonacciBalance.sol` `withdraw` unguarded-state-write — seen by modifier-lens
 - `arbitrary_location_write_simple.sol` `PopBonusCode` unguarded-state-write — seen by no lens

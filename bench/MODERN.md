@@ -20,11 +20,11 @@ That number is the ceiling on this tool's usefulness against a modern audit, bef
 
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
-| reentrancy | 1 | 84 | 0 | 0% | 0% | **4** | 0 | **0%** | **0%** |
-| unguarded-state-write | 5 | 315 | 3 | 1% | 60% | **7** | 0 | **0%** | **0%** |
-| unsafe-math | 0 | 203 | 0 | 0% | n/a | **12** | 0 | **0%** | **n/a** |
-| accounting-mismatch | 1 | 74 | 0 | 0% | 0% | **3** | 0 | **0%** | **0%** |
-| **all** | 7 | 676 | 3 | 0% | 43% | **26** | 0 | **0%** | **0%** |
+| reentrancy | 1 | 91 | 0 | 0% | 0% | **5** | 0 | **0%** | **0%** |
+| unguarded-state-write | 5 | 346 | 4 | 1% | 80% | **7** | 0 | **0%** | **0%** |
+| unsafe-math | 0 | 221 | 0 | 0% | n/a | **12** | 0 | **0%** | **n/a** |
+| accounting-mismatch | 1 | 92 | 0 | 0% | 0% | **4** | 0 | **0%** | **0%** |
+| **all** | 7 | 750 | 4 | 1% | 57% | **28** | 0 | **0%** | **0%** |
 
 ## Every labelled target, and what the lenses did with it
 
@@ -32,7 +32,7 @@ That number is the ceiling on this tool's usefulness against a modern audit, bef
 - `2025-02-recall/contracts/contracts/gateway/router/CheckpointingFacet.sol` `execBottomUpMsgs` accounting-mismatch — missed, seen by no lens
 - `2025-02-recall/contracts/contracts/subnet/SubnetActorManagerFacet.sol` `leave` reentrancy — missed, seen by no lens
 - `2025-04-virtuals-protocol/contracts/contribution/ServiceNft.sol` `updateImpact` unguarded-state-write — candidate, seen by modifier-lens
-- `2025-04-virtuals-protocol/contracts/virtualPersona/AgentNftV2.sol` `addValidator` unguarded-state-write — missed, seen by no lens
+- `2025-04-virtuals-protocol/contracts/virtualPersona/AgentNftV2.sol` `addValidator` unguarded-state-write — candidate, seen by modifier-lens
 - `2025-04-virtuals-protocol/contracts/virtualPersona/AgentVeToken.sol` `stake` unguarded-state-write — candidate, seen by modifier-lens
 - `2025-05-blackhole/contracts/AlgebraCLVe33/GaugeFactoryCL.sol` `createGauge` unguarded-state-write — candidate, seen by modifier-lens
 
@@ -43,11 +43,19 @@ Read one by one in the source, not inferred from the table.
 | target | why the lenses did not confirm it |
 |---|---|
 | recall `leave` reentrancy | The function carries `nonReentrant`. The re-entry comes through `stake`, a different entry point that has no guard. A cross-function bug: the announced limit, and a line reader inside one function cannot see it. |
-| recall `register` unguarded write | Every write goes through `s.` and a local `Subnet storage` pointer. The state lives in a struct declared in another file (the diamond pattern), so a reader of this file alone sees no state write at all. |
+| recall `register` unguarded write | Every write goes through `s.` and a local `Subnet storage` pointer. The state is a struct reached through a library, not a declaration this contract inherits, so even reading across files there is no state write here to see. |
 | recall `execBottomUpMsgs` accounting | Same cause: `s.circSupply` is not a declaration this file contains. |
-| virtuals `addValidator` unguarded write | The function body writes nothing; the writes happen in `_addValidator` and `_initValidatorScore`, which are inherited from another file. The pair follows helpers within a file, not across files. |
+| virtuals `addValidator` unguarded write | The function body writes nothing; the writes happen in `_addValidator`, inherited from another file. Since reading across files this is a candidate, seen by `modifier-lens`. |
 | virtuals `stake`, `updateImpact` unguarded write | Both seen by `modifier-lens` and held as candidates. `sender-lens` did not corroborate because each body mentions `msg.sender`, which the lens reads as a caller check. |
 | blackhole `createGauge` unguarded write | Seen by `modifier-lens`, held as a candidate. `sender-lens` did not corroborate because the variables written (`last_gauge`, `__gauges`) do not carry a privileged-looking name. |
+
+Four of the seven are now candidates rather than invisible, because a lens reads what a contract inherits since
+v0.6.0. None of the four is confirmed, and they all stop at the same place: `sender-lens`, the second reading of
+the access pair, keys on the *name* of the variable written (fee, rate, owner, oracle and the rest) and on the
+absence of `msg.sender`. Modern code writes `last_gauge` and `_validatorsMap`. Loosening that rule to "any state
+write" would make the two lenses one lens, and a quorum of one is not a quorum, so the answer is a genuinely
+different second reading and it is not designed yet. That is the next open question, and it will be worked on the
+labelled corpora, not here.
 
 Four of the seven come down to one thing: **this tool reads one file at a time.** Modern protocols keep their state in a diamond struct, a base contract or a library, and split a function's work across files. That is not a rule to tune; it is a different program, and it is written down as the next decision rather than hidden in a number.
 
@@ -72,29 +80,37 @@ Both are written down here and will be built against the labelled corpora first,
 
 | lens | sightings | on a target |
 |---|---|---|
-| callorder-lens | 14 | 0 |
-| guard-lens | 74 | 0 |
-| modifier-lens | 289 | 3 |
+| callorder-lens | 15 | 0 |
+| guard-lens | 81 | 0 |
+| modifier-lens | 320 | 4 |
 | sender-lens | 33 | 0 |
 | wrap-lens | 23 | 0 |
-| bound-lens | 192 | 0 |
-| ledger-lens | 23 | 0 |
-| payout-lens | 54 | 0 |
+| bound-lens | 210 | 0 |
+| ledger-lens | 22 | 0 |
+| payout-lens | 74 | 0 |
 
-Candidates held back by the rule (one lens only): 650. Confirmations that name no labelled finding: 26.
+Candidates held back by the rule (one lens only): 722. Confirmations that name no labelled finding: 28.
 
 ## The confirmations, read by hand
 
-All 26 were opened and read in the source. Every one is false. Nine are `unchecked` arithmetic bounded by a checked
-operation beside it, seven are the zero-argument setter above, four are vendored Uniswap libraries whose wrap is the
-design, three are payouts that zero the balance before they pay, two are calls to a contract fixed in the constructor,
-and one is a stateless multicall helper that holds no funds.
+All 28 were opened and read in the source. None is a bug the audit missed. Nine are `unchecked` arithmetic
+bounded by a checked operation beside it, seven are a zero-argument setter that copies a value from a trusted
+contract, four are vendored Uniswap libraries whose wrap is the design, four are payouts that zero the balance
+before they pay, two are calls to a contract fixed in the constructor, and one is a stateless multicall helper
+that holds no funds.
+
+The twenty-eighth is worth its own line, because it is not quite a false alarm. `ReferralRegistry.becomeReferrer`
+in the Merkl contest pays ether to an address any caller can register, and pulls a caller-chosen token, before it
+writes its state, with no guard anywhere in the file despite a comment that claims one. The audit did not report
+it because the file is named in that contest's out-of-scope list. So the shape is real and nobody was looking at
+it; it is not counted as a true positive here, because this benchmark scores against what the audits found, and
+nothing was verified beyond reading it.
 
 ## Contests
 
 | contest | findings | Quorum-shaped | files scanned | confirmations |
 |---|---|---|---|---|
-| 2025-01-liquid-ron | 3 | 0 | 6 | 0 |
+| 2025-01-liquid-ron | 3 | 0 | 6 | 1 |
 | 2025-01-next-generation | 2 | 0 | 6 | 0 |
 | 2025-02-recall | 13 | 3 | 36 | 0 |
 | 2025-03-nudgexyz | 4 | 0 | 3 | 0 |
@@ -108,5 +124,5 @@ and one is a stateless multicall helper that holds no funds.
 | 2025-11-ekubo | 4 | 0 | 81 | 1 |
 | 2025-11-garden | 1 | 0 | 6 | 0 |
 | 2025-11-megapot | 11 | 0 | 6 | 2 |
-| 2025-11-merkl | 3 | 0 | 21 | 7 |
+| 2025-11-merkl | 3 | 0 | 21 | 8 |
 | 2025-11-sukukfi | 4 | 0 | 8 | 2 |

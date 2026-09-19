@@ -659,3 +659,89 @@ def test_a_lock_modifier_is_a_reentrancy_guard():
     """`modifier lock()` over an `_unlocked` flag is the Uniswap V2 Pair idiom (bench/MODERN.md)."""
     assert _reentrancy_lenses_on(PAIR_WITH_LOCK, "swap") == {"callorder-lens"}
     assert _reentrancy_lenses_on(PAIR_WITH_LOCK, "drain") == {"callorder-lens", "guard-lens"}
+
+
+# ---- reading across files: what a contract inherits (bench/MODERN.md named this as the next thing) ----
+
+BASE_REGISTRY = """
+pragma solidity ^0.8.20;
+contract ValidatorRegistry {
+    mapping(uint256 => mapping(address => bool)) private _validatorsMap;
+    function _addValidator(uint256 id, address v) internal {
+        _validatorsMap[id][v] = true;
+    }
+}
+"""
+
+CHILD_REGISTRY = """
+pragma solidity ^0.8.20;
+import {ValidatorRegistry} from "./ValidatorRegistry.sol";
+contract AgentNft is ValidatorRegistry {
+    function addValidator(uint256 id, address v) public {
+        _addValidator(id, v);
+    }
+}
+"""
+
+BASE_VAULT = """
+pragma solidity ^0.8.20;
+contract VaultBase {
+    mapping(address => uint256) public staked;
+    function _debit(address a, uint256 amount) internal { staked[a] -= amount; }
+}
+"""
+
+CHILD_VAULT = """
+pragma solidity ^0.8.20;
+import {VaultBase} from "./VaultBase.sol";
+contract Vault is VaultBase {
+    function stake() external payable { staked[msg.sender] += msg.value; }
+    function unstake(uint256 amount) external {
+        _debit(msg.sender, amount);
+        payable(msg.sender).transfer(amount);
+    }
+}
+"""
+
+
+def test_a_nested_mapping_is_state():
+    """`mapping(a => mapping(b => c))` stopped the declaration reader at the first bracket, so a balance
+    keyed by two things was not state at all (bench/MODERN.md)."""
+    from quorum.agents import state_vars
+
+    assert "_validatorsMap" in state_vars(BASE_REGISTRY)
+
+
+def test_the_project_resolves_what_a_contract_inherits():
+    from quorum.agents import Project
+
+    p = Project.read({"ValidatorRegistry.sol": BASE_REGISTRY, "AgentNft.sol": CHILD_REGISTRY})
+    assert p.parents["AgentNft"] == ["ValidatorRegistry"]
+    assert "_validatorsMap" in p.vars_of("AgentNft")
+    assert "_addValidator" in p.helpers_of("AgentNft")
+    assert p.vars_of("ValidatorRegistry") == set()   # a base inherits nothing here
+
+
+def test_a_write_made_by_an_inherited_helper_is_seen():
+    from quorum.agents import Project, modifier_lens
+
+    p = Project.read({"ValidatorRegistry.sol": BASE_REGISTRY, "AgentNft.sol": CHILD_REGISTRY})
+    seen = {s.function for s in modifier_lens("AgentNft.sol", CHILD_REGISTRY, p)}
+    assert "addValidator" in seen
+    assert not modifier_lens("AgentNft.sol", CHILD_REGISTRY)  # one file alone still sees nothing
+
+
+def test_an_inherited_balance_is_read_and_its_inherited_debit_is_read_with_it():
+    """The child pays out against a balance declared in its base. Reading one file, the balance is not
+    state at all and the payout is invisible; reading what the contract inherits, both the balance and
+    the debit that keeps it honest come into view, so the pair stays quiet."""
+    from quorum.agents import Project, one_way_ledgers, payout_lens
+
+    p = Project.read({"VaultBase.sol": BASE_VAULT, "Vault.sol": CHILD_VAULT})
+    assert "staked" in p.vars_of("Vault")
+    assert one_way_ledgers(CHILD_VAULT, p, "Vault") == set()   # the base debits it, so it is not one-way
+    assert not payout_lens("Vault.sol", CHILD_VAULT, p)
+    with tempfile.TemporaryDirectory() as d:
+        report = run_swarm(SwarmMemory(os.path.join(d, "m.db")),
+                           {"VaultBase.sol": BASE_VAULT, "Vault.sol": CHILD_VAULT})
+    assert not [f for f in report.promoted if f["risk"] == "accounting-mismatch"]

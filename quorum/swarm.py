@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 
-from .agents import LENSES, Sighting
+from .agents import LENSES, Project, Sighting
 from .memory import QUORUM_THRESHOLD, SwarmMemory
 
 
@@ -44,6 +44,7 @@ def run_swarm(
     report = RunReport(memory_enabled=memory.enabled)
     agent_id = agent_id or f"pid-{os.getpid()}"
 
+    project = Project.read(targets)   # what each contract inherits, so a lens is not stuck inside one file
     for contract, src in targets.items():
         if fresh_claims:
             memory.clear_claims(contract, list(LENSES))
@@ -55,7 +56,7 @@ def run_swarm(
                 continue
             report.scanned += 1
 
-            for s in lens(contract, src):
+            for s in lens(contract, src, project):
                 _handle(memory, s, threshold, report)
 
     return report

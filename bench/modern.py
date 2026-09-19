@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from bench.run import Corpus, RISKS, pct, row  # noqa: E402
-from quorum.agents import LENSES  # noqa: E402
+from quorum.agents import LENSES, Project  # noqa: E402
 from quorum.memory import QUORUM_THRESHOLD  # noqa: E402
 
 # Dependencies, tests and build output are not the audited code and are not scanned.
@@ -73,10 +73,14 @@ def main(argv: list[str] | None = None) -> None:
 
     sightings: dict[tuple[str, str, str], set[str]] = defaultdict(set)
     lens_hits: dict[str, set] = defaultdict(set)
-    for name, path in corpus.files:
-        src = path.read_text(errors="replace")
+    sources = {name: path.read_text(errors="replace") for name, path in corpus.files}
+    # One project per contest: a contract never inherits from a different protocol.
+    projects = {c: Project.read({n: s for n, s in sources.items() if n.startswith(c + "/")})
+                for c in sorted({n.split("/")[0] for n in sources})}
+    for name, src in sources.items():
+        project = projects[name.split("/")[0]]
         for lens_name, lens in LENSES.items():
-            for s in lens(name, src):
+            for s in lens(name, src, project):
                 key = (name, s.function, s.risk)
                 sightings[key].add(lens_name)
                 lens_hits[lens_name].add(key)

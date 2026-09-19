@@ -9,7 +9,7 @@ Disagreement is meaningful and is kept as a candidate, not published.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import Iterator
 
 from .memory import signature
@@ -20,7 +20,7 @@ PRIVILEGED = re.compile(r"\b(owner|admin|treasury|fee|rate|price|oracle|paused|r
 # hook runs inside it.
 EXTERNAL_CALL = re.compile(r"\.(call|delegatecall)\s*[{(]|\.\w+\s*\{\s*value\s*:|\.(call|delegatecall|callcode)\.value\s*\(|\.(transfer|send)\s*\([^()]*,")
 DELETE = re.compile(r"^\s*delete\s+([A-Za-z_]\w*)")
-CONTRACT = re.compile(r"^\s*(?:abstract\s+)?(?:contract|library)\s+(\w+)", re.M)
+CONTRACT = re.compile(r"^\s*(?:abstract\s+)?(?:contract|library|interface)\s+(\w+)((?:\s+is\s[^{]*)?)", re.M)
 STATE_WRITE = re.compile(r"^\s*([A-Za-z_]\w*)\s*(\[[^\]]*\]|\.\w+)*\s*(=|\+=|-=)[^=]")
 FUNC = re.compile(r"^\s*function\s*(\w*)\s*\(", re.M)  # the name is empty for a 0.4 fallback: `function () payable`
 ALIAS = re.compile(r"^\s*(?:var|\w+(?:\.\w+)?\s+storage)\s+(\w+)\s*=\s*([A-Za-z_]\w*)")
@@ -57,6 +57,70 @@ class Function:
     start_line: int        # the `function` keyword
     body_line: int = 0     # the opening brace; evidence lines are counted from here
     contract: str = ""     # the enclosing contract, so a 0.4 constructor (same name) can be told apart
+
+
+@dataclass
+class Project:
+    """Every contract in one run, so a lens can see what a contract inherits from another file.
+
+    A lens reads one file. Modern protocols declare their state in a base contract and put a
+    function's work in an internal helper one file up, which is why four of the seven findings in
+    bench/MODERN.md were invisible to every lens. This carries the inheritance graph, so a function
+    is read with the state and the code its own contract actually has, and with nothing else: an
+    unrelated contract's names stay out of scope, or every same-named local would look like a
+    state write.
+    """
+
+    decls: dict[str, set[tuple[str, str]]] = field(default_factory=dict)   # contract -> its own (type, name)
+    funcs: dict[str, list["Function"]] = field(default_factory=dict)       # contract -> its own functions
+    parents: dict[str, list[str]] = field(default_factory=dict)            # contract -> direct base names
+
+    @classmethod
+    def read(cls, targets: dict[str, str]) -> "Project":
+        p = cls()
+        for src in targets.values():
+            stripped = _strip_comments(src)
+            fns = parse_functions(src)
+            outside = stripped
+            for f in fns:
+                outside = outside.replace(f.body, "\n" * f.body.count("\n"))
+            heads = [(m.start(), m.group(1), m.group(2) or "") for m in CONTRACT.finditer(stripped)]
+            for i, (pos, name, bases) in enumerate(heads):
+                end = heads[i + 1][0] if i + 1 < len(heads) else len(outside)
+                p.parents.setdefault(name, []).extend(
+                    b for b in re.findall(r"\b([A-Z]\w*)", re.sub(r"^\s*is\b", " ", bases.strip())) if b != name)
+                p.decls.setdefault(name, set()).update(
+                    (m.group(1), m.group(2)) for m in _DECL.finditer(outside[pos:end]))
+            for f in fns:
+                if f.contract:
+                    p.funcs.setdefault(f.contract, []).append(f)
+        return p
+
+    def _ancestors(self, contract: str) -> list[str]:
+        """The bases of this contract, nearest first. Its own file is read directly, so it is not here."""
+        seen, stack, out = {contract}, list(self.parents.get(contract, [])), []
+        while stack:
+            c = stack.pop(0)
+            if c in seen:
+                continue
+            seen.add(c); out.append(c)
+            stack.extend(self.parents.get(c, []))
+        return out
+
+    def typed_of(self, contract: str) -> set[tuple[str, str]]:
+        return {d for a in self._ancestors(contract) for d in self.decls.get(a, set())}
+
+    def vars_of(self, contract: str) -> set[str]:
+        return {name for _, name in self.typed_of(contract)}
+
+    def functions_of(self, contract: str) -> list["Function"]:
+        return [f for a in self._ancestors(contract) for f in self.funcs.get(a, [])]
+
+    def helpers_of(self, contract: str) -> dict[str, "Function"]:
+        out: dict[str, "Function"] = {}
+        for a in reversed(self._ancestors(contract)):
+            out.update({f.name: f for f in self.funcs.get(a, []) if f.name and not _is_external(f)})
+        return out
 
 
 def _strip_comments(src: str) -> str:
@@ -115,7 +179,11 @@ def parse_functions(src: str) -> list[Function]:
     return out
 
 
-_DECL = re.compile(r"^\s*(mapping\s*\([^)]*\)|address|uint\d*|int\d*|bool|bytes\d*|string)\s+"
+# `mapping(a => mapping(b => c))` is ordinary Solidity and the first cut of this stopped at the first
+# closing bracket, so every nested mapping was invisible: a balance keyed by two things was not state at
+# all. Three levels of nesting are matched, which is more than any real declaration uses.
+_MAPPING = r"mapping\s*\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)"
+_DECL = re.compile(r"^\s*(" + _MAPPING + r"|address|uint\d*|int\d*|bool|bytes\d*|string)\s+"
                    r"(?:public|private|internal|immutable|constant|payable|\s)*\s*(\w+)\s*[;=]", re.M)
 
 
@@ -138,11 +206,15 @@ def state_vars(src: str) -> set[str]:
 COUNTER = re.compile(r"(Id|ID|Ids|Count|Counter|Index|Idx|Nonce|Length|Num|Number|Seq)$")
 
 
-def ledger_vars(src: str) -> set[str]:
-    """State variables that can hold a balance: mappings and integers, minus configuration and counter names."""
-    return {name for typ, name in _declarations(src)
+def _ledger_names(typed: set[tuple[str, str]] | list[tuple[str, str]]) -> set[str]:
+    return {name for typ, name in typed
             if (typ.startswith("mapping") or typ.startswith("uint") or typ.startswith("int"))
             and not PRIVILEGED.search(name) and not COUNTER.search(name)}
+
+
+def ledger_vars(src: str) -> set[str]:
+    """State variables that can hold a balance: mappings and integers, minus configuration and counter names."""
+    return _ledger_names(_declarations(src))
 
 
 def _is_external(fn: Function) -> bool:
@@ -196,21 +268,34 @@ def _with_helpers(fn: Function, helpers: dict[str, Function]) -> list[Function]:
     return [fn] + called
 
 
+def _scope(fn: Function, own: set[str], project: "Project | None") -> set[str]:
+    """The state names in scope for this function: its own file's, plus what its contract inherits."""
+    return own | (project.vars_of(fn.contract) if project and fn.contract else set())
+
+
+def _reachable(fns: list[Function], fn: Function, project: "Project | None") -> list[Function]:
+    """The function, and the helpers it calls, including ones it inherits from another file."""
+    h = _helpers(fns)
+    if project and fn.contract:
+        h = {**project.helpers_of(fn.contract), **h}
+    return _with_helpers(fn, h)
+
+
 def _storage_aliases(fn: Function, svars: set[str]) -> set[str]:
     """Local names that point into storage: `var acc = Acc[msg.sender]`, `Item storage it = items[id]`."""
     return {m.group(1) for _, text in _lines(fn) for m in [ALIAS.match(text)] if m and m.group(2) in svars}
 
 
-def callorder_lens(contract: str, src: str) -> list[Sighting]:
+def callorder_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
     """Evidence: an external call happens before a state write in the same function, or in a helper it runs."""
-    out, svars = [], state_vars(src)
+    out, own = [], state_vars(src)
     fns = parse_functions(src)
-    helpers = _helpers(fns)
     for fn in fns:
         if _is_readonly(fn) or not _is_external(fn) or _owner_only(fn):
             continue  # a helper is read through the functions that call it, not on its own
+        svars = _scope(fn, own, project)
         call_at = None
-        for part in _with_helpers(fn, helpers):
+        for part in _reachable(fns, fn, project):
             writes_storage = svars | _storage_aliases(part, svars)
             for ln, text in _lines(part):
                 if call_at is None and EXTERNAL_CALL.search(text):
@@ -239,15 +324,14 @@ def _guarded(parts: list[Function]) -> bool:
     return bool(GUARD_FLAG.search("".join(p.header + p.body for p in parts)))
 
 
-def guard_lens(contract: str, src: str) -> list[Sighting]:
+def guard_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
     """Evidence: a function (or a helper it runs) moves value out and carries no reentrancy guard."""
     out = []
     fns = parse_functions(src)
-    helpers = _helpers(fns)
     for fn in fns:
         if _is_readonly(fn) or not _is_external(fn) or _owner_only(fn):
             continue
-        parts = _with_helpers(fn, helpers)
+        parts = _reachable(fns, fn, project)
         if _guarded(parts):
             continue
         for part in parts:
@@ -277,18 +361,18 @@ def _modifiers(fn: Function) -> set[str]:
     return {w for w in re.findall(r"\b[a-zA-Z_]\w*\b", tail)} - _NOT_A_MODIFIER
 
 
-def modifier_lens(contract: str, src: str) -> list[Sighting]:
+def modifier_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
     """Evidence: externally callable, writes storage, carries no modifier at all."""
-    out, svars = [], state_vars(src)
+    out, own = [], state_vars(src)
     fns = parse_functions(src)
-    helpers = _helpers(fns)
     for fn in fns:
         if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
             continue
         mods = _modifiers(fn)
         if mods:
             continue
-        for part in _with_helpers(fn, helpers):
+        svars = _scope(fn, own, project)
+        for part in _reachable(fns, fn, project):
             hit = next(((ln, text) for ln, text in _lines(part)
                         for m in [STATE_WRITE.match(text)] if m and m.group(1) in svars), None)
             if hit:
@@ -297,15 +381,15 @@ def modifier_lens(contract: str, src: str) -> list[Sighting]:
     return out
 
 
-def sender_lens(contract: str, src: str) -> list[Sighting]:
+def sender_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
     """Evidence: writes a privileged-looking variable with no msg.sender check anywhere."""
-    out, svars = [], state_vars(src)
+    out, own = [], state_vars(src)
     fns = parse_functions(src)
-    helpers = _helpers(fns)
     for fn in fns:
         if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
             continue
-        parts = _with_helpers(fn, helpers)
+        svars = _scope(fn, own, project)
+        parts = _reachable(fns, fn, project)
         if re.search(r"msg\.sender|_checkOwner|onlyOwner|hasRole|_msgSender",
                      "".join(p.body + p.header for p in parts)):
             continue
@@ -378,29 +462,29 @@ def _storage_arithmetic(fn: Function, svars: set[str]) -> Iterator[tuple[int, st
             yield ln, text, target, rhs
 
 
-def wrap_lens(contract: str, src: str) -> list[Sighting]:
+def wrap_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
     """Evidence: the compiler lets this storage arithmetic wrap (a pre-0.8 pragma, or an unchecked block)."""
-    out, svars = [], state_vars(src)
+    out, own = [], state_vars(src)
     pragma = _min_pragma(src)
     wraps_everywhere = pragma is not None and pragma < (0, 8)
     for fn in parse_functions(src):
         if _is_readonly(fn):
             continue
         allowed = _wrapping_lines(fn, wraps_everywhere)
-        for ln, text, _, _ in _storage_arithmetic(fn, svars):
+        for ln, text, _, _ in _storage_arithmetic(fn, _scope(fn, own, project)):
             if ln in allowed:
                 out.append(Sighting("wrap-lens", "unsafe-math", contract, fn.name, ln, text))
                 break
     return out
 
 
-def bound_lens(contract: str, src: str) -> list[Sighting]:
+def bound_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
     """Evidence: nothing in the function bounds the operands before the storage arithmetic."""
-    out, svars = [], state_vars(src)
+    out, own = [], state_vars(src)
     for fn in parse_functions(src):
         if _is_readonly(fn):
             continue
-        for ln, text, target, rhs in _storage_arithmetic(fn, svars):
+        for ln, text, target, rhs in _storage_arithmetic(fn, _scope(fn, own, project)):
             free = CHAIN_BOUNDED.sub("", rhs)
             rhs_names = set(re.findall(r"[A-Za-z_]\w*", free)) - {target} - UNITS - set(re.findall(r"\b(?:uint|int)\d*\b", free))
             if not rhs_names:
@@ -465,43 +549,56 @@ def _reads(fn: Function, names: set[str]) -> Iterator[tuple[int, str, str]]:
                 break
 
 
-def one_way_ledgers(src: str) -> set[str]:
-    """Ledger variables written somewhere in the contract whose every write, anywhere, is a credit."""
+def one_way_ledgers(src: str, project: "Project | None" = None, contract: str = "") -> set[str]:
+    """Ledger variables whose every write, anywhere in the contract, is a credit.
+
+    "Anywhere" means every function the contract has, including the ones it inherits: a balance
+    lowered only in a base contract's withdraw is not one-way, and reading one file said it was.
+    """
+    typed = set(_declarations(src)) | (project.typed_of(contract) if project and contract else set())
+    names = {name for _, name in typed}
+    fns = parse_functions(src) + (project.functions_of(contract) if project and contract else [])
     written: dict[str, bool] = {}
-    svars = state_vars(src)
-    for fn in parse_functions(src):
-        for _, _, name, credit in _writes_of(fn, svars):
+    for fn in fns:
+        for _, _, name, credit in _writes_of(fn, names):
             written[name] = written.get(name, True) and credit
-    return {v for v in ledger_vars(src) if written.get(v)}
+    return {v for v in _ledger_names(typed) if written.get(v)}
 
 
-def ledger_lens(contract: str, src: str) -> list[Sighting]:
+def ledger_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
     """Evidence: the balance this function relies on has no way down anywhere in the contract."""
-    out, one_way, svars = [], one_way_ledgers(src), state_vars(src)
-    if not one_way:
-        return out
+    out, own, cache = [], state_vars(src), {}
     for fn in parse_functions(src):
         if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
             continue
-        touched = {name for _, _, name, _ in _writes_of(fn, svars)}
+        if fn.contract not in cache:
+            cache[fn.contract] = one_way_ledgers(src, project, fn.contract)
+        one_way = cache[fn.contract]
+        if not one_way:
+            continue
+        svars = _scope(fn, own, project)
+        touched = {name for part in _reachable(parse_functions(src), fn, project) for _, _, name, _ in _writes_of(part, svars)}
         for ln, text, v in _reads(fn, one_way - touched):
             out.append(Sighting("ledger-lens", "accounting-mismatch", contract, fn.name, ln, text))
             break
     return out
 
 
-def payout_lens(contract: str, src: str) -> list[Sighting]:
+def payout_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
     """Evidence: value leaves this function against a balance it reads and never reduces."""
-    out, ledgers = [], ledger_vars(src)
-    for fn in parse_functions(src):
+    out, own_typed = [], set(_declarations(src))
+    fns = parse_functions(src)
+    for fn in fns:
         if _is_readonly(fn) or not _is_external(fn) or _is_constructor(fn):
             continue
-        outflow = next(((ln, text) for ln, text in _lines(fn)
+        ledgers = _ledger_names(own_typed | (project.typed_of(fn.contract) if project and fn.contract else set()))
+        parts = _reachable(fns, fn, project)
+        outflow = next(((ln, text) for part in parts for ln, text in _lines(part)
                         if not text.startswith("//") and not text.startswith("*") and OUTFLOW.search(text)), None)
         if not outflow:
             continue
-        written = {name for _, _, name, _ in _writes_of(fn, ledgers)}
-        read = {v for _, _, v in _reads(fn, ledgers)}
+        written = {name for part in parts for _, _, name, _ in _writes_of(part, ledgers)}
+        read = {v for part in parts for _, _, v in _reads(part, ledgers)}
         if read and not (read & written):
             out.append(Sighting("payout-lens", "accounting-mismatch", contract, fn.name, outflow[0], outflow[1]))
     return out
