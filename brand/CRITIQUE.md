@@ -89,3 +89,18 @@ rings at sixteen pixels will always carry some of it. The alternative that would
 favicon that is not the full mark — the vesica alone, or one ring and the lens — and nobody has
 drawn those yet.
 
+
+## The question round 2 left open, decided (2026-09-19)
+
+Round 2 ended by saying that `0.96 r` reduces the spectacles reading at 16 px without removing it, and that
+removing it needs a favicon that is not the full mark: the vesica alone, or one ring with the lens. Neither
+was drawn, and neither should be.
+
+The art direction forbids both by name already. A fat vesica filled green "reads as a leaf or an eye at a
+glance", which is the first line of the forbidden list. One ring with the lens reads as a crescent or a C,
+and it throws away the only idea the mark carries: two readings, and the overlap is the finding. A favicon
+that says something different from the mark is not a favicon for this mark.
+
+So the answer is that some of that reading is the price of the idea at sixteen pixels, and the mark keeps
+the idea. What `0.96 r` buys is the subject: the green stays the thing you see first. That is the part worth
+fixing, and it is fixed. No round 3.
