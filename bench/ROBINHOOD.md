@@ -49,7 +49,18 @@ Every one of those became a change to the lenses the same day, measured on the l
 | before | 63% | 48% | 50% | 62% |
 | after | 62% | 48% | 50% | 62% |
 
-The labelled corpora barely move, which is the point: they were built from the bugs the lenses were written for. The wild run is where the change shows, and it is being re-done with the new lenses; its numbers are appended here when it finishes.
+The labelled corpora barely move, which is the point: they were built from the bugs the lenses were written for.
+
+The whole run was then re-done with the new lenses, on a listing that had grown to 1,506 projects and 658 Solidity repositories:
+
+| | first run, 2026-09-16 | re-run, 2026-09-19 |
+|---|---|---|
+| repos containing Solidity, scanned | 631 | 658 |
+| Solidity files read | 11,506 | 11,132 |
+| findings confirmed | 281 | 244 |
+| repos with at least one | 149 | 140 |
+
+Fewer files because the path filter now knows the test, mock, harness and flattened-copy names it learned here, and 37 fewer confirmations on more repositories. The re-run's confirmations have not been read by hand, so this file claims nothing about how many are true; the 3-in-281 from the read above is the only precision number here.
 
 ## Reproduce
 
