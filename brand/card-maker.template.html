@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quorum card maker</title>
+<style>
+  @font-face { font-family: "Archivo Black"; src: url(data:font/woff2;base64,__ARCHIVO__) format("woff2"); font-weight: 400; font-display: block; }
+  @font-face { font-family: "IBM Plex Sans"; src: url(data:font/woff2;base64,__PLEX__) format("woff2"); font-weight: 500; font-display: block; }
+
+  :root {
+    --paper: #f3eee4; --ink: #121212; --green: #3fb950; --green-ink: #2a8a38;
+    --muted: #8b8578; --ground: #fbfaf7; --line: #e2dcd0; --panel: #fdfbf6; --on-ink: #f6f3ec;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ground); color: var(--ink); font-family: "IBM Plex Sans", system-ui, sans-serif; padding: 28px; }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; gap: 32px; align-items: start; }
+  @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
+
+  h1.page { font-family: "Archivo Black", sans-serif; font-size: 26px; letter-spacing: -0.03em; text-transform: uppercase; }
+  .lede { margin-top: 8px; color: #5f5a51; font-size: 14px; line-height: 1.5; max-width: 62ch; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .panel + .panel { margin-top: 16px; }
+
+  label { display: block; margin-top: 14px; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+  label:first-of-type { margin-top: 0; }
+  input, textarea, select { width: 100%; margin-top: 6px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px;
+    font: inherit; font-size: 14px; background: var(--panel); color: var(--ink); }
+  textarea { resize: vertical; min-height: 58px; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--green-ink); outline-offset: 1px; }
+  .count { float: right; font-size: 10px; letter-spacing: 0.1em; color: var(--muted); }
+  .count.over { color: #b4342a; }
+
+  button { margin-top: 18px; width: 100%; padding: 12px; border: 0; border-radius: 8px; background: var(--ink); color: var(--on-ink);
+    font: inherit; font-weight: 600; letter-spacing: 0.04em; cursor: pointer; }
+  button:hover { background: #1c1c1c; }
+  button.ghost { background: var(--panel); color: var(--ink); border: 1px solid var(--line); margin-top: 8px; font-weight: 500; }
+
+  .stage { position: sticky; top: 28px; }
+  canvas { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: 12px; background: var(--ground); }
+  .note { margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+  .rules { font-size: 13px; line-height: 1.6; color: #3f3b34; }
+  .rules h2 { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .rules li { margin: 0 0 6px 16px; }
+  .rules b { font-weight: 600; }
+  details summary { cursor: pointer; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  details p { margin-top: 8px; font-size: 13px; line-height: 1.6; color: #3f3b34; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div>
+      <h1 class="page">Quorum card maker</h1>
+      <p class="lede">Type the words. The card draws itself in the house style, and the button saves a PNG at the size X wants. Nothing is uploaded and nothing leaves this page.</p>
+
+      <div class="panel" style="margin-top:18px">
+        <label for="style">Card</label>
+        <select id="style">
+          <option value="paper">Paper, with the mark (the usual one)</option>
+          <option value="dark">Ink, with the mark centred</option>
+        </select>
+
+        <label for="kicker">Top line <span class="count" id="c-kicker"></span></label>
+        <input id="kicker" maxlength="40" value="runquorum.site" />
+
+        <label for="status">Second line <span class="count" id="c-status"></span></label>
+        <input id="status" maxlength="52" value="built and measured" />
+
+        <label for="head">Headline, one line per row <span class="count" id="c-head"></span></label>
+        <textarea id="head" rows="3">Built. Measured.
+0 on 1,164 files.</textarea>
+
+        <label for="sub">Bottom line <span class="count" id="c-sub"></span></label>
+        <textarea id="sub" rows="2">the new pair on twelve audited codebases, before posting</textarea>
+
+        <button id="save">Save the PNG</button>
+        <button class="ghost" id="copy">Copy the image</button>
+        <p class="note" id="status-note">2560 by 1440. Drop it straight into a post.</p>
+      </div>
+
+      <div class="panel rules">
+        <h2>Before you post it</h2>
+        <ul>
+          <li><b>Every number has to come from a file in the repo.</b> If you cannot point at where it came from, leave it out.</li>
+          <li><b>No price, market cap, chart or holders.</b> Not on a card, not in the post under it.</li>
+          <li><b>Never "won".</b> If someone else's words say it, quote them and name them.</li>
+          <li><b>Say what is not done.</b> A card that claims less than the truth is fine; one that claims more is not.</li>
+          <li><b>No dashes in place of commas</b>, and no words like thorough, comprehensive or production-ready.</li>
+        </ul>
+        <details style="margin-top:12px">
+          <summary>What the four lines are for</summary>
+          <p>Top line is where to go, usually the site. Second line is the state of the thing in lower case, like "built and measured" or "listed 17 september 2026". Headline is the fact, in two short lines, with a full stop on each. Bottom line is the one sentence that stops someone misreading the headline.</p>
+        </details>
+      </div>
+    </div>
+
+    <div class="stage">
+      <canvas id="card" width="2560" height="1440" aria-label="the card as it will be saved"></canvas>
+      <p class="note">This is the real thing at a quarter size. What you save is the full 2560 by 1440.</p>
+    </div>
+  </div>
+
+<script>
+// The card is drawn, not screenshotted, so the saved file is exact at any size.
+// Geometry mirrors brand/post-*.html: a 1280x720 layout drawn at 2x.
+const S = 2;                     // scale from the 1280x720 layout to the saved 2560x1440
+const PAPER = "#f3eee4", INK = "#121212", GREEN = "#3fb950", GREENINK = "#2a8a38",
+      MUTED = "#8b8578", GROUND = "#fbfaf7", DARK = "#0d100d", DARKINK = "#e9ede9";
+
+const el = (id) => document.getElementById(id);
+const fields = ["style", "kicker", "status", "head", "sub"];
+
+function rounded(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function tracked(ctx, text, x, y, spacing) {
+  // canvas letterSpacing is not everywhere yet, so the letters are placed one at a time
+  let cx = x;
+  for (const ch of text) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + spacing; }
+  return cx - x - spacing;
+}
+
+function trackedWidth(ctx, text, spacing) {
+  let w = 0;
+  for (const ch of text) w += ctx.measureText(ch).width + spacing;
+  return Math.max(0, w - spacing);
+}
+
+function wrap(ctx, text, maxWidth) {
+  const words = text.split(/\s+/).filter(Boolean), lines = [];
+  let line = "";
+  for (const w of words) {
+    const next = line ? line + " " + w : w;
+    if (ctx.measureText(next).width > maxWidth && line) { lines.push(line); line = w; }
+    else line = next;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawMark(ctx, x, y, w, strokeColor, greenColor) {
+  // two circles, centres 1.06 r apart, the overlap filled green, the ink arcs crossing over it
+  const r = w / 3.06, cx1 = x + r, cx2 = x + r + 1.06 * r, cy = y + r;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx1, cy, r, 0, 7); ctx.clip();
+  ctx.fillStyle = greenColor; ctx.beginPath(); ctx.arc(cx2, cy, r, 0, 7); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = strokeColor; ctx.lineWidth = 0.20 * r;
+  ctx.beginPath(); ctx.arc(cx1, cy, r, 0, 7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx2, cy, r, 0, 7); ctx.stroke();
+}
+
+function fitFont(ctx, lines, family, start, min, maxWidth) {
+  let size = start;
+  while (size > min) {
+    ctx.font = `${size}px "${family}"`;
+    if (lines.every((l) => ctx.measureText(l).width <= maxWidth)) break;
+    size -= 1;
+  }
+  return size;
+}
+
+function draw() {
+  const c = el("card"), ctx = c.getContext("2d");
+  const dark = el("style").value === "dark";
+  const kicker = el("kicker").value.trim();
+  const status = el("status").value.trim();
+  const head = el("head").value.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 3);
+  const sub = el("sub").value.trim();
+
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.textBaseline = "alphabetic";
+
+  if (dark) {
+    ctx.fillStyle = DARK; ctx.fillRect(0, 0, c.width, c.height);
+    drawMark(ctx, (1280 / 2 - 150) * S, 150 * S, 300 * S, DARKINK, GREEN);
+    const lines = head.length ? head : [""];
+    ctx.textAlign = "center";
+    const size = fitFont(ctx, lines, "Archivo Black", 96 * S, 40 * S, 1100 * S);
+    ctx.fillStyle = DARKINK;
+    let y = 470 * S;
+    for (const l of lines) { ctx.font = `${size}px "Archivo Black"`; ctx.fillText(l.toUpperCase(), c.width / 2, y); y += size * 1.02; }
+    ctx.font = `${17 * S}px "IBM Plex Sans"`;
+    ctx.fillStyle = GREEN;
+    const label = [kicker, status].filter(Boolean).join("  ·  ").toUpperCase();
+    ctx.textAlign = "left";
+    tracked(ctx, label, c.width / 2 - trackedWidth(ctx, label, 5.1 * S) / 2, y + 22 * S, 5.1 * S);
+    if (sub) {
+      ctx.font = `${15 * S}px "IBM Plex Sans"`; ctx.fillStyle = MUTED; ctx.textAlign = "center";
+      for (const [i, l] of wrap(ctx, sub, 900 * S).slice(0, 2).entries()) ctx.fillText(l, c.width / 2, (640 * S) + i * 22 * S);
+    }
+    ctx.textAlign = "left";
+    return;
+  }
+
+  // paper card
+  ctx.fillStyle = GROUND; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.save();
+  ctx.shadowColor = "rgba(18,18,18,0.10)"; ctx.shadowBlur = 40 * S; ctx.shadowOffsetY = 18 * S;
+  ctx.fillStyle = PAPER; rounded(ctx, 28 * S, 28 * S, 1224 * S, 664 * S, 36 * S); ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  rounded(ctx, 28 * S, 28 * S, 1224 * S, 664 * S, 36 * S); ctx.clip();
+
+  // the art: black shapes and the mark, in the card's own 560x664 right-hand space
+  const ax = 28 * S + 664 * S, ay = 28 * S, k = S;   // the art space starts 664 from the card's left
+  ctx.fillStyle = "#111111";
+  ctx.fillRect(ax + 468 * k, ay, 92 * k, 664 * k);
+  ctx.fillRect(ax + 240 * k, ay, 320 * k, 44 * k);
+  ctx.beginPath();
+  ctx.moveTo(ax + 360 * k, ay + 664 * k); ctx.lineTo(ax + 560 * k, ay + 430 * k); ctx.lineTo(ax + 560 * k, ay + 664 * k);
+  ctx.closePath(); ctx.fill();
+  // two paper discs, the overlap green, the ink arcs over it
+  const r = 176 * k, c1 = ax + 187 * k, c2 = ax + 374 * k, cy = ay + 176 * k;
+  ctx.fillStyle = PAPER;
+  ctx.beginPath(); ctx.arc(c1, cy, r, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(c2, cy, r, 0, 7); ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(c1, cy, r, 0, 7); ctx.clip();
+  ctx.fillStyle = GREEN; ctx.beginPath(); ctx.arc(c2, cy, r, 0, 7); ctx.fill(); ctx.restore();
+  ctx.strokeStyle = "#111111"; ctx.lineWidth = 35 * k;
+  ctx.beginPath(); ctx.arc(c1, cy, r, 0, 7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(c2, cy, r, 0, 7); ctx.stroke();
+  // the black corner block
+  ctx.fillStyle = "#111111"; ctx.fillRect(28 * S, 28 * S + 596 * S, 68 * S, 68 * S);
+
+  // the words
+  const x = 28 * S + 72 * S;
+  let y = 28 * S + 96 * S;
+  ctx.fillStyle = GREENINK; ctx.fillRect(x, y, 32 * S, 3 * S);
+  y += 3 * S + 20 * S;
+
+  ctx.font = `${15 * S}px "IBM Plex Sans"`; ctx.fillStyle = GREENINK;
+  y += 12 * S; tracked(ctx, kicker.toUpperCase(), x, y, 4.2 * S);
+
+  ctx.font = `${13 * S}px "IBM Plex Sans"`; ctx.fillStyle = MUTED;
+  y += 24 * S; tracked(ctx, status.toUpperCase(), x, y, 4.4 * S);
+
+  const lines = (head.length ? head : [""]).map((l) => l.toUpperCase());
+  // the headline is tracked -0.04em, as the cards are
+  let size = 58 * S;
+  const fits = (px) => { ctx.font = `${px}px "Archivo Black"`; return lines.every((l) => trackedWidth(ctx, l, -0.04 * px) <= 600 * S); };
+  while (size > 26 * S && !fits(size)) size -= 1;
+  ctx.font = `${size}px "Archivo Black"`;
+  ctx.fillStyle = INK;
+  y += 64 * S + size * 0.74;
+  for (const l of lines) { tracked(ctx, l, x, y, -0.04 * size); y += size * 0.95; }
+
+  if (sub) {
+    ctx.font = `${16 * S}px "IBM Plex Sans"`; ctx.fillStyle = MUTED;
+    y -= size * 0.95;                 // back to the last headline baseline
+    y += 28 * S + 16 * S;             // the cards' own gap
+    for (const l of wrap(ctx, sub.toUpperCase(), 600 * S).slice(0, 3)) { tracked(ctx, l, x, y, 1.3 * S); y += 22 * S; }
+  }
+  ctx.restore();
+}
+
+function name() {
+  const words = el("head").value.split("\n")[0].toLowerCase().replace(/[^a-z0-9 ]/g, "").trim().split(/\s+/).slice(0, 4);
+  return "quorum-card-" + (words.join("-") || "untitled") + ".png";
+}
+
+el("save").onclick = () => {
+  el("card").toBlob((b) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(b); a.download = name(); a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    el("status-note").textContent = "Saved as " + a.download;
+  }, "image/png");
+};
+
+el("copy").onclick = async () => {
+  try {
+    el("card").toBlob(async (b) => {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": b })]);
+      el("status-note").textContent = "Copied. Paste it straight into the post.";
+    }, "image/png");
+  } catch (e) {
+    el("status-note").textContent = "This browser will not copy images. Use Save the PNG instead.";
+  }
+};
+
+function counts() {
+  for (const [id, cap] of [["kicker", 40], ["status", 52], ["sub", 120]]) {
+    const n = el(id).value.length, box = el("c-" + id);
+    box.textContent = n + "/" + cap; box.classList.toggle("over", n > cap);
+  }
+  const rows = el("head").value.split("\n").filter((s) => s.trim());
+  const longest = Math.max(0, ...rows.map((r) => r.length));
+  const box = el("c-head");
+  box.textContent = rows.length + " line" + (rows.length === 1 ? "" : "s") + ", longest " + longest;
+  box.classList.toggle("over", rows.length > 3 || longest > 30);
+}
+
+for (const f of fields) el(f).addEventListener("input", () => { counts(); draw(); });
+document.fonts.ready.then(() => { counts(); draw(); });
+</script>
+</body>
+</html>

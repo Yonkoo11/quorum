@@ -386,6 +386,7 @@ tests/           # 75 tests: test_quorum.py (the swarm), test_token.py (the toke
 fixtures/        # two teaching contracts, vulnerable on purpose
 docs/            # the site (runquorum.site): five pages, one stylesheet, one script, self-hosted fonts
 brand/           # the cards, marks and fonts the site and the posts are built from
+  card-maker.html  # one file, no install: type the words, save the card as a PNG (see MAKING-CARDS.md)
 bench/           # the lenses and Slither scored on three corpora (two labelled, one of recent audit contests), re-run with one command each
 contracts/       # the ClaimRegistry (Foundry): source, 18 tests, a fuzz and an invariant, the deploy script
 diary/           # the Telegram diary: what the repo did, in plain words, every two hours, silent when nothing happened
