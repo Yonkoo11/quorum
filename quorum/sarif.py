@@ -14,7 +14,7 @@ from pathlib import Path
 from .agents import LENSES
 from .swarm import RunReport
 
-VERSION = "0.1.0"
+VERSION = "0.7.0"
 RULES = {
     "reentrancy": "An external call is made before the state it depends on is written, in a function with no guard.",
     "unguarded-state-write": "Storage that looks privileged is written by a function anyone can call.",
