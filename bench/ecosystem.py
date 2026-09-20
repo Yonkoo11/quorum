@@ -14,7 +14,9 @@ import json
 import re
 import subprocess
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 import urllib.request
 from pathlib import Path
 
@@ -28,6 +30,11 @@ SKIP = ("/lib/", "/node_modules/", "/test/", "/tests/", "/script/", "/scripts/",
         "/fixtures/", "/fixture/", "/testing/", "/harness/", "/echidna/", "/deprecated/", "/audit/", "/testdata/", "/templates/", "/testnet/", "/examples/")
 # Files that are tests, mocks or copies whatever folder they sit in. 50 of the 281 confirmations of the first
 # run were these (bench/ROBINHOOD.md).
+# Projects run side by side. Almost all of the time is waiting: a listing call, a shallow clone, and
+# the claim protocol's own pause per lens-unit. Every repo has its own clone and its own memory
+# file, so two projects share nothing and the reading each one gets is identical either way.
+WORKERS = 6
+
 SKIP_NAME = re.compile(r"(\.t\.sol|\.s\.sol|\.flat\.sol|-flatten\.sol|\.invariant\.\w*\.sol|\.fuzz\.\w*\.sol|Test\w*\.sol|\w*Tests?\.sol|Mock\w*\.sol|\w*Mocks?\.sol|\w*Harness\.sol|\w*Canary\.sol)$")
 
 
@@ -112,11 +119,15 @@ def main(work: Path) -> None:
     state = json.loads(state_path.read_text()) if state_path.exists() else {"projects": {}, "started": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime())}
     projects = list_projects()
     print(f"{len(projects)} projects with a public repo", flush=True)
-    for i, p in enumerate(projects):
+    todo = [(i, p) for i, p in enumerate(projects)
+            if not state["projects"].get(p["slug"], {}).get("done")]
+    lock = threading.Lock()
+
+    def one(i: int, p: dict) -> tuple[int, str, dict]:
+        """A project, start to finish. Every repo has its own clone and its own memory file, so two
+        projects share nothing and can run at the same time."""
         slug = p["slug"]
-        if slug in state["projects"] and state["projects"][slug].get("done"):
-            continue
-        rec = {"name": p.get("name"), "kind": p.get("projectKind"), "repos": {}}
+        rec: dict = {"name": p.get("name"), "kind": p.get("projectKind"), "repos": {}}
         try:
             for repo in repos_of(slug):
                 r: dict = {}
@@ -124,7 +135,6 @@ def main(work: Path) -> None:
                     r["skip"] = "no solidity"
                 else:
                     dest = work / "repos" / repo.replace("/", "__")
-                    (work / "dbs").mkdir(exist_ok=True)
                     if not clone(repo, dest):
                         r["skip"] = "clone failed"
                     else:
@@ -135,11 +145,17 @@ def main(work: Path) -> None:
         except Exception as e:  # noqa: BLE001
             rec["skip"] = f"error: {str(e)[:80]}"
         rec["done"] = True
-        state["projects"][slug] = rec
-        state_path.write_text(json.dumps(state, indent=1))
-        line = rec.get("skip") or "; ".join(f"{k}: " + (v.get("skip") or f"{v['files']} files, {len(v['confirmed'])} confirmed, {v['candidates']} candidates") for k, v in rec["repos"].items())
-        print(f"[{i + 1}/{len(projects)}] {slug}: {line}", flush=True)
-        time.sleep(0.5)
+        return i, slug, rec
+
+    (work / "dbs").mkdir(exist_ok=True)
+    (work / "repos").mkdir(exist_ok=True)
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        for i, slug, rec in pool.map(lambda a: one(*a), todo):
+            with lock:
+                state["projects"][slug] = rec
+                state_path.write_text(json.dumps(state, indent=1))
+            line = rec.get("skip") or "; ".join(f"{k}: " + (v.get("skip") or f"{v['files']} files, {len(v['confirmed'])} confirmed, {v['candidates']} candidates") for k, v in rec["repos"].items())
+            print(f"[{i + 1}/{len(projects)}] {slug}: {line}", flush=True)
     print("done", flush=True)
 
 
