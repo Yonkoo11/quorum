@@ -8,9 +8,9 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 |---|---|---|---|---|---|---|---|---|---|
 | reentrancy | 31 | 91 | 28 | 31% | 90% | **39** | 28 | **72%** | **90%** |
 | unguarded-state-write | 21 | 216 | 9 | 4% | 43% | **5** | 2 | **40%** | **10%** |
-| unsafe-math | 21 | 171 | 21 | 12% | 100% | **48** | 17 | **35%** | **81%** |
-| accounting-mismatch | 0 | 30 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
-| **all** | 73 | 508 | 58 | 11% | 79% | **96** | 47 | **49%** | **64%** |
+| unsafe-math | 21 | 172 | 21 | 12% | 100% | **49** | 17 | **35%** | **81%** |
+| accounting-mismatch | 0 | 34 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
+| **all** | 73 | 513 | 58 | 11% | 79% | **97** | 47 | **48%** | **64%** |
 
 ## Per lens
 
@@ -21,12 +21,12 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | modifier-lens | 208 | 9 |
 | sender-lens | 7 | 1 |
 | consistency-lens | 6 | 1 |
-| wrap-lens | 171 | 21 |
-| bound-lens | 48 | 17 |
+| wrap-lens | 172 | 21 |
+| bound-lens | 49 | 17 |
 | ledger-lens | 7 | 0 |
-| payout-lens | 27 | 0 |
+| payout-lens | 31 | 0 |
 
-Candidates held back by the rule (one lens only): 412, of which on a target: 11.
+Candidates held back by the rule (one lens only): 416, of which on a target: 11.
 
 ## Confirmed findings that are not on a labelled target
 
@@ -66,6 +66,7 @@ Candidates held back by the rule (one lens only): 412, of which on a target: 11.
 - `etherpot_lotto.sol` `fallback` unsafe-math — bound-lens, wrap-lens
 - `guess_the_random_number.sol` `GuessTheRandomNumberChallenge` unsafe-math — bound-lens, wrap-lens
 - `lucky_doubler.sol` `join` unsafe-math — bound-lens, wrap-lens
+- `odds_and_evens.sol` `andTheWinnerIs` unsafe-math — bound-lens, wrap-lens
 - `parity_wallet_bug_1.sol` `confirm` reentrancy — callorder-lens, guard-lens
 - `parity_wallet_bug_1.sol` `initDaylimit` unguarded-state-write — consistency-lens, modifier-lens
 - `parity_wallet_bug_1.sol` `initMultiowned` unguarded-state-write — consistency-lens, modifier-lens

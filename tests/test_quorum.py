@@ -861,3 +861,44 @@ def test_the_payout_reading_sees_the_debit_beside_the_check():
     from quorum.agents import payout_lens
 
     assert not payout_lens("Fund.sol", READS_TWO)
+
+
+STRUCT_FIELD = """
+pragma solidity ^0.8.20;
+
+struct SwapParams {
+    bool zeroForOne;
+    uint256 amount;
+}
+
+contract Adapter {
+    address public owner;
+
+    function setOwner(address who) external {
+        require(msg.sender == owner, "no");
+        owner = who;
+    }
+
+    function quote(uint256 amountIn) external returns (uint256) {
+        bool zeroForOne = amountIn > 0;
+        return zeroForOne ? amountIn : 0;
+    }
+}
+"""
+
+
+def test_a_struct_field_is_not_contract_state():
+    """`struct SwapParams { bool zeroForOne; }` made `zeroForOne` a state variable everywhere in the
+    file, so a local of that name read as a state write. A Uniswap adapter's `quote` was confirmed on
+    the Robinhood Chain run for writing a local bool."""
+    from quorum.agents import state_vars
+
+    names = state_vars(STRUCT_FIELD)
+    assert "owner" in names
+    assert "zeroForOne" not in names and "amount" not in names
+
+
+def test_a_local_named_like_a_struct_field_is_not_a_state_write():
+    from quorum.agents import modifier_lens
+
+    assert "quote" not in {s.function for s in modifier_lens("Adapter.sol", STRUCT_FIELD)}

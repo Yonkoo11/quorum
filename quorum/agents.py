@@ -187,11 +187,40 @@ _DECL = re.compile(r"^\s*(" + _MAPPING + r"|address|uint\d*|int\d*|bool|bytes\d*
                    r"(?:public|private|internal|immutable|constant|payable|\s)*\s*(\w+)\s*[;=]", re.M)
 
 
+STRUCT = re.compile(r"\b(struct|enum)\s+\w+\s*\{")
+
+
+def _without_blocks(src: str, starts: Iterator[int]) -> str:
+    """The source with the brace-matched block after each offset blanked out, newlines kept."""
+    out = list(src)
+    for i in starts:
+        depth = 0
+        for j in range(i, len(src)):
+            if src[j] == "{":
+                depth += 1
+            elif src[j] == "}":
+                depth -= 1
+                if depth == 0:
+                    break
+        else:
+            continue
+        for k in range(i, j + 1):
+            if out[k] != "\n":
+                out[k] = " "
+    return "".join(out)
+
+
 def _declarations(src: str) -> list[tuple[str, str]]:
-    """(type, name) for every contract-scope declaration (crude but honest: declarations outside functions)."""
+    """(type, name) for every contract-scope declaration (crude but honest: declarations outside functions).
+
+    A struct's fields are not contract state. `struct SwapParams { bool zeroForOne; ... }` made
+    `zeroForOne` a state variable everywhere in the file, so a local of that name, or a named return,
+    read as a state write: a Uniswap adapter's `quote` was confirmed for writing a local bool.
+    """
     stripped = _strip_comments(src)
     for fn in parse_functions(src):
         stripped = stripped.replace(fn.body, "")
+    stripped = _without_blocks(stripped, (m.end() - 1 for m in STRUCT.finditer(stripped)))
     return [(m.group(1), m.group(2)) for m in _DECL.finditer(stripped)]
 
 

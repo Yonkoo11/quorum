@@ -20,11 +20,11 @@ That number is the ceiling on this tool's usefulness against a modern audit, bef
 
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
-| reentrancy | 1 | 91 | 0 | 0% | 0% | **4** | 0 | **0%** | **0%** |
-| unguarded-state-write | 5 | 350 | 4 | 1% | 80% | **19** | 2 | **11%** | **40%** |
-| unsafe-math | 0 | 201 | 0 | 0% | n/a | **9** | 0 | **0%** | **n/a** |
-| accounting-mismatch | 1 | 63 | 0 | 0% | 0% | **4** | 0 | **0%** | **0%** |
-| **all** | 7 | 705 | 4 | 1% | 57% | **36** | 2 | **6%** | **29%** |
+| reentrancy | 1 | 91 | 0 | 0% | 0% | **5** | 0 | **0%** | **0%** |
+| unguarded-state-write | 5 | 354 | 4 | 1% | 80% | **19** | 2 | **11%** | **40%** |
+| unsafe-math | 0 | 221 | 0 | 0% | n/a | **12** | 0 | **0%** | **n/a** |
+| accounting-mismatch | 1 | 84 | 0 | 0% | 0% | **4** | 0 | **0%** | **0%** |
+| **all** | 7 | 750 | 4 | 1% | 57% | **40** | 2 | **5%** | **29%** |
 
 ## Every labelled target, and what the lenses did with it
 
@@ -95,29 +95,27 @@ It will be built against a labelled corpus first, then re-measured here.
 
 | lens | sightings | on a target |
 |---|---|---|
-| callorder-lens | 14 | 0 |
+| callorder-lens | 15 | 0 |
 | guard-lens | 81 | 0 |
-| modifier-lens | 316 | 4 |
+| modifier-lens | 320 | 4 |
 | sender-lens | 33 | 0 |
 | consistency-lens | 20 | 2 |
-| wrap-lens | 17 | 0 |
-| bound-lens | 193 | 0 |
-| ledger-lens | 16 | 0 |
-| payout-lens | 51 | 0 |
+| wrap-lens | 23 | 0 |
+| bound-lens | 210 | 0 |
+| ledger-lens | 22 | 0 |
+| payout-lens | 66 | 0 |
 
-Candidates held back by the rule (one lens only): 669. Confirmations that name no labelled finding: 34.
+Candidates held back by the rule (one lens only): 710. Confirmations that name no labelled finding: 38.
 
 ## The confirmations, read by hand
 
-All 36 were opened and read in the source. None is a bug an audit missed.
+All 40 were opened and read in the source. None is a bug an audit missed.
 
-Twenty-four of them do not involve the consistency lens, and they are what is left of the 28 read one by one
-before that lens existed. Those 28 were: nine `unchecked` arithmetic bounded by a checked operation beside it,
-seven a setter that copies a value out of a trusted contract, four vendored Uniswap libraries whose wrap is the
-design, four payouts that zero the balance before they pay, two calls to a contract fixed in the constructor,
-one a stateless multicall helper that holds no funds, and `ReferralRegistry.becomeReferrer`, below. Four have
-since gone on their own: a struct's fields are not contract state, the declaration reader used to think they
-were, and a local sharing a field's name read as a state write.
+The 28 from the run before the consistency lens are unchanged: nine are `unchecked` arithmetic bounded by a
+checked operation beside it, seven are a setter that copies a value out of a trusted contract, four are vendored
+Uniswap libraries whose wrap is the design, four are payouts that zero the balance before they pay, two are calls
+to a contract fixed in the constructor, one is a stateless multicall helper that holds no funds, and one is
+`ReferralRegistry.becomeReferrer`, below.
 
 The twelve the consistency lens takes part in were read this run. Two are the labelled findings above. The other
 ten are false, in four shapes:
@@ -150,9 +148,9 @@ nothing was verified beyond reading it.
 | 2025-04-virtuals-protocol | 32 | 3 | 52 | 6 |
 | 2025-05-blackhole | 24 | 1 | 64 | 5 |
 | 2025-08-morpheus | 4 | 0 | 41 | 3 |
-| 2025-10-hybra-finance | 10 | 0 | 89 | 4 |
+| 2025-10-hybra-finance | 10 | 0 | 89 | 7 |
 | 2025-10-sequence | 6 | 0 | 35 | 0 |
-| 2025-11-ekubo | 4 | 0 | 81 | 1 |
+| 2025-11-ekubo | 4 | 0 | 81 | 2 |
 | 2025-11-garden | 1 | 0 | 6 | 0 |
 | 2025-11-megapot | 11 | 0 | 6 | 2 |
 | 2025-11-merkl | 3 | 0 | 21 | 10 |
