@@ -48,4 +48,8 @@ $ quorum --db fresh.db run --targets targets/Router.sol targets/WETH9.sol target
 scanned 24 lens-units | confirmed 0 | recalled 0 | candidates 9 | suppressed 0 | duplicate work avoided 0
 ```
 
+Those two lines are what eight lenses printed on 2026-09-16. Re-run on 2026-09-19 with nine, the same
+commands print `scanned 45 ... candidates 29` and `scanned 27 ... candidates 20`. What matters to this
+file is unchanged: `confirmed 0` on both, and the accounting pair is not among the lenses that moved.
+
 Added 2026-09-18, when the baseline re-run confirmed a fifth SmartBugs function: `smart_billions.sol` `invest` sends back only the part of `msg.value` above the funding cap and credits shares for the part it keeps; every credit is matched by ether received. False.
