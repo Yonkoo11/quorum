@@ -1,6 +1,6 @@
 # Benchmark — the 9 lenses on SmartBugs-curated
 
-Run 2026-09-20 · corpus commit `230e649` · 143 files scanned · 73 targets · quorum threshold 2 · `python bench/run.py <corpus>`
+Run 2026-09-19 · corpus commit `230e649` · 143 files scanned · 73 targets · quorum threshold 2 · `python bench/run.py <corpus>`
 
 Unit: a (file, function, risk). A target is a labelled function whose bug maps to a risk Quorum covers. Precision counts every finding not on a target as false, including hits on files the corpus labels for some other bug.
 
@@ -9,8 +9,8 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | reentrancy | 31 | 91 | 28 | 31% | 90% | **39** | 28 | **72%** | **90%** |
 | unguarded-state-write | 21 | 216 | 9 | 4% | 43% | **5** | 2 | **40%** | **10%** |
 | unsafe-math | 21 | 172 | 21 | 12% | 100% | **49** | 17 | **35%** | **81%** |
-| accounting-mismatch | 0 | 34 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
-| **all** | 73 | 513 | 58 | 11% | 79% | **97** | 47 | **48%** | **64%** |
+| accounting-mismatch | 0 | 43 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
+| **all** | 73 | 522 | 58 | 11% | 79% | **97** | 47 | **48%** | **64%** |
 
 ## Per lens
 
@@ -24,9 +24,9 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | wrap-lens | 172 | 21 |
 | bound-lens | 49 | 17 |
 | ledger-lens | 7 | 0 |
-| payout-lens | 31 | 0 |
+| payout-lens | 40 | 0 |
 
-Candidates held back by the rule (one lens only): 416, of which on a target: 11.
+Candidates held back by the rule (one lens only): 425, of which on a target: 11.
 
 ## Confirmed findings that are not on a labelled target
 

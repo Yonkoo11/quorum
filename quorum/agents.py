@@ -465,13 +465,39 @@ def _state_writes(parts: list[Function], svars: set[str], chosen_only: bool = Fa
     return out
 
 
-ONE_SHOT = re.compile(r"\b(initializer|reinitializer\s*\()")
-# A test the function itself applies to its caller. Wider than SENDER_CHECK, which wants a comparison:
+# A modifier that lets a function run once. After deployment nobody can call it at all, so what its
+# siblings carry says nothing about it. Ten confirmations on the modern corpus were an initializer
+# sitting beside a guarded setter.
+ONE_SHOT = re.compile(r"^(initializer|reinitializer)$", re.I)
+# A test the function applies to its own caller. Wider than SENDER_CHECK, which wants a comparison:
 # `require(nft.isApprovedOrOwner(msg.sender, id))` names no operator and is still a caller check. This
 # lens claims a function carries none of the guard its siblings share, and a function making its own
 # decision about who is calling is not that; five of the hand-read false confirmations were this shape.
 OWN_CALLER_TEST = re.compile(r"\b(require|revert|assert)\s*\([^;{]*(msg\.sender|_msgSender\(\))"
                              r"|\bif\s*\([^;{]*(msg\.sender|_msgSender\(\))[^;{]*\)\s*\{?\s*(revert|require)")
+
+
+def _one_shot(fn: Function) -> bool:
+    return any(ONE_SHOT.match(m) for m in _modifiers(fn))
+
+
+def _open_to_callers(fn: Function) -> bool:
+    """Externally callable, changes state, and can still be called once the contract is deployed."""
+    return (_is_external(fn) and not _is_readonly(fn) and not _is_constructor(fn)
+            and bool(fn.name) and not _one_shot(fn))
+
+
+def _family_of(cname: str, fns: list[Function], own: set[str],
+               project: "Project | None") -> tuple[list[Function], set[str], dict[str, Function]]:
+    """What this contract actually has: its own file's functions and state, plus everything it inherits."""
+    family = [f for f in fns if f.contract == cname]
+    helpers = _helpers(family)
+    svars = set(own)
+    if project:
+        family = family + project.functions_of(cname)
+        helpers = {**project.helpers_of(cname), **helpers}
+        svars |= project.vars_of(cname)
+    return family, svars, helpers
 
 
 def consistency_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
@@ -489,40 +515,23 @@ def consistency_lens(contract: str, src: str, project: "Project | None" = None) 
     fns = parse_functions(src)
     own = state_vars(src)
 
-    def open_to_callers(f: Function) -> bool:
-        # A one-shot initializer is guarded by the modifier that makes it one-shot: after deployment
-        # nobody can call it at all, so its siblings' modifiers say nothing about it.
-        if ONE_SHOT.search(f.header.split(")")[-1] or f.header):
-            return False
-        return _is_external(f) and not _is_readonly(f) and not _is_constructor(f) and bool(f.name)
-
     for cname in {f.contract for f in fns if f.contract}:
-        family = [f for f in fns if f.contract == cname]
-        if project:
-            family += project.functions_of(cname)
-        svars = own | (project.vars_of(cname) if project else set())
-        helpers = _helpers(family)
-        if project:
-            helpers = {**project.helpers_of(cname), **helpers}
-        reach = {id(f): _with_helpers(f, helpers) for f in family if open_to_callers(f)}
-        writes = {id(f): _state_writes(reach[id(f)], svars) for f in family if open_to_callers(f)}
-        # A sibling only has to show that the variable is guarded somewhere, so every write of it counts
-        # there. The function being sighted is the one the caller has to be able to reach.
-        chosen = {id(f): _state_writes(reach[id(f)], svars, chosen_only=True) for f in family if open_to_callers(f)}
-        guards = {id(f): _guards(f, reach[id(f)]) for f in family if open_to_callers(f)}
+        family, svars, helpers = _family_of(cname, fns, own, project)
+        callers = [f for f in family if _open_to_callers(f)]
+        reach = {id(f): _with_helpers(f, helpers) for f in callers}
+        # A sibling only has to show the variable is guarded somewhere, so every write of it counts there.
+        writes = {id(f): _state_writes(reach[id(f)], svars) for f in callers}
+        guards = {id(f): _guards(f, reach[id(f)]) for f in callers}
 
         for fn in fns:
-            if fn.contract != cname or not open_to_callers(fn):
+            if fn.contract != cname or not _open_to_callers(fn) or guards[id(fn)]:
                 continue
-            if OWN_CALLER_TEST.search(fn.body):
+            if any(OWN_CALLER_TEST.search(p.body) for p in reach[id(fn)]):
                 continue
-            mine = guards[id(fn)]
-            for var, (ln, text) in chosen[id(fn)].items():
-                siblings = [f for f in family if f is not fn and open_to_callers(f) and var in writes[id(f)]]
-                if not siblings:
-                    continue
-                shared = set.intersection(*(guards[id(f)] for f in siblings))
-                if shared and not mine:
+            # The function being sighted is the one the caller has to be able to reach.
+            for var, (ln, text) in _state_writes(reach[id(fn)], svars, chosen_only=True).items():
+                siblings = [f for f in callers if f is not fn and var in writes[id(f)]]
+                if siblings and set.intersection(*(guards[id(f)] for f in siblings)):
                     out.append(Sighting("consistency-lens", "unguarded-state-write", contract, fn.name, ln, text))
                     break
     return out
@@ -663,15 +672,20 @@ def _writes_of(fn: Function, svars: set[str] | None = None) -> Iterator[tuple[in
 
 
 def _reads(fn: Function, names: set[str]) -> Iterator[tuple[int, str, str]]:
-    """(line, text, variable) for every line that mentions a variable without writing it."""
+    """(line, text, variable) for every variable a line mentions without writing it.
+
+    Every one, and in a fixed order. This yielded only the first match on a line, taken from a set, and
+    Python randomises set order per process: `require(balances[msg.sender] >= MinDeposit)` reported
+    `balances` in one run and `MinDeposit` in the next. payout-lens intersects what a function reads with
+    what it writes, so the same file confirmed a finding on one run and not on the next, on identical code.
+    """
     for ln, text in _lines(fn):
         if text.startswith("//") or text.startswith("*"):
             continue
         written = {(m.group(2) or m.group(6)) for m in WRITE.finditer(text)}
-        for v in names:
+        for v in sorted(names):
             if v not in written and re.search(rf"\b{re.escape(v)}\b", text):
                 yield ln, text, v
-                break
 
 
 def one_way_ledgers(src: str, project: "Project | None" = None, contract: str = "") -> set[str]:

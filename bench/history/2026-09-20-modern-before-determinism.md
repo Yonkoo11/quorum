@@ -1,6 +1,6 @@
 # The 9 lenses on recent audit contests
 
-Run 2026-09-20 · 16 contests, each at the commit its published report links · 512 Solidity files scanned · quorum threshold 2 · `python bench/modern.py <workdir> --labels bench/labels/modern-c4.json`
+Run 2026-09-19 · 16 contests, each at the commit its published report links · 512 Solidity files scanned · quorum threshold 2 · `python bench/modern.py <workdir> --labels bench/labels/modern-c4.json`
 
 ## What share of modern findings is this tool even looking for
 
@@ -23,8 +23,8 @@ That number is the ceiling on this tool's usefulness against a modern audit, bef
 | reentrancy | 1 | 91 | 0 | 0% | 0% | **5** | 0 | **0%** | **0%** |
 | unguarded-state-write | 5 | 354 | 4 | 1% | 80% | **19** | 2 | **11%** | **40%** |
 | unsafe-math | 0 | 221 | 0 | 0% | n/a | **12** | 0 | **0%** | **n/a** |
-| accounting-mismatch | 1 | 84 | 0 | 0% | 0% | **4** | 0 | **0%** | **0%** |
-| **all** | 7 | 750 | 4 | 1% | 57% | **40** | 2 | **5%** | **29%** |
+| accounting-mismatch | 1 | 91 | 0 | 0% | 0% | **4** | 0 | **0%** | **0%** |
+| **all** | 7 | 757 | 4 | 1% | 57% | **40** | 2 | **5%** | **29%** |
 
 ## Every labelled target, and what the lenses did with it
 
@@ -103,9 +103,9 @@ It will be built against a labelled corpus first, then re-measured here.
 | wrap-lens | 23 | 0 |
 | bound-lens | 210 | 0 |
 | ledger-lens | 22 | 0 |
-| payout-lens | 66 | 0 |
+| payout-lens | 73 | 0 |
 
-Candidates held back by the rule (one lens only): 710. Confirmations that name no labelled finding: 38.
+Candidates held back by the rule (one lens only): 717. Confirmations that name no labelled finding: 38.
 
 ## The confirmations, read by hand
 

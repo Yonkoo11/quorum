@@ -824,3 +824,40 @@ def test_a_write_the_caller_cannot_reach_is_not_the_shape():
     """`refreshAdmin` copies a value out of a contract the protocol chose, into a slot the caller does
     not pick. Taking no permission to call it costs an attacker nothing, because they decide nothing."""
     assert "refreshAdmin" not in _consistency(CONSISTENT_REGISTRY)
+
+
+READS_TWO = """
+pragma solidity ^0.4.19;
+
+contract Fund {
+    mapping(address => uint256) balances;
+    uint256 MinDeposit;
+
+    function CashOut(uint256 amount) public {
+        if (balances[msg.sender] >= MinDeposit) {
+            balances[msg.sender] -= amount;
+            msg.sender.transfer(amount);
+        }
+    }
+}
+"""
+
+
+def test_a_line_that_mentions_two_balances_reports_both():
+    """It reported only the first, taken from a set, and Python randomises set order per process. The
+    same file then confirmed an accounting finding on one run and not on the next, on identical code:
+    payout-lens intersects what a function reads with what it writes, and which name it saw was luck."""
+    from quorum.agents import _reads, parse_functions
+
+    fn = next(f for f in parse_functions(READS_TWO) if f.name == "CashOut")
+    seen = [v for _, _, v in _reads(fn, {"balances", "MinDeposit"})]
+    guard_line = [v for ln, text, v in _reads(fn, {"balances", "MinDeposit"}) if ">= MinDeposit" in text]
+    assert guard_line == ["MinDeposit", "balances"]      # every match on the line, in a fixed order
+    assert seen == sorted(seen, key=lambda v: (seen.index(v), v)) and set(seen) == {"MinDeposit", "balances"}
+
+
+def test_the_payout_reading_sees_the_debit_beside_the_check():
+    """With both names in hand, a function that lowers the balance it checks is not a one-way payout."""
+    from quorum.agents import payout_lens
+
+    assert not payout_lens("Fund.sol", READS_TWO)
