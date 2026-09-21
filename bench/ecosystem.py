@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -34,6 +35,7 @@ SKIP = ("/lib/", "/node_modules/", "/test/", "/tests/", "/script/", "/scripts/",
 # the claim protocol's own pause per lens-unit. Every repo has its own clone and its own memory
 # file, so two projects share nothing and the reading each one gets is identical either way.
 WORKERS = 6
+CLONE_TIMEOUT = 240   # seconds; past this the remote is not answering and the run moves on
 
 SKIP_NAME = re.compile(r"(\.t\.sol|\.s\.sol|\.flat\.sol|-flatten\.sol|\.invariant\.\w*\.sol|\.fuzz\.\w*\.sol|Test\w*\.sol|\w*Tests?\.sol|Mock\w*\.sol|\w*Mocks?\.sol|\w*Harness\.sol|\w*Canary\.sol)$")
 
@@ -80,7 +82,10 @@ def repos_of(slug: str) -> list[str]:
 
 
 def has_solidity(repo: str) -> bool:
-    r = subprocess.run(["gh", "api", f"repos/{repo}/languages"], capture_output=True, text=True)
+    try:
+        r = subprocess.run(["gh", "api", f"repos/{repo}/languages"], capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        return False
     try:
         langs = json.loads(r.stdout)
     except json.JSONDecodeError:
@@ -89,10 +94,22 @@ def has_solidity(repo: str) -> bool:
 
 
 def clone(repo: str, dest: Path) -> bool:
+    """Shallow clone, or False if the remote will not answer in time.
+
+    Nothing is read from git here, so it gets no pipes. With `capture_output`, a timeout killed
+    `git clone` and then waited for the pipe to close, and git's own transport children hold it open:
+    one stalled remote hung every worker, and a run that was 973 projects in stopped moving for
+    twenty minutes with six idle clones on it.
+    """
     if dest.exists():
         return True
-    r = subprocess.run(["git", "clone", "--quiet", "--depth", "1", f"https://github.com/{repo}.git", str(dest)],
-                       capture_output=True, text=True, timeout=300)
+    try:
+        r = subprocess.run(["git", "clone", "--quiet", "--depth", "1", f"https://github.com/{repo}.git", str(dest)],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           timeout=CLONE_TIMEOUT, start_new_session=True)
+    except subprocess.TimeoutExpired:
+        shutil.rmtree(dest, ignore_errors=True)   # half a clone is not a clone
+        return False
     return r.returncode == 0
 
 
