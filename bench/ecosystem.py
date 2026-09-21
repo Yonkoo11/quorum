@@ -34,8 +34,10 @@ SKIP = ("/lib/", "/node_modules/", "/test/", "/tests/", "/script/", "/scripts/",
 # Projects run side by side. Almost all of the time is waiting: a listing call, a shallow clone, and
 # the claim protocol's own pause per lens-unit. Every repo has its own clone and its own memory
 # file, so two projects share nothing and the reading each one gets is identical either way.
-WORKERS = 6
-CLONE_TIMEOUT = 240   # seconds; past this the remote is not answering and the run moves on
+WORKERS = 10
+CLONE_TIMEOUT = 120   # seconds; a live remote answers in a few, so past this it is not answering
+# and the run moves on. At 240 a stretch of dead repos held every worker and the rate fell from eight
+# repositories a minute to one and a half.
 
 SKIP_NAME = re.compile(r"(\.t\.sol|\.s\.sol|\.flat\.sol|-flatten\.sol|\.invariant\.\w*\.sol|\.fuzz\.\w*\.sol|Test\w*\.sol|\w*Tests?\.sol|Mock\w*\.sol|\w*Mocks?\.sol|\w*Harness\.sol|\w*Canary\.sol)$")
 
