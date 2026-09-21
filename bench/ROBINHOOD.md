@@ -51,16 +51,22 @@ Every one of those became a change to the lenses the same day, measured on the l
 
 The labelled corpora barely move, which is the point: they were built from the bugs the lenses were written for.
 
-The whole run was then re-done with the new lenses, on a listing that had grown to 1,506 projects and 658 Solidity repositories:
+The whole run was then re-done twice, as the lenses grew:
 
-| | first run, 2026-09-16 | re-run, 2026-09-19 |
-|---|---|---|
-| repos containing Solidity, scanned | 631 | 658 |
-| Solidity files read | 11,506 | 11,132 |
-| findings confirmed | 281 | 244 |
-| repos with at least one | 149 | 140 |
+| | first run, 2026-09-16 (8 lenses) | re-run, 2026-09-19 (8 lenses) | re-run, 2026-09-21 (9 lenses) |
+|---|---|---|---|
+| projects listed | 1,506 | 1,506 | 1,560 |
+| repos with Solidity, scanned | 631 | 658 | 682 |
+| Solidity files read | 11,506 | 11,132 | 10,849 |
+| findings confirmed | 281 | 244 | 339 |
 
-Fewer files because the path filter now knows the test, mock, harness and flattened-copy names it learned here, and 37 fewer confirmations on more repositories. The re-run's confirmations have not been read by hand, so this file claims nothing about how many are true; the 3-in-281 from the read above is the only precision number here.
+The third run added `consistency-lens`, the ninth, and it takes part in 115 of the 339, which is why the total rose. **All 115 were read by hand** (the other 224 are the reentrancy, arithmetic and old-access findings the earlier runs already characterised). Of the 115: 113 false, and two real bugs on live code that the audits had not touched, plus the two Virtuals findings the modern-audit corpus already carries.
+
+1. **A Uniswap V4 hook where anyone can steal another position's fees.** `B20HUBHook.setPending` in madebyshun/blue-agent is `external` with no caller check, while the sibling that writes the same pool binding is `onlyPoolManager`. An attacker binds a junk pool to their own address and a victim's LP tokenId in one transaction, then calls the permissionless `claimFees`, which sweeps the victim position's fees to the hook and pays the attacker 80%. A code comment calls `claimFees` a revert stub; the collect path is fully implemented. The hook is deployed on Base 8453 (the repo's own notes verify its treasury on-chain, dated 2026-08-18).
+
+2. **A circuit-breaker registry anyone can seize.** `BreakerRegistry.arm` in millw14/merrymen has no check that the caller controls the account it arms; the first caller becomes the permanent owner, and every other function is `onlyOwner`. An attacker front-runs the real owner, becomes the breaker owner for a victim account, and can `halt` it with no reset path for the victim. Griefing and denial of service, no direct profit.
+
+The 113 false ones fall into the same shapes recorded in [MODERN.md](MODERN.md): a caller-keyed write, a fresh-slot-only registration, a one-shot init flag (the OpenZeppelin modifier and hand-rolled `if (_initialized) revert`), a value fixed by a signature, Merkle proof, vote or oracle, a payout whose recipient is never the caller, or a demo, test or benchmark file. The full hand-read is in the run's workdir, `FINDINGS.md`.
 
 ## Reproduce
 
