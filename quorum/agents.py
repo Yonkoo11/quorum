@@ -498,6 +498,8 @@ def _state_writes(parts: list[Function], svars: set[str], chosen_only: bool = Fa
 # siblings carry says nothing about it. Ten confirmations on the modern corpus were an initializer
 # sitting beside a guarded setter.
 ONE_SHOT = re.compile(r"^(initializer|reinitializer)$", re.I)
+# `x = true`, the half of a hand-rolled one-shot guard that closes the door behind it.
+SETS_TRUE = re.compile(r"\b([A-Za-z_]\w*)\s*=\s*true\b")
 # A test the function applies to its own caller. Wider than SENDER_CHECK, which wants a comparison:
 # `require(nft.isApprovedOrOwner(msg.sender, id))` names no operator and is still a caller check. This
 # lens claims a function carries none of the guard its siblings share, and a function making its own
@@ -507,7 +509,26 @@ OWN_CALLER_TEST = re.compile(r"\b(require|revert|assert)\s*\([^;{]*(msg\.sender|
 
 
 def _one_shot(fn: Function) -> bool:
-    return any(ONE_SHOT.match(m) for m in _modifiers(fn))
+    """A function that can run only once, so what its siblings carry says nothing about it.
+
+    Two ways to be one-shot. The OpenZeppelin `initializer` modifier is the one this knew, and the
+    Robinhood Chain run turned up the other: a flag rolled by hand with no modifier at all, as in
+    `DirectLaunchFeeSplitter.initialize` opening `if (_initialized) revert AlreadyInitialized();`.
+    That read as an unguarded setter sitting beside guarded siblings.
+
+    The hand-rolled test is semantic rather than a list of names: the function refuses to run when a
+    flag is already set, AND sets that same flag itself. Both halves are required. A function that
+    only reads a flag is not one-shot, and one that only sets it can still be called again.
+    """
+    if any(ONE_SHOT.match(m) for m in _modifiers(fn)):
+        return True
+    for flag in {m.group(1) for m in SETS_TRUE.finditer(fn.body)}:
+        f = re.escape(flag)
+        if re.search(rf"\bif\s*\(\s*{f}\s*\)\s*\{{?\s*(revert|require)", fn.body):
+            return True
+        if re.search(rf"\brequire\s*\(\s*!\s*{f}\b", fn.body):
+            return True
+    return False
 
 
 def _open_to_callers(fn: Function) -> bool:

@@ -902,3 +902,51 @@ def test_a_local_named_like_a_struct_field_is_not_a_state_write():
     from quorum.agents import modifier_lens
 
     assert "quote" not in {s.function for s in modifier_lens("Adapter.sol", STRUCT_FIELD)}
+
+
+HAND_ROLLED_ONE_SHOT = """
+pragma solidity ^0.8.20;
+
+contract Splitter {
+    address public creator;
+    address public owner;
+    bool private _initialized;
+
+    error AlreadyInitialized();
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not owner");
+        _;
+    }
+
+    function initialize(address creator_) external {
+        if (_initialized) revert AlreadyInitialized();
+        _initialized = true;
+        creator = creator_;
+    }
+
+    function setCreator(address creator_) external onlyOwner {
+        creator = creator_;
+    }
+}
+"""
+
+
+def test_a_hand_rolled_one_shot_guard_is_one_shot():
+    """`initialize` carries no modifier and writes `creator`, which its sibling only writes behind
+    onlyOwner, so the lens read it as an unguarded setter. But it refuses to run once `_initialized`
+    is set and sets that flag itself, so it can only ever run once. Found on the Robinhood Chain run
+    as DirectLaunchFeeSplitter.initialize (bench/ROBINHOOD.md)."""
+    from quorum.agents import consistency_lens
+
+    assert "initialize" not in {s.function for s in consistency_lens("Splitter.sol", HAND_ROLLED_ONE_SHOT)}
+
+
+def test_a_function_that_only_reads_a_flag_is_not_one_shot():
+    """Both halves are required: refusing on a flag AND setting it. Reading one is not enough, or
+    every function with a paused check would look one-shot."""
+    from quorum.agents import _one_shot, parse_functions
+
+    src = HAND_ROLLED_ONE_SHOT.replace("        _initialized = true;\n", "")
+    fn = next(f for f in parse_functions(src) if f.name == "initialize")
+    assert not _one_shot(fn)

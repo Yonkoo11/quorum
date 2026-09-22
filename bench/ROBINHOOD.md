@@ -68,13 +68,17 @@ The third run added `consistency-lens`, the ninth, and it takes part in 115 of t
 
 The 113 false ones fall into the same shapes recorded in [MODERN.md](MODERN.md): a caller-keyed write, a fresh-slot-only registration, a one-shot init flag (the OpenZeppelin modifier and hand-rolled `if (_initialized) revert`), a value fixed by a signature, Merkle proof, vote or oracle, a payout whose recipient is never the caller, or a demo, test or benchmark file.
 
-One shape was new this run and is not yet a rule: a **hand-rolled one-shot guard**. The lens knows the
-OpenZeppelin `initializer` modifier and nothing else, so a function that opens with
-`if (_initialized) revert AlreadyInitialized();` and carries no modifier reads as an unguarded setter
+One shape was new this run: a **hand-rolled one-shot guard**. The lens knew the OpenZeppelin
+`initializer` modifier and nothing else, so a function that opens with
+`if (_initialized) revert AlreadyInitialized();` and carries no modifier read as an unguarded setter
 sitting beside guarded siblings. `DirectLaunchFeeSplitter.initialize` was confirmed for exactly that.
-A function that reverts on its own one-shot flag is one-shot, and teaching the lens to see that is the
-next precision change. It gets measured on the three labelled corpora before it ships, like every
-other rule here.
+
+That is now a rule: a function is one-shot if it refuses to run when a flag is already set AND sets
+that same flag itself. Both halves are required, or every function with a paused check would look
+one-shot. **It changes nothing on any of the three labelled corpora** (precision and recall identical,
+both real modern findings kept), so it earns no number here. Its evidence is this run's hand-read
+false confirmation plus two tests, one proving the shape is now suppressed and one proving a
+read-only flag check still is not one-shot.
 
 ## Reproduce
 
