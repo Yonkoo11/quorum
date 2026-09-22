@@ -39,9 +39,13 @@ SmartBugs, seventh run: recall unchanged at 63%; overall precision 51% → 48%, 
 
 Updated 2026-09-22. When this file was written on 2026-09-16, no corpus on disk labelled this bug, so there was no recall number at all. The outside-labels benchmark it was waiting for now exists, and it labels exactly one: [MODERN.md](MODERN.md), contest `2025-02-recall`, `CheckpointingFacet.execBottomUpMsgs`.
 
-**The pair misses it. 0% recall, on a sample of one.** No lens sighted it at all. The cause is recorded in MODERN.md and is not a judgement call: the ledger the finding turns on is `s.circSupply`, diamond storage reached through an `AppStorage` struct, and `s.circSupply` is not a declaration that file contains, so the reader never treats it as a balance. Any ledger held in diamond storage and reached through a struct pointer is invisible to this pair for the same reason.
+**The pair misses it. 0% recall, on a sample of one.** No lens sighted it at all.
 
-One target is a number, not a measurement. It is enough to say the pair has not yet been shown to find one of these in the wild, and not enough to say how often it would. The Pashov reviews name at least four more of exactly this shape (a `totalStaked` only incremented; an `amountDeposited` never decreased on withdraw; unclaimed rewards never decremented; withdrawn earnings never reduced), and none of those repos is on disk. A recall number worth quoting still needs a corpus labelled for this bug specifically.
+It is worth being exact about why, because the first version of this note got it wrong. It is not that the reader cannot see the ledger. `circSupply` is credited in `LibGateway.sol:252` and debited in the flagged file itself, `subnet.circSupply -= totalAmount`. So the ledger has a way down, and `ledger-lens` would decline to call it one-way even with perfect cross-file and diamond-storage sight. The bug is that the debit skips `IpcMsgKind.Call` messages, so one class of credit is never matched by a debit.
+
+That is a **scope gap, not a reader gap**. This pair reads for one narrow sub-shape of accounting-mismatch: a balance with no way down *anywhere*. The labelled bug is a conditional gap in a ledger that does have a way down, which is strictly harder, because finding it means noticing that one branch skips the debit. No amount of fixing the reader gets there. Saying so is more useful than a 0% that implies a near miss.
+
+One target is a number, not a measurement. It is enough to say the pair has not been shown to find one of these in the wild, and not enough to say how often it would. The Pashov reviews name at least four of the shape this pair actually reads for (a `totalStaked` only incremented; an `amountDeposited` never decreased on withdraw; unclaimed rewards never decremented; withdrawn earnings never reduced), and none of those repos is on disk. A recall number worth quoting still needs a corpus labelled for that shape specifically.
 
 ```
 $ python bench/run.py <smartbugs-curated>                                  # BENCHMARK.md
