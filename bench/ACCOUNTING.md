@@ -35,9 +35,13 @@ Before the counter-name exclusion the first cut confirmed seven: the four above 
 
 SmartBugs, seventh run: recall unchanged at 63%; overall precision 51% → 48%, because the four confirmations above count as false under the rule. Held-out: unchanged, 50% / 62%. Full tables in `BENCHMARK.md`, `HELDOUT.md`; before-files in `history/2026-09-16-before-accounting.md` and `history/2026-09-16-heldout-before-accounting.md`.
 
-## What is not measured
+## Recall
 
-Recall. No corpus on disk labels this bug, so there is no number for how many such bugs the pair finds. The Pashov reviews name at least four of exactly this shape (a `totalStaked` only incremented; an `amountDeposited` never decreased on withdraw; unclaimed rewards never decremented; withdrawn earnings never reduced), but none of those repos is on disk. The first honest recall number waits for the outside-labels benchmark.
+Updated 2026-09-22. When this file was written on 2026-09-16, no corpus on disk labelled this bug, so there was no recall number at all. The outside-labels benchmark it was waiting for now exists, and it labels exactly one: [MODERN.md](MODERN.md), contest `2025-02-recall`, `CheckpointingFacet.execBottomUpMsgs`.
+
+**The pair misses it. 0% recall, on a sample of one.** No lens sighted it at all. The cause is recorded in MODERN.md and is not a judgement call: the ledger the finding turns on is `s.circSupply`, diamond storage reached through an `AppStorage` struct, and `s.circSupply` is not a declaration that file contains, so the reader never treats it as a balance. Any ledger held in diamond storage and reached through a struct pointer is invisible to this pair for the same reason.
+
+One target is a number, not a measurement. It is enough to say the pair has not yet been shown to find one of these in the wild, and not enough to say how often it would. The Pashov reviews name at least four more of exactly this shape (a `totalStaked` only incremented; an `amountDeposited` never decreased on withdraw; unclaimed rewards never decremented; withdrawn earnings never reduced), and none of those repos is on disk. A recall number worth quoting still needs a corpus labelled for this bug specifically.
 
 ```
 $ python bench/run.py <smartbugs-curated>                                  # BENCHMARK.md
