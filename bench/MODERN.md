@@ -1,6 +1,6 @@
 # The 9 lenses on recent audit contests
 
-Run 2026-09-20 · 16 contests, each at the commit its published report links · 512 Solidity files scanned · quorum threshold 2 · `python bench/modern.py <workdir> --labels bench/labels/modern-c4.json`
+Run 2026-09-22 · 16 contests, each at the commit its published report links · 512 Solidity files scanned · quorum threshold 2 · `python bench/modern.py <workdir> --labels bench/labels/modern-c4.json`
 
 ## What share of modern findings is this tool even looking for
 
@@ -57,10 +57,21 @@ in v0.7.0, is the different second reading that was missing: it asks the contrac
 variable is, by reading what its other writers carry. It confirms two of the seven. It is not free, and the cost
 is the next section.
 
-Three of the five still missed come down to one thing: **this tool reads declarations, not storage pointers.**
-A diamond struct reached through `s.` is not a declaration any file contains, so there is no state write to see.
-That is not a rule to tune; it is a different program, and it is written down as the next decision rather than
-hidden in a number.
+The five still missed do not share one cause. An earlier version of this paragraph said they did; corrected
+2026-09-22 after re-reading the source.
+
+- **One is a reader gap.** `register`: a diamond struct reached through `s.` is not a declaration any file
+  contains, so **this tool reads declarations, not storage pointers** and there is no state write to see. That is
+  not a rule to tune, it is a different program.
+- **One is a scope gap.** `execBottomUpMsgs`: the ledger is debited in the same file, so no amount of reader work
+  reaches it. The pair reads for a balance with no way down anywhere; this is a conditional gap in a ledger that
+  does have one. The row above says it in full.
+- **One is cross-function.** `leave` carries `nonReentrant`; the re-entry arrives through a different entry point.
+- **Two are the rule working as designed.** `stake` and `createGauge` are single-lens candidates, held back
+  because the siblings that write the same state do not agree on a guard, so there was nothing to corroborate.
+
+Lumping them together made one fixable-looking problem out of three different ones, and only the first is a
+reader that could be extended.
 
 ## What this corpus changed, and what it stopped being
 

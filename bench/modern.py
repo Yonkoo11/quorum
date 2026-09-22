@@ -38,6 +38,22 @@ SKIP_NAME = re.compile(r"(\.t\.sol|\.s\.sol|\.flat\.sol|-flatten\.sol|Test\w*\.s
                        r"\w*Mocks?\.sol|\w*Harness\.sol|I[A-Z]\w*\.sol)$")
 
 
+PROSE = Path(__file__).parent / "prose"
+
+
+def prose(name: str) -> None:
+    """Print a hand-written section kept beside this script.
+
+    This report is generated, but three of its sections are read by hand and cannot be derived from
+    a scan: what happened to each labelled target, what the corpus changed, and the confirmations
+    read one by one. They used to live only inside the generated file, so re-running the command in
+    bench/README.md silently deleted them. They live in bench/prose/ now and are spliced back here.
+    """
+    f = PROSE / name
+    if f.exists():
+        print("\n" + f.read_text().strip("\n") + "\n")
+
+
 def load(work: Path, labels_path: Path) -> tuple[Corpus, list[dict]]:
     findings = json.loads(labels_path.read_text())["findings"]
     contests = sorted({f["contest"] for f in findings})
@@ -126,11 +142,15 @@ def main(argv: list[str] | None = None) -> None:
         verdict = "CONFIRMED" if (name, fn, risk) in confirmed else ("candidate" if seen else "missed")
         print(f"- `{name}` `{fn}` {risk} — {verdict}" + (f", seen by {', '.join(seen)}" if seen else ", seen by no lens"))
 
-    print("\n## Per lens\n\n| lens | sightings | on a target |\n|---|---|---|")
+    prose("modern-before-per-lens.md")
+
+    print("## Per lens\n\n| lens | sightings | on a target |\n|---|---|---|")
     for lens_name in LENSES:
         print(f"| {lens_name} | {len(lens_hits[lens_name]):,} | {len(lens_hits[lens_name] & targets)} |")
     print(f"\nCandidates held back by the rule (one lens only): {len(candidates):,}. "
-          f"Confirmations that name no labelled finding: {len(confirmed - targets):,}.\n")
+          f"Confirmations that name no labelled finding: {len(confirmed - targets):,}.")
+
+    prose("modern-before-contests.md")
 
     print("## Contests\n\n| contest | findings | Quorum-shaped | files scanned | confirmations |\n|---|---|---|---|---|")
     for c in contests:
