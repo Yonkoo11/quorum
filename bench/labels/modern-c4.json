@@ -1,6 +1,73 @@
 {
  "corpus": "Recent public audit contests (Code4rena)",
  "source": "https://code4rena.com/reports/<contest>, each repo at the commit the report links",
+ "repos_pinned": "Resolved 2026-09-22 from the default branch of each Code4rena contest repo. `python bench/fetch_modern.py <workdir>` clones each at the commit below, which is what makes this corpus rebuildable; before this, nothing recorded which repo or commit the numbers came from.",
+ "repos": {
+  "2025-01-liquid-ron": {
+   "repo": "code-423n4/2025-01-liquid-ron",
+   "commit": "fdcba65ae7749e323e35d69f49b59ea6983e0c60"
+  },
+  "2025-01-next-generation": {
+   "repo": "code-423n4/2025-01-next-generation",
+   "commit": "fd63b7826f80354f091a63ce1e8ad6f5a9918997"
+  },
+  "2025-02-recall": {
+   "repo": "code-423n4/2025-02-recall",
+   "commit": "54d2074206851d74f95c7aa233699fe986519c41"
+  },
+  "2025-03-nudgexyz": {
+   "repo": "code-423n4/2025-03-nudgexyz",
+   "commit": "f7b32aba3501eb1ae8b5109f3d02d94a90de413c"
+  },
+  "2025-04-bitvault": {
+   "repo": "code-423n4/2025-04-bitvault",
+   "commit": "8626a2ee610a16a11924683d51e77efd4b159f3d"
+  },
+  "2025-04-kinetiq": {
+   "repo": "code-423n4/2025-04-kinetiq",
+   "commit": "a3913ca2b9d021df45a428e0185ee4f4f45509ae"
+  },
+  "2025-04-virtuals-protocol": {
+   "repo": "code-423n4/2025-04-virtuals-protocol",
+   "commit": "f8d4b0dbcce83e2fbbdf3f9d5b150b44947a8dfa"
+  },
+  "2025-05-blackhole": {
+   "repo": "code-423n4/2025-05-blackhole",
+   "commit": "133e380b9cbd35010dcf5b87235695fddfa26c85"
+  },
+  "2025-08-morpheus": {
+   "repo": "code-423n4/2025-08-morpheus",
+   "commit": "ac464944f8da90e8805261e9f74fe960d432f24d"
+  },
+  "2025-10-hybra-finance": {
+   "repo": "code-423n4/2025-10-hybra-finance",
+   "commit": "17d72f0b95e6d320e13c4e33ffc68eaad440e8a7"
+  },
+  "2025-10-sequence": {
+   "repo": "code-423n4/2025-10-sequence",
+   "commit": "32521089e66d734ac13c3bb7d1de09792b27f19c"
+  },
+  "2025-11-ekubo": {
+   "repo": "code-423n4/2025-11-ekubo",
+   "commit": "2928ab5b121b762702a2e8541654a94576611c25"
+  },
+  "2025-11-garden": {
+   "repo": "code-423n4/2025-11-garden",
+   "commit": "933f54599b3b55a55df5ff10b3da43bb87b988e2"
+  },
+  "2025-11-megapot": {
+   "repo": "code-423n4/2025-11-megapot",
+   "commit": "538649e8a05b07efa706083d1158c65f640cb823"
+  },
+  "2025-11-merkl": {
+   "repo": "code-423n4/2025-11-merkl",
+   "commit": "542610c5c1bac6dca0d23eef4249f612eb9ff21e"
+  },
+  "2025-11-sukukfi": {
+   "repo": "code-423n4/2025-11-sukukfi",
+   "commit": "18fe2578cf1c6203dac7ff21513533010f3dda3e"
+  }
+ },
  "how_labelled": "By hand from the reports and the source, 2026-09-19, before any lens was run on this corpus. Every High and Medium finding in every report was classified: either one of the four shapes Quorum's lens pairs look for (reentrancy, unguarded-state-write, unsafe-math, accounting-mismatch) or the category of bug it actually is. A target names the one function where the fix belongs. Contests whose protocol appears in the maintainer's own audit-practice archive were excluded before anything was read, so nothing here was seen during that work. Non-Solidity contests (Rust, Cairo) and reports that link no source were dropped at collection time.",
  "excluded": "tests, mocks, harnesses, scripts, interfaces, dependencies (lib/, node_modules/) and build output",
  "findings": [

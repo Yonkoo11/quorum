@@ -66,7 +66,15 @@ The third run added `consistency-lens`, the ninth, and it takes part in 115 of t
 
 2. **A circuit-breaker registry anyone can seize.** `BreakerRegistry.arm` in millw14/merrymen has no check that the caller controls the account it arms; the first caller becomes the permanent owner, and every other function is `onlyOwner`. An attacker front-runs the real owner, becomes the breaker owner for a victim account, and can `halt` it with no reset path for the victim. Griefing and denial of service, no direct profit.
 
-The 113 false ones fall into the same shapes recorded in [MODERN.md](MODERN.md): a caller-keyed write, a fresh-slot-only registration, a one-shot init flag (the OpenZeppelin modifier and hand-rolled `if (_initialized) revert`), a value fixed by a signature, Merkle proof, vote or oracle, a payout whose recipient is never the caller, or a demo, test or benchmark file. The full hand-read is in the run's workdir, `FINDINGS.md`.
+The 113 false ones fall into the same shapes recorded in [MODERN.md](MODERN.md): a caller-keyed write, a fresh-slot-only registration, a one-shot init flag (the OpenZeppelin modifier and hand-rolled `if (_initialized) revert`), a value fixed by a signature, Merkle proof, vote or oracle, a payout whose recipient is never the caller, or a demo, test or benchmark file.
+
+One shape was new this run and is not yet a rule: a **hand-rolled one-shot guard**. The lens knows the
+OpenZeppelin `initializer` modifier and nothing else, so a function that opens with
+`if (_initialized) revert AlreadyInitialized();` and carries no modifier reads as an unguarded setter
+sitting beside guarded siblings. `DirectLaunchFeeSplitter.initialize` was confirmed for exactly that.
+A function that reverts on its own one-shot flag is one-shot, and teaching the lens to see that is the
+next precision change. It gets measured on the three labelled corpora before it ships, like every
+other rule here.
 
 ## Reproduce
 

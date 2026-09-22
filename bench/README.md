@@ -14,6 +14,10 @@ git clone --depth 1 https://github.com/SunWeb3Sec/DeFiVulnLabs /tmp/DeFiVulnLabs
 .venv/bin/python bench/slither.py /tmp/DeFiVulnLabs --labels bench/labels/defivulnlabs.json --fallback-pragma "^0.8.18" \
     --remap forge-std/=/tmp/DeFiVulnLabs/lib/forge-std/src/ ds-test/=/tmp/DeFiVulnLabs/lib/forge-std/lib/ds-test/src/ @openzeppelin/=/tmp/DeFiVulnLabs/lib/openzeppelin-contracts/ \
                                                                                                   > bench/SLITHER-HELDOUT.md
+
+# the recent-contest corpus: sixteen Code4rena repos, each pinned to a commit in the label file
+.venv/bin/python bench/fetch_modern.py /tmp/modern
+.venv/bin/python bench/modern.py /tmp/modern --labels bench/labels/modern-c4.json                 > bench/MODERN.md
 ```
 
 ## What it measures
