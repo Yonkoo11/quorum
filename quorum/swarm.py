@@ -62,15 +62,20 @@ def run_swarm(
     return report
 
 
-def _split_witness(body: dict) -> bool:
+def split_witness(risk: str, lines) -> bool:
     """For unsafe-math the two readings must be of the same sum: wrap-lens on one line and bound-lens on
     another is two candidates, not a finding. Every other pair agrees on a function. Added after the
     Robinhood Chain run, where most false unsafe-math confirmations were a checked `+=` on one line and
-    an `unchecked` add on another (bench/ROBINHOOD.md)."""
-    if body.get("risk") != "unsafe-math":
-        return False
-    lines = {w.get("line") for w in (body.get("witnesses") or {}).values()}
-    return len(lines) > 1
+    an `unchecked` add on another (bench/ROBINHOOD.md).
+
+    The benchmarks import this rather than keeping their own idea of what a confirmation is. They used
+    to, and it made every published unsafe-math number describe a tool that was not the shipped one.
+    """
+    return risk == "unsafe-math" and len(set(lines)) > 1
+
+
+def _split_witness(body: dict) -> bool:
+    return split_witness(body.get("risk"), [w.get("line") for w in (body.get("witnesses") or {}).values()])
 
 
 def _handle(memory: SwarmMemory, s: Sighting, threshold: int, report: RunReport) -> None:

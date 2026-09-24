@@ -1,14 +1,20 @@
 ## The confirmations, read by hand
 
-All 36 were opened and read in the source. None is a bug an audit missed.
+All 29 were opened and read in the source. None is a bug an audit missed.
 
-Twenty-four of them do not involve the consistency lens, and they are what is left of the 28 read one by one
+Seventeen of them do not involve the consistency lens, and they are what is left of the 28 read one by one
 before that lens existed. Those 28 were: nine `unchecked` arithmetic bounded by a checked operation beside it,
 seven a setter that copies a value out of a trusted contract, four vendored Uniswap libraries whose wrap is the
 design, four payouts that zero the balance before they pay, two calls to a contract fixed in the constructor,
-one a stateless multicall helper that holds no funds, and `ReferralRegistry.becomeReferrer`, below. Four have
-since gone on their own: a struct's fields are not contract state, the declaration reader used to think they
-were, and a local sharing a field's name read as a state write.
+one a stateless multicall helper that holds no funds, and `ReferralRegistry.becomeReferrer`, below.
+
+Eleven of those 28 have since gone, and nobody tuned a lens at them. Four were a local sharing its name with a
+struct field, which the declaration reader used to mistake for contract state. The other seven came out of the
+nine `unchecked` shapes above, and they went for a better reason than a fix. The benchmark was not applying the
+swarm's own rule that the two readings of an `unsafe-math` finding have to be of the **same sum**: wrap-lens was
+sighting the `unchecked` add, bound-lens the checked `+=` on the line above, and the harness counted that as
+agreement. The shipped tool never would have. Two of the nine survive, where both readings really are of one
+line.
 
 The twelve the consistency lens takes part in were read this run. Two are the labelled findings above. The other
 ten are false, in four shapes:

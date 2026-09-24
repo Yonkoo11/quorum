@@ -65,7 +65,7 @@ built from the bugs these lenses were written for.
 |---|---|---|---|---|
 | | recall | precision | recall | precision |
 | lenses, any single lens | 79% | 11% | 50% | 4% |
-| **lenses, two-witness rule** | **64%** | **49%** | **50%** | **62%** |
+| **lenses, two-witness rule** | **64%** | **52%** | **50%** | **71%** |
 | Slither, strict | 48% | 41% | 40% | 20% |
 | Slither, loose | 49% | 24% | 40% | 7% |
 
@@ -75,7 +75,7 @@ Per risk, two-witness against Slither strict (recall / precision):
 |---|---|---|---|---|
 | reentrancy | 90% / 72% | 90% / 62% | 2 of 4, 67% | 2 of 4, 40% |
 | unguarded-state-write | 10% / 40% | 33% / 19% | 1 of 2, 100% | 1 of 2, 8% |
-| unsafe-math | 81% / 35% | 0% | 2 of 4, 50% | 1 of 4, 50% |
+| unsafe-math | 81% / 40% | 0% | 2 of 4, 50% | 1 of 4, 50% |
 | accounting-mismatch | no labels; 4 confirmed, all counted false | no detector for this shape | no labels; 0 confirmed | no detector for this shape |
 
 Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLITHER.md),
@@ -99,6 +99,7 @@ Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLIT
 | [2026-09-20 twelfth](history/2026-09-20-before-determinism.md) | not a lens change: a defect that made this table depend on luck. `_reads` reported only the first variable a line mentions, taken from a set, and Python randomises set order per process, so `require(balances[msg.sender] >= MinDeposit)` reported `balances` in one run and `MinDeposit` in the next. payout-lens intersects what a function reads with what it writes, so identical code confirmed an accounting finding on one run and not on the next: three runs of this corpus on the same commit gave 523, 518 and 517 any-lens sightings. Every match on a line is reported now, in a fixed order, and three runs under different hash seeds produce byte-identical files. The confirmed set did not move at all; the any-lens count settles at 513 because the duplicates it was counting were never distinct findings | 64% | 48% | 90% | 72% |
 | [2026-09-20 thirteenth](history/2026-09-20-before-structfields.md) | a struct's fields are not contract state. `struct SwapParams { bool zeroForOne; }` made `zeroForOne` a state variable everywhere in the file, so a local or a named return sharing a field's name read as a state write; a Uniswap adapter's `quote` was confirmed for assigning a local bool. Found by reading the first confirmations of the Robinhood Chain re-run. One fewer confirmation here and all 47 true ones kept, so precision 48% to 49% with recall held; on the modern corpus 40 confirmations to 36 with the same two true; the held-out corpus did not move | 64% | 49% | 90% | 72% |
 | [2026-09-22 fourteenth](ROBINHOOD.md) | a hand-rolled one-shot guard is one-shot. The lens knew the OpenZeppelin `initializer` modifier and nothing else, so `if (_initialized) revert AlreadyInitialized();` with no modifier read as an unguarded setter beside guarded siblings (`DirectLaunchFeeSplitter.initialize`, found on the Robinhood Chain run). A function now counts as one-shot if it refuses to run when a flag is set AND sets that flag itself; both halves are required, or a paused check would qualify. **This moves nothing here.** All three labelled corpora are identical before and after, so the rule earns no number; its evidence is one hand-read false confirmation in the wild and two tests | 64% | 49% | 90% | 72% |
+| [2026-09-24 fifteenth](history/2026-09-24-before-splitwitness.md) | not a lens change: the harness was not using the swarm's own definition of a confirmation. `quorum/swarm.py` has held a rule since the Robinhood Chain run that the two readings of an `unsafe-math` finding must be of the same sum, because wrap-lens on an `unchecked` add and bound-lens on the checked `+=` above it are two candidates and not agreement. The benchmarks kept their own idea of confirmed, keyed on the function alone, so every published unsafe-math number described a tool that was not the shipped one. Both now import `split_witness` from the swarm. No lens moved and no true positive was lost: SmartBugs 96 confirmations to 91 with the same 47 true, held-out 8 to 7 with the same 5 true, the modern corpus 36 to 29 with the same 2 | 64% | 52% | 90% | 72% |
 
 All twelve changes were made after looking at this corpus, so every row after the first is a tuned
 number. The seventh added a pair for a bug this corpus does not label, so its four confirmations

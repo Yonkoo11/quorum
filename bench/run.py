@@ -31,6 +31,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from quorum.agents import LENSES, Project, parse_functions  # noqa: E402
+from quorum.swarm import split_witness  # noqa: E402
 from quorum.memory import QUORUM_THRESHOLD  # noqa: E402
 
 CATEGORY_TO_RISK = {
@@ -110,6 +111,7 @@ def load_corpus(root: str, labels: str | None) -> Corpus:
 
 def scan(corpus: Corpus):
     sightings: dict[Key, set[str]] = defaultdict(set)
+    lines: dict[Key, set[int]] = defaultdict(set)
     lens_hits: dict[str, set[Key]] = defaultdict(set)
     sources = {name: path.read_text(errors="replace") for name, path in corpus.files}
     project = Project.read(sources)
@@ -118,8 +120,9 @@ def scan(corpus: Corpus):
             for s in lens(name, src, project):
                 key = (name, s.function, s.risk)
                 sightings[key].add(lens_name)
+                lines[key].add(s.line)
                 lens_hits[lens_name].add(key)
-    return sightings, lens_hits
+    return sightings, lens_hits, lines
 
 
 def pct(num: int, den: int) -> str:
@@ -136,9 +139,13 @@ def row(risk: str | None, targets: set[Key], any_lens: set[Key], confirmed: set[
             f"| **{len(conf)}** | {tp} | **{pct(tp, len(conf))}** | **{pct(tp, len(t))}** |")
 
 
-def report(corpus: Corpus, sightings, lens_hits, command: str) -> None:
-    confirmed = {k for k, lenses in sightings.items() if len(lenses) >= QUORUM_THRESHOLD}
-    candidates = {k for k, lenses in sightings.items() if len(lenses) < QUORUM_THRESHOLD}
+def report(corpus: Corpus, sightings, lens_hits, lines, command: str) -> None:
+    # The swarm's own rule, imported rather than restated: for unsafe-math, two readings of different
+    # lines are two candidates and not a finding. Keeping a second idea of "confirmed" here is what
+    # made the published unsafe-math numbers describe a tool that was not the shipped one.
+    confirmed = {k for k, lenses in sightings.items()
+                 if len(lenses) >= QUORUM_THRESHOLD and not split_witness(k[2], lines[k])}
+    candidates = set(sightings) - confirmed
     any_lens = set(sightings)
     targets = corpus.targets
 
@@ -184,9 +191,9 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--labels", help="hand-written labels file; without it the SmartBugs layout is assumed")
     args = ap.parse_args(argv)
     corpus = load_corpus(args.corpus, args.labels)
-    sightings, lens_hits = scan(corpus)
+    sightings, lens_hits, lines = scan(corpus)
     command = "python bench/run.py <corpus>" + (f" --labels {args.labels}" if args.labels else "")
-    report(corpus, sightings, lens_hits, command)
+    report(corpus, sightings, lens_hits, lines, command)
 
 
 if __name__ == "__main__":

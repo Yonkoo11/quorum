@@ -27,7 +27,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from bench.run import Corpus, RISKS, pct, row  # noqa: E402
 from quorum.agents import LENSES, Project  # noqa: E402
-from quorum.memory import QUORUM_THRESHOLD  # noqa: E402
+from quorum.memory import QUORUM_THRESHOLD
+from quorum.swarm import split_witness  # noqa: E402
 
 # Dependencies, tests and build output are not the audited code and are not scanned.
 SKIP_DIR = ("/lib/", "/node_modules/", "/test/", "/tests/", "/script/", "/scripts/", "/mocks/", "/mock/",
@@ -89,6 +90,7 @@ def main(argv: list[str] | None = None) -> None:
 
     sightings: dict[tuple[str, str, str], set[str]] = defaultdict(set)
     lens_hits: dict[str, set] = defaultdict(set)
+    lines: dict = defaultdict(set)
     sources = {name: path.read_text(errors="replace") for name, path in corpus.files}
     # One project per contest: a contract never inherits from a different protocol.
     projects = {c: Project.read({n: s for n, s in sources.items() if n.startswith(c + "/")})
@@ -99,10 +101,14 @@ def main(argv: list[str] | None = None) -> None:
             for s in lens(name, src, project):
                 key = (name, s.function, s.risk)
                 sightings[key].add(lens_name)
+                lines[key].add(s.line)
                 lens_hits[lens_name].add(key)
 
-    confirmed = {k for k, l in sightings.items() if len(l) >= QUORUM_THRESHOLD}
-    candidates = {k for k, l in sightings.items() if len(l) < QUORUM_THRESHOLD}
+    # The swarm's own rule, imported rather than restated: for unsafe-math, two readings of different
+    # lines are two candidates and not a finding.
+    confirmed = {k for k, l in sightings.items()
+                 if len(l) >= QUORUM_THRESHOLD and not split_witness(k[2], lines[k])}
+    candidates = set(sightings) - confirmed
     any_lens = set(sightings)
     targets = corpus.targets
     contests = sorted({f["contest"] for f in findings})

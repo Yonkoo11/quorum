@@ -1,6 +1,6 @@
 # The 9 lenses on recent audit contests
 
-Run 2026-09-24 · 16 contests, each at the commit its published report links · 512 Solidity files scanned · quorum threshold 2 · `python bench/modern.py <workdir> --labels bench/labels/modern-c4.json`
+Run 2026-09-22 · 16 contests, each at the commit its published report links · 512 Solidity files scanned · quorum threshold 2 · `python bench/modern.py <workdir> --labels bench/labels/modern-c4.json`
 
 ## What share of modern findings is this tool even looking for
 
@@ -22,9 +22,9 @@ That number is the ceiling on this tool's usefulness against a modern audit, bef
 |---|---|---|---|---|---|---|---|---|---|
 | reentrancy | 1 | 91 | 0 | 0% | 0% | **4** | 0 | **0%** | **0%** |
 | unguarded-state-write | 5 | 350 | 4 | 1% | 80% | **19** | 2 | **11%** | **40%** |
-| unsafe-math | 0 | 201 | 0 | 0% | n/a | **2** | 0 | **0%** | **n/a** |
+| unsafe-math | 0 | 201 | 0 | 0% | n/a | **9** | 0 | **0%** | **n/a** |
 | accounting-mismatch | 1 | 63 | 0 | 0% | 0% | **4** | 0 | **0%** | **0%** |
-| **all** | 7 | 705 | 4 | 1% | 57% | **29** | 2 | **7%** | **29%** |
+| **all** | 7 | 705 | 4 | 1% | 57% | **36** | 2 | **6%** | **29%** |
 
 ## Every labelled target, and what the lenses did with it
 
@@ -116,25 +116,19 @@ It will be built against a labelled corpus first, then re-measured here.
 | ledger-lens | 16 | 0 |
 | payout-lens | 51 | 0 |
 
-Candidates held back by the rule (one lens only): 676. Confirmations that name no labelled finding: 27.
+Candidates held back by the rule (one lens only): 669. Confirmations that name no labelled finding: 34.
 
 ## The confirmations, read by hand
 
-All 29 were opened and read in the source. None is a bug an audit missed.
+All 36 were opened and read in the source. None is a bug an audit missed.
 
-Seventeen of them do not involve the consistency lens, and they are what is left of the 28 read one by one
+Twenty-four of them do not involve the consistency lens, and they are what is left of the 28 read one by one
 before that lens existed. Those 28 were: nine `unchecked` arithmetic bounded by a checked operation beside it,
 seven a setter that copies a value out of a trusted contract, four vendored Uniswap libraries whose wrap is the
 design, four payouts that zero the balance before they pay, two calls to a contract fixed in the constructor,
-one a stateless multicall helper that holds no funds, and `ReferralRegistry.becomeReferrer`, below.
-
-Eleven of those 28 have since gone, and nobody tuned a lens at them. Four were a local sharing its name with a
-struct field, which the declaration reader used to mistake for contract state. The other seven came out of the
-nine `unchecked` shapes above, and they went for a better reason than a fix. The benchmark was not applying the
-swarm's own rule that the two readings of an `unsafe-math` finding have to be of the **same sum**: wrap-lens was
-sighting the `unchecked` add, bound-lens the checked `+=` on the line above, and the harness counted that as
-agreement. The shipped tool never would have. Two of the nine survive, where both readings really are of one
-line.
+one a stateless multicall helper that holds no funds, and `ReferralRegistry.becomeReferrer`, below. Four have
+since gone on their own: a struct's fields are not contract state, the declaration reader used to think they
+were, and a local sharing a field's name read as a state write.
 
 The twelve the consistency lens takes part in were read this run. Two are the labelled findings above. The other
 ten are false, in four shapes:
@@ -164,13 +158,13 @@ nothing was verified beyond reading it.
 | 2025-03-nudgexyz | 4 | 0 | 3 | 0 |
 | 2025-04-bitvault | 2 | 0 | 49 | 1 |
 | 2025-04-kinetiq | 8 | 0 | 9 | 0 |
-| 2025-04-virtuals-protocol | 32 | 3 | 52 | 4 |
-| 2025-05-blackhole | 24 | 1 | 64 | 3 |
+| 2025-04-virtuals-protocol | 32 | 3 | 52 | 6 |
+| 2025-05-blackhole | 24 | 1 | 64 | 5 |
 | 2025-08-morpheus | 4 | 0 | 41 | 3 |
-| 2025-10-hybra-finance | 10 | 0 | 89 | 2 |
+| 2025-10-hybra-finance | 10 | 0 | 89 | 4 |
 | 2025-10-sequence | 6 | 0 | 35 | 0 |
 | 2025-11-ekubo | 4 | 0 | 81 | 1 |
 | 2025-11-garden | 1 | 0 | 6 | 0 |
 | 2025-11-megapot | 11 | 0 | 6 | 2 |
 | 2025-11-merkl | 3 | 0 | 21 | 10 |
-| 2025-11-sukukfi | 4 | 0 | 8 | 1 |
+| 2025-11-sukukfi | 4 | 0 | 8 | 2 |

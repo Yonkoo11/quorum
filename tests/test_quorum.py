@@ -950,3 +950,46 @@ def test_a_function_that_only_reads_a_flag_is_not_one_shot():
     src = HAND_ROLLED_ONE_SHOT.replace("        _initialized = true;\n", "")
     fn = next(f for f in parse_functions(src) if f.name == "initialize")
     assert not _one_shot(fn)
+
+
+SPLIT_WITNESS_ERC20 = """
+pragma solidity 0.8.13;
+
+contract Token {
+    uint public totalSupply;
+    mapping(address => uint) public balanceOf;
+
+    function _mint(address _to, uint _amount) internal returns (bool) {
+        totalSupply += _amount;
+        unchecked {
+            balanceOf[_to] += _amount;
+        }
+        return true;
+    }
+}
+"""
+
+
+def test_unsafe_math_needs_both_readings_on_the_same_sum():
+    """wrap-lens sights the `unchecked` add; bound-lens sights the checked `+=` on the line above.
+    Two readings of two different sums are two candidates, not a finding. This is the ERC20 mint
+    shape and it was nine of the modern corpus's confirmations."""
+    from quorum.agents import wrap_lens, bound_lens
+    from quorum.swarm import split_witness
+
+    wrap = [s for s in wrap_lens("Token.sol", SPLIT_WITNESS_ERC20) if s.function == "_mint"]
+    bound = [s for s in bound_lens("Token.sol", SPLIT_WITNESS_ERC20) if s.function == "_mint"]
+    assert wrap and bound, "both lenses should still sight this function"
+    assert wrap[0].line != bound[0].line, "the two readings are of different lines"
+    assert split_witness("unsafe-math", [wrap[0].line, bound[0].line])
+
+
+def test_the_same_line_rule_is_only_for_unsafe_math():
+    """Every other pair agrees on a function, not a line, so the rule must not touch them."""
+    from quorum.swarm import split_witness
+
+    assert not split_witness("unsafe-math", [10, 10])
+    assert split_witness("unsafe-math", [10, 12])
+    assert not split_witness("reentrancy", [10, 12])
+    assert not split_witness("unguarded-state-write", [10, 12])
+    assert not split_witness("accounting-mismatch", [10, 12])
