@@ -33,9 +33,21 @@ labelled function whose bug maps to one of the three risks Quorum's lens pairs c
 
 Every finding that is not on a labelled function is counted as false, including hits on attack
 contracts, test harnesses, remediated twins and files the corpus labels for some other bug. Some of
-those are probably real; the harsh count is the one published. Memory recall between contracts is
-switched off so the result does not depend on file order. The rule itself is the swarm's own: two
-distinct lenses on one key.
+those are probably real; the harsh count is the one published.
+
+**The rule is the swarm's own, and is imported rather than restated.** Two distinct lenses on one
+`contract:function:risk` key, and for `unsafe-math` both readings must be of the same line, which
+`bench/run.py` and `bench/modern.py` get by calling `split_witness` from `quorum/swarm.py`. That
+sentence used to be a claim rather than a fact: until 2026-09-24 the harnesses kept their own idea of
+a confirmation and counted `unsafe-math` findings the shipped tool refuses, which understated
+precision on all three corpora.
+
+The confirmation path was then walked end to end against `quorum/swarm.py` to see whether anything
+else differed. The key is the same triple, `corroborations` counts distinct lenses in both, and each
+lens contributes one witness line in both. **One difference is left, and it is deliberate:** memory
+recall between contracts is switched off here, so a pattern confirmed on an earlier contract cannot
+promote a single-lens sighting on a later one. That keeps the result from depending on file order,
+and it makes these numbers stricter than the tool in normal use, never kinder.
 
 Two corpora:
 
