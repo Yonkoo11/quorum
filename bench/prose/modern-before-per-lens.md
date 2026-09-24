@@ -60,7 +60,12 @@ that exposed it, and each measured on the labelled corpora before and after:
 On SmartBugs-curated those three moved precision from 48% to 49% with recall unchanged at 62%; the held-out corpus
 did not move at all.
 
-One observation from the first run is still **not** a rule. An `unchecked` block whose operands are bounded by a
-checked operation on the line above it cannot wrap, and most of the arithmetic false confirmations are that shape.
-It will be built against a labelled corpus first, then re-measured here.
+An observation from the first run said most of the arithmetic false confirmations were an `unchecked` block whose
+operands are bounded by a checked operation on the line above, and that a rule for it was owed. On 2026-09-24
+that was chased, and there was no rule to write. The shape was real, but the tool already refused it: the swarm
+has required since the Robinhood Chain run that the two readings of an `unsafe-math` finding be of the **same
+sum**, and wrap-lens on the `unchecked` add plus bound-lens on the checked `+=` above it is two candidates, not
+agreement. The benchmark was the only thing counting them, because it kept its own definition of a confirmation
+keyed on the function alone. Both harnesses import the swarm's rule now. Seven of the nine went, no lens moved,
+and no recall number changed anywhere. The remaining two are cases where both readings really are of one line.
 
