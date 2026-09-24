@@ -45,7 +45,28 @@ It is worth being exact about why, because the first version of this note got it
 
 That is a **scope gap, not a reader gap**. This pair reads for one narrow sub-shape of accounting-mismatch: a balance with no way down *anywhere*. The labelled bug is a conditional gap in a ledger that does have a way down, which is strictly harder, because finding it means noticing that one branch skips the debit. No amount of fixing the reader gets there. Saying so is more useful than a 0% that implies a near miss.
 
-One target is a number, not a measurement. It is enough to say the pair has not been shown to find one of these in the wild, and not enough to say how often it would. The Pashov reviews name at least four of the shape this pair actually reads for (a `totalStaked` only incremented; an `amountDeposited` never decreased on withdraw; unclaimed rewards never decremented; withdrawn earnings never reduced), and none of those repos is on disk. A recall number worth quoting still needs a corpus labelled for that shape specifically.
+One target is a number, not a measurement. It is enough to say the pair has not been shown to find one of these in the wild, and not enough to say how often it would.
+
+## The Pashov corpus this file was waiting for cannot be built
+
+Since 2026-09-16 this file said the first real recall number waited on labelling the Pashov reviews, which name several bugs of exactly the shape this pair reads for. On 2026-09-24 that was actually attempted. It does not work, and the reason is worth recording so nobody plans around it again.
+
+All 299 reports in `pashov/audits` (248 team, 50 solo, 1 agentic) were searched for the shape. Fourteen mention it in passing; read one by one, **four** are genuinely a balance credited and never debited:
+
+| finding | severity | the variable |
+|---|---|---|
+| Nexus C-03, `DepositETH/DepositUSD.executeWithdrawal` | Critical | `nETHMinted` / `nUSDMinted` credited on deposit, never debited on withdrawal |
+| Saffron C-01, `LidoVault.vaultEndedWithdraw` | Critical | `withdrawnStakingEarnings` accumulated, never reduced when the share is paid out |
+| Kinetiq M-05, `StakingManager.stake` | Medium | `totalStaked` incremented on stake, never decremented on withdrawal |
+| stHYPE L-04, `StakingModuleExternalManagement.deposit` | Low | `amountDeposited` credited, never debited on withdrawal |
+
+**Every one of the four audited repositories is private or deleted.** `kinetiq-research/lst`, `Nexus-2023/NativeYield`, `saffron-finance/lido-fiv` and `ValantisLabs/sthype-contracts` all return 404, and a search turned up no public fork or mirror of any of them. A benchmark needs the source to scan, and for these four there is no source to get. The plan is dead, not pending.
+
+Two things follow, and both are more useful than the TODO they replace.
+
+**The shape is rare.** Four findings in 299 professional audits, and only two of those are High or Critical. That is the honest ceiling on what this pair can be worth, and it sits alongside [MODERN.md](MODERN.md)'s finding that the four risks Quorum reads for are 5% of what modern audits report at all. A pair that reads for a rare shape is not useless, but nobody should expect it to carry a review.
+
+**The viable route is public contest repos, not client audits.** Client audit reports name the code but the code goes private; contest repos stay public, which is exactly why the sixteen in [MODERN.md](MODERN.md) can be pinned and re-fetched. A recall number for this pair means labelling more public contests until enough of this shape turns up, and the honest note is that it may take a lot of contests to find four.
 
 ```
 $ python bench/run.py <smartbugs-curated>                                  # BENCHMARK.md
