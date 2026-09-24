@@ -607,8 +607,11 @@ UNITS = {"wei", "gwei", "ether", "seconds", "minutes", "hours", "days", "weeks",
 
 def _min_pragma(src: str) -> tuple[int, int] | None:
     """The lowest compiler version the file admits, as (major, minor). None if it names none."""
-    versions = [tuple(int(x) for x in v.split(".")[:2])
-                for m in PRAGMA.finditer(src) for v in re.findall(r"\d+\.\d+(?:\.\d+)?", m.group(1))]
+    versions: list[tuple[int, int]] = []
+    for m in PRAGMA.finditer(src):
+        for v in re.findall(r"\d+\.\d+(?:\.\d+)?", m.group(1)):
+            major, minor = (int(x) for x in v.split(".")[:2])
+            versions.append((major, minor))
     return min(versions) if versions else None
 
 
@@ -767,7 +770,7 @@ def ledger_lens(contract: str, src: str, project: "Project | None" = None) -> li
             continue
         svars = _scope(fn, own, project)
         touched = {name for part in _reachable(parse_functions(src), fn, project) for _, _, name, _ in _writes_of(part, svars)}
-        for ln, text, v in _reads(fn, one_way - touched):
+        for ln, text, _ in _reads(fn, one_way - touched):
             out.append(Sighting("ledger-lens", "accounting-mismatch", contract, fn.name, ln, text))
             break
     return out
