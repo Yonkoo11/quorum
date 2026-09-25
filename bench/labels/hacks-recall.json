@@ -1,0 +1,62 @@
+{
+  "corpus": "2026 hacks, verified victim source",
+  "source": "https://github.com/SunWeb3Sec/DeFiHackLabs",
+  "scan": "src/*.sol",
+  "how_labelled": "Derived by bench/fetch_hacks.py from bench/labels/hacks-2026.json, which classifies the 53 hacks of 2026 that DeFiHackLabs reproduces with a root-cause note. Each label names the function that note blames, in the implementation or facet that holds it rather than the proxy in front of it. Only hacks whose victim source can actually be read are here; the rest are listed as skipped by the same script and are the ceiling on any recall number taken from this corpus.",
+  "labels": [
+    {
+      "path": "src/AtomicQueue.sol",
+      "function": "solve",
+      "risk": "unguarded-state-write",
+      "why": "2026-09/EtherFiAtomicQueue_exp.sol: solve() takes a `solver` address with no check that it is the caller or consented, and pulls on that address's standing allowance"
+    },
+    {
+      "path": "src/InvestmentManagerFacet.sol",
+      "function": "getTotalAssetBalance",
+      "risk": "accounting-mismatch",
+      "why": "2026-09/Reddio_exp.sol: share pricing reads the vault's raw token balance with no per-share-class accounting of the stETH backing one class"
+    },
+    {
+      "path": "src/LaunchpadFactoryAuto.sol",
+      "function": "launch",
+      "risk": "unguarded-state-write",
+      "why": "2026-08/UnistreetLaunchpad_exp.sol: launch() is permissionless and forwards the caller's calldata verbatim into the V4 PositionManager as the factory, unvalidated"
+    },
+    {
+      "path": "src/OFTSand.sol",
+      "function": "approveAndCall",
+      "risk": "unguarded-state-write",
+      "why": "2026-08/SandboxOFT_exp.sol: approveAndCall calls an arbitrary target as the token itself, guarded only by the first word of calldata equalling the caller"
+    },
+    {
+      "path": "src/ORBCore.sol",
+      "function": "addPoolAndSell",
+      "risk": "reentrancy",
+      "why": "2026-09/ORB_exp.sol: addPoolAndSell and _sellToken both refund BNB to the caller before their remaining state work, with no guard on the path"
+    },
+    {
+      "path": "src/Royal1155LDA.sol",
+      "function": "safeBatchTransferFrom",
+      "risk": "accounting-mismatch",
+      "why": "2026-06/RoyalRoyalties_exp.sol: per-tier bookkeeping is credited for every batch item even when amounts[i] == 0, so a zero-balance sender inflates the record without moving value"
+    },
+    {
+      "path": "src/SquidRouterModule.sol",
+      "function": "_executeWithToken",
+      "risk": "unguarded-state-write",
+      "why": "2026-05/NewMarketTrading_exp.sol: the Axelar express path is callable by anyone and the module authorizes against a sourceAddress string the caller supplied, not the caller"
+    },
+    {
+      "path": "src/StartaleSmartAccount.sol",
+      "function": "initializeAccount",
+      "risk": "unguarded-state-write",
+      "why": "2026-09/Startale_exp.sol: initializeAccount is gated only on a transient flag that EIP-1153 keeps set for the whole transaction, with no already-initialized guard"
+    },
+    {
+      "path": "src/Vault4626.sol",
+      "function": "totalAssets",
+      "risk": "accounting-mismatch",
+      "why": "2026-06/Vault4626_exp.sol: totalAssets() values idle non-asset WETH as asset while redeem() hands that same WETH out, so the books count it twice"
+    }
+  ]
+}

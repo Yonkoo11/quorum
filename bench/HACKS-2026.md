@@ -54,10 +54,13 @@ permanently out of scope for this design.
 
 ## What this does not say
 
-**It is not a recall claim.** "A shape Quorum reads for" is an upper bound on what it could catch,
-not a claim that it would have. On recent audit contests Quorum confirms 29% of the targets in the
-shapes it does read for, so the realistic figure is a fraction of the 43%, not the 43%. Nobody should
-quote this as a hit rate.
+**It is not a recall claim, and the recall has since been measured.** "A shape Quorum reads for" is
+an upper bound on what it could catch, not a claim that it would have.
+[`HACKS-RECALL.md`](HACKS-RECALL.md) puts the lenses in front of the actual victim source: of these
+23, nine could be scanned at all, and the two-witness rule confirmed the labelled bug in **one** of
+them. It named the right function in three, with the wrong risk in two of those. So the distance
+between this file's 43% and what the tool reaches is large, and it is written down rather than left
+to the reader. Nobody should quote the 43% as a hit rate.
 
 **The denominator is incidents, not dollars.** By dollars, 2026 went the other way: roughly 74% of
 attributed losses came from operational failures, stolen keys, signer compromise and backend

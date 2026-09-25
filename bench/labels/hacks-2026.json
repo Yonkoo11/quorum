@@ -14,58 +14,426 @@
   "source": "https://github.com/SunWeb3Sec/DeFiHackLabs",
   "classified": "2026-09-25",
   "hacks": [
-    {"file": "2026-01/MTToken_exp.sol", "category": "business-logic", "quorum_shape": false, "why": "transactionFee() splits by a list of percentages with no sum(shares) <= 100 check, so a transfer debits the sender for more than the amount"},
-    {"file": "2026-01/futureswap_exp.sol", "category": "business-logic", "quorum_shape": false, "why": "a token-unit fee is handed to a system that reads the same number as basis points"},
-    {"file": "2026-05/DxSale_exp.sol", "category": "key-or-admin-compromise", "quorum_shape": false, "why": "locker ownership was walked to the attacker over 269 days, then an owner-only function drained the locked LP as designed"},
-    {"file": "2026-05/JoeAgent_exp.sol", "category": "reentrancy", "quorum_shape": true, "why": "removeLiquidityViaContract sends BNB before zeroing lpInfo[user].lpAmount, and receive() re-enters with the same liquidity value"},
-    {"file": "2026-05/LegendaryMoneyMonNft_exp.sol", "category": "signature-or-approval", "quorum_shape": false, "why": "cliamRewred pays an arbitrary ERC20 amount on a signature its recoverSigner does not bind tightly enough"},
-    {"file": "2026-05/NewMarketTrading_exp.sol", "category": "access-control", "quorum_shape": true, "why": "the Axelar express path is callable by anyone and the module authorizes against a sourceAddress string the caller supplied, not the caller"},
-    {"file": "2026-05/SKP_exp.sol", "category": "key-or-admin-compromise", "quorum_shape": false, "why": "the owner used ownerBurnLiquidityPairTokens, an owner-only backdoor, to burn SKP inside the pair and then borrowed against the spike"},
-    {"file": "2026-05/TrustedVolumes_exp.sol", "category": "access-control", "quorum_shape": true, "why": "signer registration on the RFQ proxy is permissionless, so an attacker registers itself as an allowed order signer for a maker", "also": ["signature-or-approval"]},
-    {"file": "2026-05/WUSD_exp.sol", "category": "business-logic", "quorum_shape": false, "why": "the GLOVE reward is gated only on the caller's current balance, with no per-address claim ledger, so a fresh address always qualifies"},
-    {"file": "2026-06/AIDC_exp.sol", "category": "business-logic", "quorum_shape": false, "why": "ordinary transfers burn accumulated sell-side amounts straight out of the AMM pair"},
-    {"file": "2026-06/ATM_exp.sol", "category": "business-logic", "quorum_shape": false, "why": "the sell branch auto-dumps the token contract's own holdings once its balance crosses a threshold"},
-    {"file": "2026-06/AztecConnect_exp.sol", "category": "business-logic", "quorum_shape": false, "why": "decodeProof commits full inner-rollup chunks while settlement covers exactly numRealTxs, so proven slots outnumber settled ones"},
-    {"file": "2026-06/AztecEscapeHatch_exp2.sol", "category": "business-logic", "quorum_shape": false, "why": "the escape-hatch circuit publishes proof_id without constraining it to 0"},
-    {"file": "2026-06/BYToken_exp.sol", "category": "access-control", "quorum_shape": true, "why": "triggerAutoBurn() is permissionless, so anyone can crash the BY reserve on demand"},
-    {"file": "2026-06/CookFinanceIssuance_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "issueWithSingleToken2 trades through a Pancake V2 spot-price adapter with attacker-supplied weightings and zero minimum output"},
-    {"file": "2026-06/OLPC_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "the transfer hook lets the pair reserve be synchronized to a manipulated balance, and a zero-input swap reads the inflated figure"},
-    {"file": "2026-06/RoyalRoyalties_exp.sol", "category": "accounting-mismatch", "quorum_shape": true, "why": "per-tier bookkeeping is credited for every batch item even when amounts[i] == 0, so a zero-balance sender inflates the record without moving value"},
-    {"file": "2026-06/ThetanutsFi_exp.sol", "category": "arithmetic", "quorum_shape": false, "why": "integer division in mint() floors to zero once totalSupply is crushed to 3 wei; truncation, not a wrap"},
-    {"file": "2026-06/Vault4626_exp.sol", "category": "accounting-mismatch", "quorum_shape": true, "why": "totalAssets() values idle non-asset WETH as asset while redeem() hands that same WETH out, so the books count it twice"},
-    {"file": "2026-07/edel-xstock_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "collateral is valued through a mutable ERC4626 convertToAssets rate that a donation moves inside the transaction"},
-    {"file": "2026-08/AIC_exp.sol", "category": "token-integration", "quorum_shape": false, "why": "fee-on-transfer tokens against a pair's public skim(), which pays any caller the gap between real balance and recorded reserve"},
-    {"file": "2026-08/AjnaFinance_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "auction and bucket prices come only from the pool's own state, and an attacker holding both sides of a liquidation shapes them"},
-    {"file": "2026-08/ArrakisGUNI_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "mint()/burn() value the V3 position off instantaneous slot0; the TWAP guard wraps only the manager rebalance path"},
-    {"file": "2026-08/BalancerV1BPool_exp.sol", "category": "arithmetic", "quorum_shape": false, "why": "the required WBTC input for a sizeable BPT mint rounds down to one satoshi once the reserve is compressed; rounding, not a wrap"},
-    {"file": "2026-08/FloatProtocol_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "getTotalAmounts() prices LP shares at slot0 spot with no TWAP on the permissionless deposit/withdraw path"},
-    {"file": "2026-08/ReflexerGEB_exp.sol", "category": "access-control", "quorum_shape": true, "why": "several SAFEs are registered with ownsSAFE == the shared proxy-actions library's own address, so a direct call to the library passes the owner check"},
-    {"file": "2026-08/SandboxOFT_exp.sol", "category": "access-control", "quorum_shape": true, "why": "approveAndCall calls an arbitrary target as the token itself, guarded only by the first word of calldata equalling the caller"},
-    {"file": "2026-08/USM_exp.sol", "category": "business-logic", "quorum_shape": false, "why": "defund() prices a redemption off a mean that is not split-invariant, so 64 slices pay more than one lump"},
-    {"file": "2026-08/UnistreetLaunchpad_exp.sol", "category": "access-control", "quorum_shape": true, "why": "launch() is permissionless and forwards the caller's calldata verbatim into the V4 PositionManager as the factory, unvalidated"},
-    {"file": "2026-09/BeatXswap_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "deposit() prices BTX off a single raw slot0 read with no TWAP and no deviation guard"},
-    {"file": "2026-09/BonfireSwap_exp.sol", "category": "access-control", "quorum_shape": true, "why": "_safeTransferFrom pulls from an arbitrary `to` with no require(msg.sender == to) and no allowance check of its own"},
-    {"file": "2026-09/CozyFinance_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "anyone may propose the UMA answer, and the trigger accepts an unchallenged proposal without verifying the event happened"},
-    {"file": "2026-09/DHC_exp.sol", "category": "accounting-mismatch", "quorum_shape": true, "why": "a claimed award can be reset to unclaimed and paid again out of a shared balance that carries no per-award reserve", "also": ["access-control"]},
-    {"file": "2026-09/EnsoFinance_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "valuation uses short per-pool TWAP windows rather than one long window, over-valuing a thin-pool token about ninefold"},
-    {"file": "2026-09/EtherFiAtomicQueue_exp.sol", "category": "access-control", "quorum_shape": true, "why": "solve() takes a `solver` address with no check that it is the caller or consented, and pulls on that address's standing allowance"},
-    {"file": "2026-09/Flamincome_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "the strategy prices its Convex position at spot virtual price and anyone can inflate the position first"},
-    {"file": "2026-09/GDC_exp.sol", "category": "accounting-mismatch", "quorum_shape": true, "why": "a taxed sell forwards 30 percent of the nominal amount back into the pair but burns the full nominal out of the pair's reserve, so the reserve stops backing the WBNB", "also": ["access-control", "reentrancy"]},
-    {"file": "2026-09/Likwid_exp.sol", "category": "accounting-mismatch", "quorum_shape": true, "why": "a leverage==0 borrow never sets delta.pairDelta, so pairReserves are never debited and every call quotes the same first-trade price"},
-    {"file": "2026-09/Nimiq_exp.sol", "category": "signature-or-approval", "quorum_shape": false, "why": "the handler's forwarder execute() discards the request, signature and domain separator it was handed"},
-    {"file": "2026-09/NotionalFinance_exp.sol", "category": "arithmetic", "quorum_shape": true, "why": "minting a short worth about 2^128 overflows the uint128 cash ladder, leaving the unbacked long with no offsetting debt; a real wrap"},
-    {"file": "2026-09/OMNI404_exp.sol", "category": "business-logic", "quorum_shape": false, "why": "transfer() reads a value under 50 as an NFT id and moves a full 1e18, so a tiny swap output pays out an entire unit"},
-    {"file": "2026-09/ORB_exp.sol", "category": "reentrancy", "quorum_shape": true, "why": "addPoolAndSell and _sellToken both refund BNB to the caller before their remaining state work, with no guard on the path"},
-    {"file": "2026-09/OrderFactory_exp.sol", "category": "access-control", "quorum_shape": true, "why": "createOrderForBuyer is reachable by any address, gated only on the buyer's state flag, and writes an attacker-named seller into the privileged slot"},
-    {"file": "2026-09/PrimeFinance_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "verifyReport stores a validly-signed report without checking it is newer than the stored one, so a stale price overwrites the live one"},
-    {"file": "2026-09/Reddio_exp.sol", "category": "accounting-mismatch", "quorum_shape": true, "why": "share pricing reads the vault's raw token balance with no per-share-class accounting of the stETH backing one class"},
-    {"file": "2026-09/RouterDrain_exp.sol", "category": "access-control", "quorum_shape": true, "why": "the V3 swap callback binds neither msg.sender to a real pool nor the decoded payer to the swap initiator"},
-    {"file": "2026-09/RsETHSafeModule_exp.sol", "category": "access-control", "quorum_shape": true, "why": "multicall gates on the target and _isAuthorized returns true whenever the target is the router itself"},
-    {"file": "2026-09/SecuredFi_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "the market unit price is a per-block sum with no time-weighting, reliable as soon as one volume threshold is crossed"},
-    {"file": "2026-09/SpiralHookV2_exp.sol", "category": "price-oracle-manipulation", "quorum_shape": false, "why": "borrow() values collateral at live V4 slot0, and the same-block defence keys on tx.origin"},
-    {"file": "2026-09/Startale_exp.sol", "category": "access-control", "quorum_shape": true, "why": "initializeAccount is gated only on a transient flag that EIP-1153 keeps set for the whole transaction, with no already-initialized guard"},
-    {"file": "2026-09/UnifiProtocol_exp.sol", "category": "access-control", "quorum_shape": true, "why": "the reward manager trusts a caller-supplied pool address for eligibility and for the reward maths, with no registry check"},
-    {"file": "2026-09/YamFinance_exp.sol", "category": "key-or-admin-compromise", "quorum_shape": false, "why": "the attacker took the Timelock through governance, made itself gov, and used the gov-only masterFallback as designed"},
-    {"file": "2026-09/ZentraFinance_exp.sol", "category": "accounting-mismatch", "quorum_shape": true, "why": "the burn is clamped to the user's scaled balance with no maximum-difference check, so a user holding zero burns zero and the debt never leaves the books"}
-  ]
+    {
+      "file": "2026-01/MTToken_exp.sol",
+      "category": "business-logic",
+      "quorum_shape": false,
+      "why": "transactionFee() splits by a list of percentages with no sum(shares) <= 100 check, so a transfer debits the sender for more than the amount"
+    },
+    {
+      "file": "2026-01/futureswap_exp.sol",
+      "category": "business-logic",
+      "quorum_shape": false,
+      "why": "a token-unit fee is handed to a system that reads the same number as basis points"
+    },
+    {
+      "file": "2026-05/DxSale_exp.sol",
+      "category": "key-or-admin-compromise",
+      "quorum_shape": false,
+      "why": "locker ownership was walked to the attacker over 269 days, then an owner-only function drained the locked LP as designed"
+    },
+    {
+      "file": "2026-05/JoeAgent_exp.sol",
+      "category": "reentrancy",
+      "quorum_shape": true,
+      "why": "removeLiquidityViaContract sends BNB before zeroing lpInfo[user].lpAmount, and receive() re-enters with the same liquidity value",
+      "chain": "bsc",
+      "address": "0xb12ce0a21f67a9fc3c8ad1c7dbc4b017b7e67319",
+      "function": "removeLiquidityViaContract",
+      "source": "absent"
+    },
+    {
+      "file": "2026-05/LegendaryMoneyMonNft_exp.sol",
+      "category": "signature-or-approval",
+      "quorum_shape": false,
+      "why": "cliamRewred pays an arbitrary ERC20 amount on a signature its recoverSigner does not bind tightly enough"
+    },
+    {
+      "file": "2026-05/NewMarketTrading_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "the Axelar express path is callable by anyone and the module authorizes against a sourceAddress string the caller supplied, not the caller",
+      "chain": "ethereum",
+      "address": "0x1f1d37a3Bf840e35c6a860c7C2dA71Fe555123ca",
+      "function": "_executeWithToken",
+      "source": "verified"
+    },
+    {
+      "file": "2026-05/SKP_exp.sol",
+      "category": "key-or-admin-compromise",
+      "quorum_shape": false,
+      "why": "the owner used ownerBurnLiquidityPairTokens, an owner-only backdoor, to burn SKP inside the pair and then borrowed against the spike"
+    },
+    {
+      "file": "2026-05/TrustedVolumes_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "signer registration on the RFQ proxy is permissionless, so an attacker registers itself as an allowed order signer for a maker",
+      "also": [
+        "signature-or-approval"
+      ],
+      "chain": "ethereum",
+      "address": "0x88eb28009351Fb414A5746F5d8CA91cdc02760d8",
+      "function": null,
+      "source": "unverified"
+    },
+    {
+      "file": "2026-05/WUSD_exp.sol",
+      "category": "business-logic",
+      "quorum_shape": false,
+      "why": "the GLOVE reward is gated only on the caller's current balance, with no per-address claim ledger, so a fresh address always qualifies"
+    },
+    {
+      "file": "2026-06/AIDC_exp.sol",
+      "category": "business-logic",
+      "quorum_shape": false,
+      "why": "ordinary transfers burn accumulated sell-side amounts straight out of the AMM pair"
+    },
+    {
+      "file": "2026-06/ATM_exp.sol",
+      "category": "business-logic",
+      "quorum_shape": false,
+      "why": "the sell branch auto-dumps the token contract's own holdings once its balance crosses a threshold"
+    },
+    {
+      "file": "2026-06/AztecConnect_exp.sol",
+      "category": "business-logic",
+      "quorum_shape": false,
+      "why": "decodeProof commits full inner-rollup chunks while settlement covers exactly numRealTxs, so proven slots outnumber settled ones"
+    },
+    {
+      "file": "2026-06/AztecEscapeHatch_exp2.sol",
+      "category": "business-logic",
+      "quorum_shape": false,
+      "why": "the escape-hatch circuit publishes proof_id without constraining it to 0"
+    },
+    {
+      "file": "2026-06/BYToken_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "triggerAutoBurn() is permissionless, so anyone can crash the BY reserve on demand",
+      "chain": "bsc",
+      "address": "0x6f50cffEcd4e00EcF7E442774C08c089450B62Ca",
+      "function": "triggerAutoBurn",
+      "source": "absent"
+    },
+    {
+      "file": "2026-06/CookFinanceIssuance_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "issueWithSingleToken2 trades through a Pancake V2 spot-price adapter with attacker-supplied weightings and zero minimum output"
+    },
+    {
+      "file": "2026-06/OLPC_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "the transfer hook lets the pair reserve be synchronized to a manipulated balance, and a zero-input swap reads the inflated figure"
+    },
+    {
+      "file": "2026-06/RoyalRoyalties_exp.sol",
+      "category": "accounting-mismatch",
+      "quorum_shape": true,
+      "why": "per-tier bookkeeping is credited for every batch item even when amounts[i] == 0, so a zero-balance sender inflates the record without moving value",
+      "chain": "polygon",
+      "address": "0xd5b297c08d890376b6cbdba6023a39ffbdf65c78",
+      "function": "safeBatchTransferFrom",
+      "source": "verified"
+    },
+    {
+      "file": "2026-06/ThetanutsFi_exp.sol",
+      "category": "arithmetic",
+      "quorum_shape": false,
+      "why": "integer division in mint() floors to zero once totalSupply is crushed to 3 wei; truncation, not a wrap"
+    },
+    {
+      "file": "2026-06/Vault4626_exp.sol",
+      "category": "accounting-mismatch",
+      "quorum_shape": true,
+      "why": "totalAssets() values idle non-asset WETH as asset while redeem() hands that same WETH out, so the books count it twice",
+      "chain": "base",
+      "address": "0xD08579102fc28355C5839019b730Ce58F84E6a4d",
+      "function": "totalAssets",
+      "source": "verified"
+    },
+    {
+      "file": "2026-07/edel-xstock_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "collateral is valued through a mutable ERC4626 convertToAssets rate that a donation moves inside the transaction"
+    },
+    {
+      "file": "2026-08/AIC_exp.sol",
+      "category": "token-integration",
+      "quorum_shape": false,
+      "why": "fee-on-transfer tokens against a pair's public skim(), which pays any caller the gap between real balance and recorded reserve"
+    },
+    {
+      "file": "2026-08/AjnaFinance_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "auction and bucket prices come only from the pool's own state, and an attacker holding both sides of a liquidation shapes them"
+    },
+    {
+      "file": "2026-08/ArrakisGUNI_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "mint()/burn() value the V3 position off instantaneous slot0; the TWAP guard wraps only the manager rebalance path"
+    },
+    {
+      "file": "2026-08/BalancerV1BPool_exp.sol",
+      "category": "arithmetic",
+      "quorum_shape": false,
+      "why": "the required WBTC input for a sizeable BPT mint rounds down to one satoshi once the reserve is compressed; rounding, not a wrap"
+    },
+    {
+      "file": "2026-08/FloatProtocol_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "getTotalAmounts() prices LP shares at slot0 spot with no TWAP on the permissionless deposit/withdraw path"
+    },
+    {
+      "file": "2026-08/ReflexerGEB_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "several SAFEs are registered with ownsSAFE == the shared proxy-actions library's own address, so a direct call to the library passes the owner check",
+      "chain": "ethereum",
+      "address": "0x84fe452d9fb495a335c74a225e6ad52c35eb8616",
+      "function": null,
+      "source": "verified"
+    },
+    {
+      "file": "2026-08/SandboxOFT_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "approveAndCall calls an arbitrary target as the token itself, guarded only by the first word of calldata equalling the caller",
+      "chain": "base",
+      "address": "0xac531Eb26Ca1d21b85126De8FB87E80E09002DcF",
+      "function": "approveAndCall",
+      "source": "verified"
+    },
+    {
+      "file": "2026-08/USM_exp.sol",
+      "category": "business-logic",
+      "quorum_shape": false,
+      "why": "defund() prices a redemption off a mean that is not split-invariant, so 64 slices pay more than one lump"
+    },
+    {
+      "file": "2026-08/UnistreetLaunchpad_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "launch() is permissionless and forwards the caller's calldata verbatim into the V4 PositionManager as the factory, unvalidated",
+      "chain": "ethereum",
+      "address": "0xFB60CD0B36aD4bD839b91767a6Ad9055AB6aD825",
+      "function": "launch",
+      "source": "verified"
+    },
+    {
+      "file": "2026-09/BeatXswap_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "deposit() prices BTX off a single raw slot0 read with no TWAP and no deviation guard"
+    },
+    {
+      "file": "2026-09/BonfireSwap_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "_safeTransferFrom pulls from an arbitrary `to` with no require(msg.sender == to) and no allowance check of its own",
+      "chain": "bsc",
+      "address": null,
+      "function": "transfer",
+      "source": "absent"
+    },
+    {
+      "file": "2026-09/CozyFinance_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "anyone may propose the UMA answer, and the trigger accepts an unchallenged proposal without verifying the event happened"
+    },
+    {
+      "file": "2026-09/DHC_exp.sol",
+      "category": "accounting-mismatch",
+      "quorum_shape": true,
+      "why": "a claimed award can be reset to unclaimed and paid again out of a shared balance that carries no per-award reserve",
+      "also": [
+        "access-control"
+      ],
+      "chain": "bsc",
+      "address": "0x5abb3fe2a02e5d4320862944cd3a0b8f6af28ce1",
+      "function": "participateAward",
+      "source": "unverified"
+    },
+    {
+      "file": "2026-09/EnsoFinance_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "valuation uses short per-pool TWAP windows rather than one long window, over-valuing a thin-pool token about ninefold"
+    },
+    {
+      "file": "2026-09/EtherFiAtomicQueue_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "solve() takes a `solver` address with no check that it is the caller or consented, and pulls on that address's standing allowance",
+      "chain": "ethereum",
+      "address": "0xD45884B592E316eB816199615A95C182F75dea07",
+      "function": "solve",
+      "source": "verified"
+    },
+    {
+      "file": "2026-09/Flamincome_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "the strategy prices its Convex position at spot virtual price and anyone can inflate the position first"
+    },
+    {
+      "file": "2026-09/GDC_exp.sol",
+      "category": "accounting-mismatch",
+      "quorum_shape": true,
+      "why": "a taxed sell forwards 30 percent of the nominal amount back into the pair but burns the full nominal out of the pair's reserve, so the reserve stops backing the WBNB",
+      "also": [
+        "access-control",
+        "reentrancy"
+      ],
+      "chain": "bsc",
+      "address": "0xe3342358e7ccbaebdd1139ad0274c53c5b3ef822",
+      "function": "_update",
+      "source": "absent"
+    },
+    {
+      "file": "2026-09/Likwid_exp.sol",
+      "category": "accounting-mismatch",
+      "quorum_shape": true,
+      "why": "a leverage==0 borrow never sets delta.pairDelta, so pairReserves are never debited and every call quotes the same first-trade price",
+      "chain": "bsc",
+      "address": "0x6bec0c1dc4898484b7f094566ddf8bc82ed7abe8",
+      "function": "_executeAddCollateralAndBorrow",
+      "source": "absent"
+    },
+    {
+      "file": "2026-09/Nimiq_exp.sol",
+      "category": "signature-or-approval",
+      "quorum_shape": false,
+      "why": "the handler's forwarder execute() discards the request, signature and domain separator it was handed"
+    },
+    {
+      "file": "2026-09/NotionalFinance_exp.sol",
+      "category": "arithmetic",
+      "quorum_shape": true,
+      "why": "minting a short worth about 2^128 overflows the uint128 cash ladder, leaving the unbacked long with no offsetting debt; a real wrap",
+      "chain": "ethereum",
+      "address": null,
+      "function": null,
+      "source": "absent"
+    },
+    {
+      "file": "2026-09/OMNI404_exp.sol",
+      "category": "business-logic",
+      "quorum_shape": false,
+      "why": "transfer() reads a value under 50 as an NFT id and moves a full 1e18, so a tiny swap output pays out an entire unit"
+    },
+    {
+      "file": "2026-09/ORB_exp.sol",
+      "category": "reentrancy",
+      "quorum_shape": true,
+      "why": "addPoolAndSell and _sellToken both refund BNB to the caller before their remaining state work, with no guard on the path",
+      "chain": "bsc",
+      "address": "0x24B6308AB84B182d0598b73d21a42f4C2bb33C18",
+      "function": "addPoolAndSell",
+      "source": "verified"
+    },
+    {
+      "file": "2026-09/OrderFactory_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "createOrderForBuyer is reachable by any address, gated only on the buyer's state flag, and writes an attacker-named seller into the privileged slot",
+      "chain": "ethereum",
+      "address": null,
+      "function": "createOrderForBuyer",
+      "source": "unverified"
+    },
+    {
+      "file": "2026-09/PrimeFinance_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "verifyReport stores a validly-signed report without checking it is newer than the stored one, so a stale price overwrites the live one"
+    },
+    {
+      "file": "2026-09/Reddio_exp.sol",
+      "category": "accounting-mismatch",
+      "quorum_shape": true,
+      "why": "share pricing reads the vault's raw token balance with no per-share-class accounting of the stETH backing one class",
+      "chain": "ethereum",
+      "address": "0x47F018dc00307cd48Fd71d489d92e550646598De",
+      "function": "getTotalAssetBalance",
+      "source": "verified"
+    },
+    {
+      "file": "2026-09/RouterDrain_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "the V3 swap callback binds neither msg.sender to a real pool nor the decoded payer to the swap initiator",
+      "chain": "bsc",
+      "address": "0x241f743e00000000000000000000000000000000",
+      "function": "uniswapV3SwapCallback",
+      "source": "unverified"
+    },
+    {
+      "file": "2026-09/RsETHSafeModule_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "multicall gates on the target and _isAuthorized returns true whenever the target is the router itself",
+      "chain": "ethereum",
+      "address": "0x4f0055926c839D1d960a82CBF84E2eE933958ebC",
+      "function": "multicall",
+      "source": "unverified"
+    },
+    {
+      "file": "2026-09/SecuredFi_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "the market unit price is a per-block sum with no time-weighting, reliable as soon as one volume threshold is crossed"
+    },
+    {
+      "file": "2026-09/SpiralHookV2_exp.sol",
+      "category": "price-oracle-manipulation",
+      "quorum_shape": false,
+      "why": "borrow() values collateral at live V4 slot0, and the same-block defence keys on tx.origin"
+    },
+    {
+      "file": "2026-09/Startale_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "initializeAccount is gated only on a transient flag that EIP-1153 keeps set for the whole transaction, with no already-initialized guard",
+      "chain": "ethereum",
+      "address": "0x000000b8f5f723A680d3D7EE624Fe0bC84a6E05A",
+      "function": "initializeAccount",
+      "source": "verified"
+    },
+    {
+      "file": "2026-09/UnifiProtocol_exp.sol",
+      "category": "access-control",
+      "quorum_shape": true,
+      "why": "the reward manager trusts a caller-supplied pool address for eligibility and for the reward maths, with no registry check",
+      "chain": "bsc",
+      "address": "0x5D8aA15505aFEc01Bab0dE21F9377673B5246EAE",
+      "function": "mintUP",
+      "source": "unverified"
+    },
+    {
+      "file": "2026-09/YamFinance_exp.sol",
+      "category": "key-or-admin-compromise",
+      "quorum_shape": false,
+      "why": "the attacker took the Timelock through governance, made itself gov, and used the gov-only masterFallback as designed"
+    },
+    {
+      "file": "2026-09/ZentraFinance_exp.sol",
+      "category": "accounting-mismatch",
+      "quorum_shape": true,
+      "why": "the burn is clamped to the user's scaled balance with no maximum-difference check, so a user holding zero burns zero and the debt never leaves the books",
+      "chain": "citrea",
+      "address": "0x62Ff719aBCaedEad9055BA980FCE3821eBdDA694",
+      "function": "_burnScaled",
+      "source": "chain-unsupported"
+    }
+  ],
+  "fields": "For the hacks whose shape these lenses read for: 'chain' and 'address' are the contract the root-cause note blames (an implementation or facet, never the proxy in front of it), 'function' is the function it blames, and 'source' says whether that contract's source can be read at all. 'unverified' is what the proof of concept's own header says; 'absent' means the explorer serves nothing for it. A null function is one the note does not pin to a single function."
 }
