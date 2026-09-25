@@ -67,6 +67,30 @@ def test_a_404_is_no_verified_source_not_a_traceback():
         assert str(exc.value).endswith("has no verified source on ethereum")
 
 
+def test_bsc_reads_from_sourcify_because_it_has_no_blockscout_instance():
+    payload = {"compilation": {"name": "Token"},
+               "sources": {"src/Token.sol": {"content": "contract Token {}"},
+                           "lib/Math.sol": {"content": "library Math {}"},
+                           "lib/Empty.sol": {"content": ""}}}
+    with _tmp_targets(), mock.patch.object(targets.requests, "get", return_value=_answer(payload)) as get:
+        path = targets.save("0x" + "cd" * 20, "bsc")
+        assert get.call_args.args[0] == (
+            "https://sourcify.dev/server/v2/contract/56/0x" + "cd" * 20 + "?fields=sources,compilation")
+        assert path == targets.TARGET_DIR / "bsc" / "Token.sol"
+        text = path.read_text()
+        # sorted by path, so the ordering of a multi-file answer is the same on every run
+        assert text.startswith("// file: lib/Math.sol\nlibrary Math {}")
+        assert "// file: src/Token.sol\ncontract Token {}" in text and "Empty" not in text
+
+
+def test_a_sourcify_answer_with_no_sources_is_refused_naming_the_chain():
+    for payload in ({"sources": {}}, {"sources": {"a.sol": {"content": ""}}}, {}):
+        with mock.patch.object(targets.requests, "get", return_value=_answer(payload)):
+            with pytest.raises(RuntimeError) as exc:
+                targets.fetch_source("0x" + "01" * 20, "bsc")
+            assert "no verified source on bsc" in str(exc.value)
+
+
 def test_an_unknown_chain_is_refused_before_any_request():
     with mock.patch.object(targets.requests, "get") as get:
         with pytest.raises(ValueError):

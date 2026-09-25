@@ -294,7 +294,7 @@ Its reveal is [tx 0x99195f17…](https://robinhoodchain.blockscout.com/tx/0x9919
 
 The claims above form a public registry of "this swarm knew this bug shape at this block". A public registry that is free to write to fills with junk, so writing to it has a cost, and the cost is destroyed rather than paid to anyone: each claim burns **100,000 QUORUM** through the token contract's own `burn(uint256)` on Robinhood Chain before the claim is written to the same chain, and the claim's calldata (`QUORUM2` shape) carries the burn's transaction hash. `quorum verify` checks both halves: the digest on chain, and that the burn it points at is a real burn of at least the fee by the same signer. Burn and claim share one chain, so one RPC verifies both. A claim whose fee was never burned does not verify.
 
-**One chain, on purpose.** The token pays for one thing: publishing a claim. Claims live on Robinhood Chain because that is where the token is. The tool reads verified code from Ethereum, Base, Arbitrum, Optimism and Polygon, and that is the part of those chains Quorum cares about. The token goes to a second chain only when three things are true at once: a claim registry exists on that chain, a canonical or audited bridge path exists for the token, and someone on that chain wants to publish claims. None of the three is true today. There is no date, and we will not give one.
+**One chain, on purpose.** The token pays for one thing: publishing a claim. Claims live on Robinhood Chain because that is where the token is. The tool reads verified code from Ethereum, Base, Arbitrum, Optimism, Polygon and BNB Smart Chain, and that is the part of those chains Quorum cares about. The token goes to a second chain only when three things are true at once: a claim registry exists on that chain, a canonical or audited bridge path exists for the token, and someone on that chain wants to publish claims. None of the three is true today. There is no date, and we will not give one.
 
 The first claim at the current fee, 2026-09-12. (The launch claim at the 1,000 fee, claim `0xacd123…efb0` at block 60748972 with burn `0x76da2f…d5d7`, came 22 minutes earlier and still verifies.)
 
@@ -366,7 +366,7 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 
 - **Language:** Python 3.10 to 3.13. No framework; the CLI is `argparse`.
 - **Memory:** [Sibyl Memory](https://github.com/Sibyl-Labs/Sibyl-Memory), all five tiers, load-bearing. Every read and write in one file.
-- **Chain:** `web3.py` against Robinhood Chain (chain id 4663) for the token, the fee burn, claims, reveals and imports; Base mainnet for the first claim. Verified target source comes from the Blockscout instances of Ethereum, Base, Arbitrum, Optimism and Polygon, with no API key ([`bench/MULTICHAIN.md`](bench/MULTICHAIN.md)).
+- **Chain:** `web3.py` against Robinhood Chain (chain id 4663) for the token, the fee burn, claims, reveals and imports; Base mainnet for the first claim. Verified target source comes from the Blockscout instances of Ethereum, Base, Arbitrum, Optimism and Polygon, and from Sourcify for BNB Smart Chain, which has no Blockscout instance and whose own explorer wants a key. No API key either way ([`bench/MULTICHAIN.md`](bench/MULTICHAIN.md)).
 - **Tests:** pytest, 89 tests, no chain access needed (the chain is mocked where it matters).
 - **Site:** static HTML, CSS and JavaScript in [`docs/`](docs/), served by GitHub Pages at [runquorum.site](https://runquorum.site); the in-browser verifier reads the chain through public JSON-RPC nodes.
 - **Demo:** the terminal recording lives in [`demo/`](demo/) and the video assembly in [`video/`](video/).
@@ -379,7 +379,7 @@ quorum/
   swarm.py       # the run: claim units, record sightings, promote, recall, retire
   memory.py      # every Sibyl Memory read and write (HOT, WARM, REFERENCE, ARCHIVE, COLD) and NoMemory
   chain.py       # claim digest, QUORUM1/2/3 calldata, fee schedule, burn check, attest, verify, reveal, import
-  targets.py     # quorum fetch: verified source from five chains' Blockscout instances, no key
+  targets.py     # quorum fetch: verified source from six chains, Blockscout and Sourcify, no key
   sarif.py       # confirmed findings as SARIF 2.1.0: both witnesses, what each read, the idiom as the fingerprint
   cli.py         # the command line
 tests/           # 89 tests: test_quorum.py (the swarm), test_token.py (the token boundary), test_targets.py (what an explorer may do), test_diary.py (the diary)

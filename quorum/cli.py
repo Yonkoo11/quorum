@@ -354,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--db", default=DEFAULT_DB, help="Sibyl Memory database path")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p = sub.add_parser("fetch", help="download verified contract source from one of five chains, no API key")
+    p = sub.add_parser("fetch", help="download verified contract source from one of six chains, no API key")
     p.add_argument("--chain", default=DEFAULT_CHAIN, choices=sorted(SOURCE_CHAINS),
                    help=f"where the address lives (default {DEFAULT_CHAIN})")
     p.add_argument("addresses", nargs="+")
