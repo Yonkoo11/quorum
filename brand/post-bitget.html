@@ -59,52 +59,57 @@
   .copy {
     position: absolute;
     left: 72px;
-    top: 96px;
-    width: 680px;
+    top: 0;
+    bottom: 0;
+    width: 620px;
     z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-bottom: 28px;
   }
 
   .rule {
-    width: 32px;
-    height: 3px;
+    width: 48px;
+    height: 4px;
     background: var(--green-ink);
-    margin-bottom: 20px;
+    margin-bottom: 22px;
   }
 
   .kicker {
     font-family: "IBM Plex Sans", sans-serif;
     font-weight: 500;
-    font-size: 15px;
-    letter-spacing: 0.28em;
-    color: var(--green-ink);
+    font-size: 28px;
+    letter-spacing: 0.04em;
+    color: #1a6428;
     text-transform: uppercase;
-    line-height: 1;
+    line-height: 1.15;
   }
 
   .status {
-    margin-top: 11px;
+    margin-top: 8px;
     font-family: "IBM Plex Sans", sans-serif;
     font-weight: 500;
-    font-size: 13px;
-    letter-spacing: 0.34em;
-    color: var(--muted);
+    font-size: 28px;
+    letter-spacing: 0.01em;
+    color: #2c2924;
     text-transform: uppercase;
-    line-height: 1;
+    line-height: 1.15;
   }
 
   h1 {
-    margin-top: 72px;
+    margin-top: 28px;
     font-family: "Archivo Black", sans-serif;
     font-weight: 400;
-    font-size: 52px;
-    line-height: 0.95;
-    letter-spacing: -0.04em;
+    line-height: 0.92;
+    letter-spacing: -0.035em;
     color: var(--ink);
     text-transform: uppercase;
-    white-space: nowrap;
   }
 
   h1 span { display: block; }
+  h1 .figure { font-size: 68px; }
+  h1 .where { margin-top: 12px; font-size: 40px; letter-spacing: -0.03em; }
 
   .anchor {
     position: absolute;
@@ -139,9 +144,10 @@
       <div class="copy">
         <div class="rule"></div>
         <div class="kicker">runquorum.site</div>
-        <div class="status">bitget, 24 september 2026</div>
+        <div class="status">24 september 2026</div>
         <h1>
-          <span>~$351.6M affected</span>
+          <span class="figure">~$351.6M</span>
+          <span class="where">affected on bitget</span>
         </h1>
       </div>
 
