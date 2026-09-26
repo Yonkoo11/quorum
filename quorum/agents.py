@@ -1,4 +1,4 @@
-"""Nine independent lenses, grouped by risk: two readings each for three risks, three for the access risk.
+"""Ten independent lenses, grouped by risk: two readings each for three risks, four for the access risk.
 
 Each lens is a narrow, deterministic reading of Solidity source. No lens can
 confirm anything on its own: a finding is only promoted when two lenses that
@@ -587,6 +587,61 @@ def consistency_lens(contract: str, src: str, project: "Project | None" = None) 
     return out
 
 
+# A `bytes` parameter, the caller's own payload: `bytes calldata data`, `bytes[] memory calls`. Not bytes32.
+BYTES_PARAM = re.compile(r"\bbytes\s*(?:\[\s*\])?\s+(?:calldata\s+|memory\s+)?([A-Za-z_]\w*)")
+# A call that leaves the contract: a low-level call, or a method on a cast address `IFoo(x).bar(`.
+OUTBOUND = re.compile(r"\.(call|delegatecall)\s*[{(]|\b[A-Z]\w*\s*\((?:[^()]|\(\))*\)\s*\.\s*\w+\s*[{(]")
+# Calling back into itself is the multicall pattern: the payload runs with the caller's own msg.sender.
+TO_SELF = re.compile(r"\b(address\s*\(\s*this\s*\)|this)\s*\.\s*(call|delegatecall)\b")
+# What follows `.call`: an optional `{value: ...}`, then the argument list. Only a single bare name counts.
+RAW_PAYLOAD = re.compile(r"[{(](?:[^{}]*\}\s*\()?\s*([A-Za-z_]\w*)\s*\)")
+TAINTS = re.compile(r"^\s*(?:[\w.]+(?:\s*\[\s*\])?\s+(?:memory|calldata|storage)\s+)?([A-Za-z_]\w*)\s*(?:\[[^\]]*\])?\s*=[^=]")
+
+
+def forward_lens(contract: str, src: str, project: "Project | None" = None) -> list[Sighting]:
+    """Evidence: anyone can call it, and it hands the caller's own bytes to another contract as itself.
+
+    The other three readings of this risk look at storage writes. The 2026 hacks showed the shape they
+    miss (bench/HACKS-RECALL.md): `LaunchpadFactoryAuto.launch` forwards two caller payloads into a
+    position manager as the factory, `OFTSand.approveAndCall` calls any target with any data as the
+    token, `AtomicQueue.solve` hands the caller's runData to a solver it also names. Each is an
+    unguarded function acting on the contract's authority with instructions the caller wrote. Only a
+    guard about who the caller is counts; approveAndCall inspects the payload for the caller's address,
+    which is a test of the data, not of the sender, and it is the check that was bypassed.
+    """
+    out = []
+    for fn in parse_functions(src):
+        if not _open_to_callers(fn) or _guards(fn, [fn]):
+            continue
+        m = PARAMS.search(fn.header)
+        tainted = set(BYTES_PARAM.findall(m.group(1))) if m else set()
+        if not tainted:
+            continue
+        for ln, text in _lines(fn):
+            t = TAINTS.match(text)
+            if t and any(re.search(rf"\b{re.escape(n)}\b", text[t.end(1):]) for n in tainted):
+                tainted.add(t.group(1))
+                continue
+            call = OUTBOUND.search(text)
+            if not call or TO_SELF.search(text):
+                continue
+            if call.group(1):   # a raw call: the caller's bytes must be the whole payload, not one argument
+                payload = RAW_PAYLOAD.match(text, call.end() - 1)
+                if payload and payload.group(1) in tainted:
+                    out.append(Sighting("forward-lens", "unguarded-state-write", contract, fn.name, ln, text))
+                    break
+                continue
+            # A named method on a contract the caller picked only reaches the caller's own code: receiver
+            # hooks and swap callbacks. The authority matters when the contract picked the target.
+            target = call.group(0).split("(", 1)[1].rsplit(")", 1)[0].strip()
+            if re.fullmatch(r"msg\.sender|_msgSender\(\)", target) or target in _parameters(fn):
+                continue
+            if any(re.search(rf"\b{re.escape(n)}\b", text[call.start():]) for n in tainted):
+                out.append(Sighting("forward-lens", "unguarded-state-write", contract, fn.name, ln, text))
+                break
+    return out
+
+
 # --------------------------- risk: unsafe-math ---------------------------
 #
 # One bug, two readings. The bug is storage arithmetic that can wrap round. wrap-lens reads the
@@ -802,6 +857,7 @@ LENSES = {
     "modifier-lens": modifier_lens,
     "sender-lens": sender_lens,
     "consistency-lens": consistency_lens,
+    "forward-lens": forward_lens,
     "wrap-lens": wrap_lens,
     "bound-lens": bound_lens,
     "ledger-lens": ledger_lens,

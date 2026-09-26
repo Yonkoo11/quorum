@@ -76,8 +76,8 @@ built from the bugs these lenses were written for.
 | | SmartBugs-curated (73 targets) | | DeFiVulnLabs, held out (10 targets) | |
 |---|---|---|---|---|
 | | recall | precision | recall | precision |
-| lenses, any single lens | 79% | 11% | 50% | 4% |
-| **lenses, two-witness rule** | **64%** | **52%** | **50%** | **71%** |
+| lenses, any single lens | 81% | 12% | 50% | 4% |
+| **lenses, two-witness rule** | **64%** | **52%** | **50%** | **62%** |
 | Slither, strict | 48% | 41% | 40% | 20% |
 | Slither, loose | 49% | 24% | 40% | 7% |
 
@@ -86,7 +86,7 @@ Per risk, two-witness against Slither strict (recall / precision):
 | risk | two-witness, SmartBugs | Slither, SmartBugs | two-witness, held out | Slither, held out |
 |---|---|---|---|---|
 | reentrancy | 90% / 72% | 90% / 62% | 2 of 4, 67% | 2 of 4, 40% |
-| unguarded-state-write | 10% / 40% | 33% / 19% | 1 of 2, 100% | 1 of 2, 8% |
+| unguarded-state-write | 10% / 40% | 33% / 19% | 1 of 2, 50% | 1 of 2, 8% |
 | unsafe-math | 81% / 40% | 0% | 2 of 4, 50% | 1 of 4, 50% |
 | accounting-mismatch | no labels; 4 confirmed, all counted false | no detector for this shape | no labels; 0 confirmed | no detector for this shape |
 
@@ -112,13 +112,17 @@ Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLIT
 | [2026-09-20 thirteenth](history/2026-09-20-before-structfields.md) | a struct's fields are not contract state. `struct SwapParams { bool zeroForOne; }` made `zeroForOne` a state variable everywhere in the file, so a local or a named return sharing a field's name read as a state write; a Uniswap adapter's `quote` was confirmed for assigning a local bool. Found by reading the first confirmations of the Robinhood Chain re-run. One fewer confirmation here and all 47 true ones kept, so precision 48% to 49% with recall held; on the modern corpus 40 confirmations to 36 with the same two true; the held-out corpus did not move | 64% | 49% | 90% | 72% |
 | [2026-09-22 fourteenth](ROBINHOOD.md) | a hand-rolled one-shot guard is one-shot. The lens knew the OpenZeppelin `initializer` modifier and nothing else, so `if (_initialized) revert AlreadyInitialized();` with no modifier read as an unguarded setter beside guarded siblings (`DirectLaunchFeeSplitter.initialize`, found on the Robinhood Chain run). A function now counts as one-shot if it refuses to run when a flag is set AND sets that flag itself; both halves are required, or a paused check would qualify. **This moves nothing here.** All three labelled corpora are identical before and after, so the rule earns no number; its evidence is one hand-read false confirmation in the wild and two tests | 64% | 49% | 90% | 72% |
 | [2026-09-24 fifteenth](history/2026-09-24-before-splitwitness.md) | not a lens change: the harness was not using the swarm's own definition of a confirmation. `quorum/swarm.py` has held a rule since the Robinhood Chain run that the two readings of an `unsafe-math` finding must be of the same sum, because wrap-lens on an `unchecked` add and bound-lens on the checked `+=` above it are two candidates and not agreement. The benchmarks kept their own idea of confirmed, keyed on the function alone, so every published unsafe-math number described a tool that was not the shipped one. Both now import `split_witness` from the swarm. No lens moved and no true positive was lost: SmartBugs 96 confirmations to 91 with the same 47 true, held-out 8 to 7 with the same 5 true, the modern corpus 36 to 29 with the same 2 | 64% | 52% | 90% | 72% |
+| [2026-09-26 sixteenth](history/2026-09-26-before-forward.md) | `forward-lens`, a tenth lens and a fourth reading of the access risk: a function anyone can call hands the caller's own bytes to another contract, as itself. Built from the three misses in [HACKS-RECALL.md](HACKS-RECALL.md) (`launch`, `approveAndCall`, `solve`), not from this corpus, and it moves nothing here: one more target sighted (`proxy.sol` `forward`), no second witness, no confirmation gained or lost. Three rules narrow it: a call into the contract itself is a multicall, a raw call counts only when the caller's bytes are the whole payload, and a named method on a contract the caller picked (a receiver hook, a swap callback) reaches only the caller's own code. The last rule came from six sightings on [MODERN.md](MODERN.md), all callbacks; with it the lens sights nothing there. On the held-out corpus it costs one false confirmation, see below | 64% | 52% | 90% | 72% |
 
-All twelve changes were made after looking at this corpus, so every row after the first is a tuned
+Every change up to the fifteenth was made after looking at this corpus, so every row after the first is a tuned
 number. The seventh added a pair for a bug this corpus does not label, so its four confirmations
 there can only count as false; the row records what the pair costs, not what it finds. The held-out run above is the untuned one. It did not move for the third and fourth
 changes; the fifth moved it from 30% / 60% to 40% / 44%, because the old arithmetic pair
 could not confirm anything there and the new one confirms four; the sixth moved it to 50% / 62%
-(one more true positive, two fewer false).
+(one more true positive, two fewer false). The sixteenth moved it from 50% / 71% to 50% / 62%:
+forward-lens and modifier-lens both confirm `UnsafeCall.sol` `approveAndCallcode`, the arbitrary call that
+file exists to teach, which the label file set outside the three risks before any lens read that shape.
+It counts as false, and the label was not changed after the result was seen.
 
 ## What the numbers say
 

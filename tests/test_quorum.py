@@ -993,3 +993,96 @@ def test_the_same_line_rule_is_only_for_unsafe_math():
     assert not split_witness("reentrancy", [10, 12])
     assert not split_witness("unguarded-state-write", [10, 12])
     assert not split_witness("accounting-mismatch", [10, 12])
+
+
+FORWARDER = """
+pragma solidity 0.8.20;
+
+contract Factory {
+    address immutable manager;
+    address owner;
+
+    function launch(bytes calldata initCalldata) external {
+        bytes[] memory calls = new bytes[](1);
+        calls[0] = initCalldata;
+        IManager(manager).multicall(calls);
+    }
+
+    function approveAndCall(address target, bytes calldata data) external {
+        if (!firstParamIs(data, msg.sender)) revert();
+        (bool ok, ) = target.call{value: msg.value}(data);
+        require(ok);
+    }
+
+    function adminCall(address target, bytes calldata data) external {
+        require(msg.sender == owner);
+        (bool ok, ) = target.call(data);
+        require(ok);
+    }
+
+    function multicall(bytes[] calldata data) external {
+        for (uint i; i < data.length; i++) {
+            bytes calldata one = data[i];
+            address(this).delegatecall(one);
+        }
+    }
+
+    function notify(address spender, bytes calldata extra) external {
+        require(spender.call(bytes4(0x8f4ffcb1), msg.sender, extra));
+    }
+
+    function swap(address to, bytes calldata data) external {
+        IPairCallee(to).hook(msg.sender, data);
+        ISwapCallback(msg.sender).swapCallback(data);
+    }
+}
+"""
+
+
+def _forward(src=FORWARDER):
+    from quorum.agents import forward_lens
+
+    return {s.function for s in forward_lens("Factory.sol", src)}
+
+
+def test_caller_bytes_handed_to_a_fixed_contract_are_sighted():
+    """UnistreetLaunchpad (2026-08): launch() copied two caller payloads into an array and handed it to
+    the position manager as the factory. The copy through a local has to keep the taint."""
+    assert "launch" in _forward()
+
+
+def test_a_check_on_the_payload_is_not_a_check_on_the_caller():
+    """SandboxOFT (2026-08): approveAndCall compared the first word of the data with the caller, which
+    decides nothing about who is calling. It is the check that was bypassed."""
+    assert "approveAndCall" in _forward()
+
+
+def test_a_forwarder_behind_a_caller_check_is_not_the_shape():
+    assert "adminCall" not in _forward()
+
+
+def test_a_multicall_into_itself_is_not_the_shape():
+    """The payload runs with the caller's own msg.sender, so it carries no authority the caller lacks."""
+    assert "multicall" not in _forward()
+
+
+def test_caller_bytes_as_one_argument_of_a_fixed_selector_is_not_the_shape():
+    """The receiveApproval idiom (SmartBugs spank_chain): the function to run is fixed by the contract."""
+    assert "notify" not in _forward()
+
+
+def test_a_callback_into_a_contract_the_caller_chose_is_not_the_shape():
+    """Receiver hooks and swap callbacks reach only the caller's own code. Every forward-lens sighting on
+    the modern corpus was one of these before the target rule."""
+    assert "swap" not in _forward()
+
+
+def test_the_forwarding_reading_corroborates_the_modifier_reading():
+    """The point of the lens: modifier-lens alone sighted launch and never got a second witness, so the
+    rule published a reentrancy reading instead (bench/HACKS-RECALL.md)."""
+    from quorum.agents import forward_lens, modifier_lens
+
+    src = FORWARDER.replace("    function launch(bytes calldata initCalldata) external {\n",
+                            "    uint256 launches;\n    function launch(bytes calldata initCalldata) external {\n        launches += 1;\n")
+    keys = lambda lens: {s.key for s in lens("Factory.sol", src)}
+    assert "Factory.sol:launch:unguarded-state-write" in keys(forward_lens) & keys(modifier_lens)

@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="hey-research-verification" content="rma0A12gxSApa__ZoqScG3gBTUE6skm5">
 <title>Quorum: a swarm that coordinates through memory</title>
-<meta name="description" content="Nine security lenses that never talk to each other. A finding exists only when two agree, and every number on the page comes from a file in the repo.">
+<meta name="description" content="Ten security lenses that never talk to each other. A finding exists only when two agree, and every number on the page comes from a file in the repo.">
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
 <link rel="icon" href="./favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="theme-color" content="#f3eee4">
 <meta property="og:title" content="Quorum: a swarm that coordinates through memory">
-<meta property="og:description" content="Nine security lenses that never talk to each other. A finding exists only when two agree.">
+<meta property="og:description" content="Ten security lenses that never talk to each other. A finding exists only when two agree.">
 <meta property="og:image" content="https://runquorum.site/post-2.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -47,7 +47,7 @@
         <span class="line" data-reveal style="--rv-delay:267ms;--rv-dur:483ms">Two lenses.</span>
         <span class="line g" data-reveal style="--rv-delay:417ms;--rv-dur:450ms">One finding.</span>
       </h1>
-      <p class="lede" data-reveal style="--rv-delay:833ms;--rv-dur:617ms">Nine lenses read Solidity and never talk to each other. A finding exists only when two agree, and the only place they can agree is memory.</p>
+      <p class="lede" data-reveal style="--rv-delay:833ms;--rv-dur:617ms">Ten lenses read Solidity and never talk to each other. A finding exists only when two agree, and the only place they can agree is memory.</p>
       <div class="test" data-reveal style="--rv-delay:833ms;--rv-dur:600ms">
         <div class="switch" role="group" aria-label="Memory"><button type="button" id="btn-on" aria-pressed="true" aria-controls="pane-on">Memory on</button><button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">Memory off</button></div>
         <p class="answer"><span class="number" id="answer-n" aria-live="polite">2</span><span class="answer-word">confirmed</span></p>
@@ -63,7 +63,7 @@
       </div>
       <p class="actions" data-reveal style="--rv-delay:1017ms;--rv-dur:500ms">
         <a class="btn primary" href="./start/">Run it</a>
-        <a class="textlink" href="./lenses/">The nine lenses</a>
+        <a class="textlink" href="./lenses/">The ten lenses</a>
       </p>
     </div>
     <div class="hero__panel">
@@ -76,15 +76,15 @@
         <h2>The deletion test</h2>
         <span class="aside" id="term-state">Memory on</span>
       </header>
-      <p class="slab__caption" data-reveal style="--rv-delay:1783ms;--rv-dur:350ms">The same nine lenses on the same two files, memory on and then memory off. Flip the switch to read what each run confirmed.</p>
+      <p class="slab__caption" data-reveal style="--rv-delay:1783ms;--rv-dur:350ms">The same ten lenses on the same two files, memory on and then memory off. Flip the switch to read what each run confirmed.</p>
       <div class="panes-text">
         <pre class="terminal" id="pane-on" tabindex="0" aria-label="Terminal output, memory on">$ quorum run --targets fixtures/VulnerableVault.sol fixtures/OpenFeeSetter.sol
   QUORUM    VulnerableVault.sol:withdraw   reentrancy   corroborated by callorder-lens, guard-lens
   QUORUM    OpenFeeSetter.sol:setFeeRate   unguarded-state-write   corroborated by modifier-lens, sender-lens
-scanned 18 lens-units | confirmed 2 | recalled 1 | candidates 5</pre>
+scanned 20 lens-units | confirmed 2 | recalled 1 | candidates 5</pre>
         <pre class="terminal" id="pane-off" tabindex="0" aria-label="Terminal output, memory off" hidden># same swarm, same contracts, memory removed
-$ quorum run --no-memory
-scanned 36 lens-units | confirmed 0 | recalled 0 | candidates 26
+$ quorum run --no-memory --targets targets/*.sol
+scanned 40 lens-units | confirmed 0 | recalled 0 | candidates 26
 nothing was confirmed, recalled or suppressed: without memory the swarm
 cannot corroborate, recognise or forget.</pre>
       </div>
@@ -99,7 +99,7 @@ cannot corroborate, recognise or forget.</pre>
         <p class="label">The numbers</p>
         <h2 class="display" id="h-numbers"><span class="line">Measured.</span> <span class="line">Every file kept.</span></h2>
       </div>
-      <p class="intro">Nine lenses over 143 contracts with known bugs, a second set of ten bugs they were never tuned on, and Slither run on the same files with the same rule. Each panel links to the file that produced it. Measured against recent audits as well: of 131 findings across 16 contests, the four risks here are 5% of what was reported, and the rule confirms two of those 7, after a ninth lens was built for that gap. <a href="https://github.com/Yonkoo11/quorum/blob/main/bench/MODERN.md">That file</a> names every miss.</p>
+      <p class="intro">Ten lenses over 143 contracts with known bugs, a second set of ten bugs they were never tuned on, and Slither run on the same files with the same rule. Each panel links to the file that produced it. Measured against recent audits as well: of 131 findings across 16 contests, the four risks here are 5% of what was reported, and the rule confirms two of those 7, after a ninth lens was built for that gap. <a href="https://github.com/Yonkoo11/quorum/blob/main/bench/MODERN.md">That file</a> names every miss.</p>
     </header>
     <div class="band c-5-4-3">
       <section class="panel raised p-precision" aria-labelledby="h-precision">

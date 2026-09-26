@@ -1,6 +1,6 @@
-# The 10 lenses on recent audit contests
+# The 9 lenses on recent audit contests
 
-Run 2026-09-26 · 16 contests, each at the commit its published report links · 512 Solidity files scanned · quorum threshold 2 · `python bench/modern.py <workdir> --labels bench/labels/modern-c4.json`
+Run 2026-09-24 · 16 contests, each at the commit its published report links · 512 Solidity files scanned · quorum threshold 2 · `python bench/modern.py <workdir> --labels bench/labels/modern-c4.json`
 
 ## What share of modern findings is this tool even looking for
 
@@ -116,7 +116,6 @@ and no recall number changed anywhere. The remaining two are cases where both re
 | modifier-lens | 316 | 4 |
 | sender-lens | 33 | 0 |
 | consistency-lens | 20 | 2 |
-| forward-lens | 0 | 0 |
 | wrap-lens | 17 | 0 |
 | bound-lens | 193 | 0 |
 | ledger-lens | 16 | 0 |

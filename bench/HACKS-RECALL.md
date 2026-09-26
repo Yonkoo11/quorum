@@ -32,41 +32,73 @@ contract nobody published. That is a permanent limit on this kind of tool, not a
 
 ## The result
 
-Run 2026-09-25 · 10 files scanned · 9 targets · quorum threshold 2
+Run 2026-09-26 · 10 files scanned · 9 targets · quorum threshold 2 · ten lenses
 
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
 | reentrancy | 1 | 16 | 1 | 6% | 100% | **4** | 1 | **25%** | **100%** |
-| unguarded-state-write | 5 | 32 | 2 | 6% | 40% | **3** | 0 | **0%** | **0%** |
+| unguarded-state-write | 5 | 33 | 2 | 6% | 40% | **5** | 2 | **40%** | **40%** |
 | unsafe-math | 0 | 27 | 0 | 0% | n/a | **1** | 0 | **0%** | **n/a** |
 | accounting-mismatch | 3 | 13 | 0 | 0% | 0% | **0** | 0 | **n/a** | **0%** |
-| **all** | 9 | 88 | 3 | 3% | 33% | **8** | 1 | **12%** | **11%** |
+| **all** | 9 | 89 | 3 | 3% | 33% | **10** | 3 | **30%** | **33%** |
 
-**One of nine.** The two-witness rule confirmed the labelled bug in one hack: ORB, where
-`ORBCore.addPoolAndSell` refunds BNB to the caller before the rest of its state work, and
-callorder-lens and guard-lens both said so. Every other labelled bug was missed, and the rule also
-produced seven confirmations that are not the bug, so precision is 12%.
+**Three of nine, and two of those three are in-sample.** The first run of this file, with nine
+lenses, confirmed the labelled bug once and is kept at
+[`history/2026-09-26-hacks-before-forward.md`](history/2026-09-26-hacks-before-forward.md). What
+changed is a tenth lens, `forward-lens`, built after reading that run's misses. It is not a
+measurement on unseen code and should not be quoted as one:
 
-### The part the table hides
+| run | lenses | confirmed the labelled bug | precision |
+|---|---|---|---|
+| 2026-09-25, before this file was used to build anything | 9 | 1 of 9 (ORB) | 12% |
+| 2026-09-26, after `forward-lens` was built from its misses | 10 | 3 of 9 (ORB, Unistreet, Sandbox) | 30% |
 
-The scoring unit is (file, function, risk), so a finding on the right function under the wrong risk
-counts as a miss *and* as a false positive. That happened twice:
+ORB is the untouched one: `ORBCore.addPoolAndSell` refunds BNB to the caller before the rest of its
+state work, and callorder-lens and guard-lens both said so.
 
-- `LaunchpadFactoryAuto.launch` — the bug is that `launch()` is permissionless and forwards the
-  caller's calldata verbatim. Quorum confirmed `launch`, as **reentrancy**.
-- `OFTSand.approveAndCall` — the bug is that the guard only checks the first word of calldata.
-  Quorum confirmed `approveAndCall`, as **reentrancy**.
+### What the tenth lens reads
 
-So **the lenses named the exact vulnerable function in 3 of 9, and got the risk right in 1 of 9.**
-Somebody triaging the output would have been reading the right code in three cases. Both numbers
-are published because the 3 is the one that flatters and the 1 is the one the harsh rule gives, and
-quoting only the first would be the kind of claim this repository exists to refuse.
+The first run named the right function three times and got the risk right once. Two access-control
+bugs were published as reentrancy:
 
-It is also not an accident that both mistakes point the same way. An external call sitting in a
-function whose guard is wrong looks like reentrancy to a line reader, because the call is visible
-and the missing check is not. The three access-control lenses saw `launch` and `approveAndCall`
-(modifier-lens sighted both, listed under the misses) but never got a second witness for that risk,
-so the rule published the reading two lenses agreed on rather than the correct one.
+- `LaunchpadFactoryAuto.launch` is permissionless and hands two caller payloads to the Uniswap V4
+  position manager as the factory.
+- `OFTSand.approveAndCall` calls any target with any data as the token. Its only check compares the
+  first word of the data with the caller, which is a test of the payload, not of who is calling.
+
+modifier-lens sighted both and no other access reading agreed, so the rule published the reading two
+lenses did agree on. An external call in a function whose guard is wrong looks like reentrancy to a
+line reader, because the call is visible and the missing check is not.
+
+`forward-lens` reads that shape directly: anyone can call the function, and it passes the caller's
+own bytes to another contract, as itself. With it, modifier-lens gets its second witness on both.
+The wrong reentrancy confirmations are still there too; the rule publishes both readings, so those
+two functions each carry one true and one false confirmation, which is why precision is 30% and not
+higher.
+
+Three rules keep it narrow, each from something it sighted on another corpus and each with a test
+that fails without it: a call back into the contract itself is a multicall and carries only the
+caller's own authority; a raw `.call` counts only when the caller's bytes are the entire payload, so
+the old `receiveApproval` idiom with a fixed selector is not the shape; and a named method on a
+contract the caller picked (an ERC-721 receiver hook, a Uniswap swap callback) reaches only the
+caller's own code. The last rule came from six sightings on the contest corpus, all callbacks.
+
+What it cost elsewhere, measured the same day on corpora it was not built from:
+
+| corpus | two-witness before | after | what moved |
+|---|---|---|---|
+| [`BENCHMARK.md`](BENCHMARK.md), SmartBugs | 64% / 52% | 64% / 52% | one more target sighted (`proxy.sol` `forward`), no second witness |
+| [`HELDOUT.md`](HELDOUT.md), DeFiVulnLabs | 50% / 71% | 50% / 62% | one new confirmation, counted false (below) |
+| [`MODERN.md`](MODERN.md), 16 contests | 29% / 7% | 29% / 7% | the lens sights nothing on 512 files |
+
+The held-out cost is `UnsafeCall.sol` `approveAndCallcode`, which that file exists to teach as an
+arbitrary-call bug. The label file had put it outside the three risks before any lens read that
+shape. It is counted false and the label was not changed after the result was seen.
+
+`AtomicQueue.solve` is still missed. The lens first sighted it, but the loss there came from pulling
+tokens out of every listed user into a solver the caller names, not from the payload, and the
+callback rule drops the sighting because the caller picks the solver. Keeping it would have been
+the right function for the wrong reason.
 
 ### Where it is blind
 
@@ -82,15 +114,17 @@ labelled that bug. It has one now and it is 0 of 3.
 
 ## What this does and does not say
 
-**It does not say Quorum catches 11% of hacks.** It says that on nine real 2026 hacks whose source
-can be read and whose shape these lenses read for, it confirmed the labelled bug once. The nine are
+**It does not say Quorum catches 33% of hacks, or 11%.** It says that on nine real 2026 hacks whose
+source can be read and whose shape these lenses read for, nine lenses confirmed the labelled bug once,
+and ten lenses, one of them built from those same misses, confirm it three times. The honest
+out-of-sample figure is still the first one. The nine are
 a small and self-selecting sample: they are the ones somebody reproduced, whose victim published
 source, and whose note pins a single function.
 
 **It does not transfer to the 43% in [`HACKS-2026.md`](HACKS-2026.md).** That figure is how many
 2026 hacks are the *shape* these lenses read for, an upper bound on what could ever be caught. This
 file is what happens when the code is actually put in front of them. The gap between 43% and 11% is
-the honest distance between a tool's scope and its reach.
+the honest distance between a tool's scope and its reach; 33% is that gap after fitting to it.
 
 **The corpus is not pinned the way the others are.** It is fetched live from explorers, so a
 contract that stops being served changes what can be scanned. `fetch_hacks.py` prints every skip and

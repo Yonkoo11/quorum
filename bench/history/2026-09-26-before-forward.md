@@ -1,16 +1,16 @@
-# Benchmark — the 10 lenses on SmartBugs-curated
+# Benchmark — the 9 lenses on SmartBugs-curated
 
-Run 2026-09-26 · corpus commit `230e649` · 143 files scanned · 73 targets · quorum threshold 2 · `python bench/run.py <corpus>`
+Run 2026-09-24 · corpus commit `230e649` · 143 files scanned · 73 targets · quorum threshold 2 · `python bench/run.py <corpus>`
 
 Unit: a (file, function, risk). A target is a labelled function whose bug maps to a risk Quorum covers. Precision counts every finding not on a target as false, including hits on files the corpus labels for some other bug.
 
 | risk | targets | any-lens found | true | precision | recall | **quorum confirmed** | true | **precision** | **recall** |
 |---|---|---|---|---|---|---|---|---|---|
 | reentrancy | 31 | 91 | 28 | 31% | 90% | **39** | 28 | **72%** | **90%** |
-| unguarded-state-write | 21 | 217 | 10 | 5% | 48% | **5** | 2 | **40%** | **10%** |
+| unguarded-state-write | 21 | 216 | 9 | 4% | 43% | **5** | 2 | **40%** | **10%** |
 | unsafe-math | 21 | 171 | 21 | 12% | 100% | **43** | 17 | **40%** | **81%** |
 | accounting-mismatch | 0 | 30 | 0 | 0% | n/a | **4** | 0 | **0%** | **n/a** |
-| **all** | 73 | 509 | 59 | 12% | 81% | **91** | 47 | **52%** | **64%** |
+| **all** | 73 | 508 | 58 | 11% | 79% | **91** | 47 | **52%** | **64%** |
 
 ## Per lens
 
@@ -21,13 +21,12 @@ Unit: a (file, function, risk). A target is a labelled function whose bug maps t
 | modifier-lens | 208 | 9 |
 | sender-lens | 7 | 1 |
 | consistency-lens | 6 | 1 |
-| forward-lens | 1 | 1 |
 | wrap-lens | 171 | 21 |
 | bound-lens | 48 | 17 |
 | ledger-lens | 7 | 0 |
 | payout-lens | 27 | 0 |
 
-Candidates held back by the rule (one lens only): 418, of which on a target: 12.
+Candidates held back by the rule (one lens only): 417, of which on a target: 11.
 
 ## Confirmed findings that are not on a labelled target
 
@@ -94,7 +93,7 @@ Candidates held back by the rule (one lens only): 418, of which on a target: 12.
 - `parity_wallet_bug_2.sol` `initWallet` unguarded-state-write — seen by no lens
 - `parity_wallet_bug_2.sol` `kill` unguarded-state-write — seen by no lens
 - `phishable.sol` `withdrawAll` unguarded-state-write — seen by no lens
-- `proxy.sol` `forward` unguarded-state-write — seen by forward-lens
+- `proxy.sol` `forward` unguarded-state-write — seen by no lens
 - `reentrancy_bonus.sol` `getFirstWithdrawalBonus` reentrancy — seen by no lens
 - `rubixi.sol` `DynamicPyramid` unguarded-state-write — seen by modifier-lens
 - `simple_suicide.sol` `sudicideAnyone` unguarded-state-write — seen by no lens

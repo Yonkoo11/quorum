@@ -35,7 +35,8 @@ point.
 Four things in that table are worth saying out loud.
 
 **Access control is the joint-largest cause of real 2026 hacks, at 13 of 53.** It is also the risk
-Quorum reads with three separate lenses, and the one `consistency-lens` was added for in v0.7.0. In
+Quorum reads with the most separate lenses, four since `forward-lens` was built from the misses in
+[`HACKS-RECALL.md`](HACKS-RECALL.md), and the one `consistency-lens` was added for in v0.7.0. In
 audit reports this risk looks small. In hacks it does not.
 
 **The accounting pair is not the dead weight it looked like.** `accounting-mismatch` is third here,
