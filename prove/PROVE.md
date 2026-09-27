@@ -13,17 +13,33 @@ python prove/harness.py prove <hack> --item <n>   # model writes + iterates the 
 python prove/harness.py check <hack>              # reproduce from the saved .t.sol, model gone
 ```
 
-## First results (2026-09-27, the nine in-sample hacks)
+## Results on the nine in-sample hacks (2026-09-27)
 
-| hack | hypothesis (v4) | verdict | what execution showed |
+Each row is v4's own hypothesis, run through the prove stage. Blocks are the exploit's parent block;
+addresses are the funded proxy, not the implementation the source was read from.
+
+| hack | chain | verdict | what execution showed |
 |---|---|---|---|
-| UnistreetLaunchpad | `launch` takes every earlier launch's LP (conf 95) | **PROVEN** | attacker, an ordinary EOA, drains an earlier launch's position; +0.00721 WETH, reproduces to the wei on two independent archive nodes; no faked state, no role impersonated |
-| Vault4626 | `redeem` pays the whole idle balance to one redeemer (conf 90) | **unproven** | at the block, available idle USDC is exactly zero (offset by pending referral fees), and a fresh depositor never enters the vulnerable branch; the conf-90 finding does not survive execution |
+| UnistreetLaunchpad | ethereum | **PROVEN** | attacker (an EOA) drains an earlier launch's LP; +0.0072 WETH; reproduces to the wei on two archive nodes |
+| SandboxOFT | base | **PROVEN** | attacker becomes the OApp delegate and mints 1,000,000 SAND; reproduces; **overturns a blind reviewer who had called this route false** |
+| RoyalRoyalties | polygon | reachable, no profit | the zero-amount owner-rewrite bug executes exactly as labelled, but Royal1155LDA has no payout path and the marketplace/royalty contracts are `address(0)` at the block, so nothing pays on a bare fork |
+| NewMarketTrading (Squid) | ethereum | reachable, no profit | the forged-payload source-check bypass executes, but the express model makes the attacker front the same token the safe receives (break-even); a real drain needs the specific victim Safe's standing allowances, which a bare fork of the module does not carry |
+| Vault4626 (redeem) | base | unproven | v4's confidence-90 redeem finding: available idle is exactly zero at the block, and a fresh depositor never enters the vulnerable branch |
+| Reddio | ethereum | unproven | no attacker profit reached from the double-count hypothesis on the fork |
+| Startale | ethereum | unprovable on a historical fork | the re-init guard is a transient-storage flag set only inside the original deploy transaction; a later-block fork cannot reproduce that without `vm.store`, which is banned. The attacker call reverts at the guard |
+| EtherFiAtomicQueue | ethereum | not settled | the model hit the 30-minute cap before writing an exploit; needs a longer run |
+| ORB | bsc | unprovable | no free BNB Chain archive endpoint; needs a paid key |
 
-Two results, opposite directions, and that is the point. A confidence-90 finding from the strongest
-hunter available did not survive a fork; a proof of a real hack was produced blind from a one-line
-hypothesis and reproduces for anyone with Foundry and an archive endpoint. Neither the score nor the
-reviewer's read decided it. The exploit did.
+**Two clean drains proven blind, and the rest sorted honestly.** The prove stage separates three
+things a score and a reader cannot: a bug that pays (Unistreet, Sandbox), a real bug that needs
+state a bare fork lacks to monetize (Royal, Squid), and a finding that does not survive at all
+(Vault4626's conf-90, Reddio). Two blind reviewers earlier rated both Royal and Squid REAL-LOSS;
+execution shows they are real but do not pay as isolated forks. One rated Sandbox false; execution
+shows it pays. That gap is the number Quorum publishes and nobody else does.
+
+Known limits this surfaced: a historical fork cannot carry same-transaction transient state
+(Startale) or a particular victim's pre-existing allowances (Squid) without more setup than the bare
+victim contract; those are provable with extra scaffolding, not with `vm.store`.
 
 ## What proving needs that labelling does not
 

@@ -1,11 +1,13 @@
 {
  "EtherFiAtomicQueue": {
   "chain": "ethereum",
-  "block": 25952623
+  "block": 25952623,
+  "address": "0xD45884B592E316eB816199615A95C182F75dea07"
  },
  "Reddio": {
   "chain": "ethereum",
-  "block": 25912200
+  "block": 25912200,
+  "address": "0x4315990D9eeAFFdFAfD49958b4851F203FA1126f"
  },
  "UnistreetLaunchpad": {
   "chain": "ethereum",
@@ -14,7 +16,8 @@
  },
  "SandboxOFT": {
   "chain": "base",
-  "block": 50289411
+  "block": 50289411,
+  "address": "0xac531Eb26Ca1d21b85126De8FB87E80E09002DcF"
  },
  "ORB": {
   "chain": "bsc",
@@ -22,15 +25,18 @@
  },
  "RoyalRoyalties": {
   "chain": "polygon",
-  "block": 89018050
+  "block": 89018050,
+  "address": "0xd5b297c08d890376b6cbdba6023a39ffbdf65c78"
  },
  "NewMarketTrading": {
   "chain": "ethereum",
-  "block": 25170513
+  "block": 25170513,
+  "address": "0x1f1d37a3Bf840e35c6a860c7C2dA71Fe555123ca"
  },
  "Startale": {
   "chain": "ethereum",
-  "block": 25987505
+  "block": 25987505,
+  "address": "0x0000003B3E7b530b4f981aE80d9350392Defef90"
  },
  "Vault4626": {
   "chain": "base",
