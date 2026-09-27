@@ -27,7 +27,7 @@ addresses are the funded proxy, not the implementation the source was read from.
 | Vault4626 (redeem) | base | unproven | v4's confidence-90 redeem finding: available idle is exactly zero at the block, and a fresh depositor never enters the vulnerable branch |
 | Reddio | ethereum | unproven | no attacker profit reached from the double-count hypothesis on the fork |
 | Startale | ethereum | unprovable on a historical fork | the re-init guard is a transient-storage flag set only inside the original deploy transaction; a later-block fork cannot reproduce that without `vm.store`, which is banned. The attacker call reverts at the guard |
-| EtherFiAtomicQueue | ethereum | not settled | the model hit the 30-minute cap before writing an exploit; needs a longer run |
+| EtherFiAtomicQueue | ethereum | reachable, needs victim state | the queue custodies nothing; profit needs a pre-existing victim solver with a standing allowance, and at the labelled block the queue is dormant (no solve events in ~450k blocks, no approvals). Same shape as Squid |
 | ORB | bsc | unprovable | no free BNB Chain archive endpoint; needs a paid key |
 
 **Two clean drains proven blind, and the rest sorted honestly.** The prove stage separates three
@@ -37,9 +37,16 @@ state a bare fork lacks to monetize (Royal, Squid), and a finding that does not 
 execution shows they are real but do not pay as isolated forks. One rated Sandbox false; execution
 shows it pays. That gap is the number Quorum publishes and nobody else does.
 
-Known limits this surfaced: a historical fork cannot carry same-transaction transient state
-(Startale) or a particular victim's pre-existing allowances (Squid) without more setup than the bare
-victim contract; those are provable with extra scaffolding, not with `vm.store`.
+Known limits this surfaced, all roadmap items rather than dead ends:
+- **The value often sits in a third party, not the named victim.** Unistreet and Sandbox proved
+  because the funds were in the vulnerable contract itself (the factory owned the LPs; the token
+  minted to itself). Squid and AtomicQueue did not, because the drain lands on a specific victim
+  Safe or solver the model has to identify from on-chain data first. The fork has that state; the
+  prove stage needs a step that finds and targets the real victim entity when it differs from the
+  contract whose code holds the bug.
+- **Same-transaction transient state** (Startale's re-init flag) cannot be reproduced at a later
+  block without `vm.store`, which is banned. Proving it needs a bundle that includes the deploy call.
+Both are extra scaffolding, never faked state.
 
 ## What proving needs that labelling does not
 
