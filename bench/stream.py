@@ -82,15 +82,24 @@ def claude(prompt: str, cwd: Path, tools: str, timeout: int = 3600) -> dict:
 
 
 def json_block(text: str):
-    """The last JSON value in a model's answer, fenced or bare."""
+    """The JSON value in a model's answer, whether fenced, bare, or wrapped in prose.
+
+    The outermost value starts at whichever of `{` or `[` appears FIRST — a model that writes a
+    sentence and then `{"entry_points": [...], ...}` must not have its inner array grabbed as the
+    whole answer. Fenced blocks are tried first, then the whole text.
+    """
     fenced = re.findall(r"```(?:json)?\s*(.+?)```", text, re.S)
-    for chunk in reversed(fenced + [text]):
-        for start in (chunk.find("["), chunk.find("{")):
-            if start >= 0:
-                try:
-                    return json.loads(chunk[start:chunk.rfind("]" if chunk[start] == "[" else "}") + 1])
-                except json.JSONDecodeError:
-                    continue
+    for chunk in fenced + [text]:
+        opens = [(chunk.find(c), c) for c in "{[" if chunk.find(c) >= 0]
+        if not opens:
+            continue
+        pos, opener = min(opens)                                   # the earliest bracket is the outer value
+        end = chunk.rfind("}" if opener == "{" else "]")
+        if end > pos:
+            try:
+                return json.loads(chunk[pos:end + 1])
+            except json.JSONDecodeError:
+                continue
     raise ValueError("no JSON in answer")
 
 
@@ -267,6 +276,11 @@ def label(dhl: Path, work: Path, contestants: list[str]) -> None:
             shutil.copy(dhl / entry["poc"], Path(tmp) / "poc.sol")
             shutil.copy(work / "src" / f"{slug(entry['id'])}.sol", Path(tmp) / "target.sol")
             found = json_block(claude(LABEL_PROMPT, Path(tmp), "Read Grep")["result"])
+        if isinstance(found, list):                     # a model that answered with the array, or several
+            found = next((x for x in found if isinstance(x, dict) and x.get("entry_points")), found[0] if found else {})
+        if not isinstance(found, dict) or not found.get("entry_points"):
+            print(f"skipped   {entry['id']}: label had no entry_points, left unlabelled")
+            continue
         entry["label"] = {**found, "labelled_at": now(), "labelled_by": "claude -p, after every prediction"}
         save(data)
         print(f"labelled  {entry['id']}: {found.get('class')}")

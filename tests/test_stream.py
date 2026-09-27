@@ -100,3 +100,11 @@ def test_intake_records_the_proxy_and_block_for_proving(monkeypatch, tmp_path):
     monkeypatch.setattr(stream, "claude", lambda *a, **k: {"result": no_proxy})
     e = stream.intake_one(tmp_path, tmp_path / "w2", "src/test/2026-10/H_exp.sol")
     assert e["proxy"] == "0xONLY"
+
+
+def test_json_block_takes_the_outer_object_not_an_inner_array():
+    """A label answer of prose + {entry_points:[...], ...} must parse as the object, not the array.
+    Found live: the inner array was being grabbed as the whole label, leaving it with no entry_points."""
+    r = 'All three reach it.\n{"entry_points": ["A.f"], "class": "reentrancy", "mechanism": "x."}'
+    got = stream.json_block(r)
+    assert isinstance(got, dict) and got["class"] == "reentrancy" and got["entry_points"] == ["A.f"]
