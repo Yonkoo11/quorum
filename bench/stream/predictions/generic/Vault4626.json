@@ -1,0 +1,25 @@
+{
+ "entry": "Vault4626",
+ "contestant": "generic",
+ "version": "claude -p, one prompt",
+ "source_sha256": "0035dc9b1934a4868c00beb903a38b1f8443e88f4a571c083ed21960103f9c07",
+ "predicted_at": "2026-09-27T07:06:19+00:00",
+ "seconds": 43,
+ "cost_usd": 0.45,
+ "findings": [
+  {
+   "contract": "Vault4626",
+   "function": "redeem",
+   "confidence": 40,
+   "text": "totalAssets() values the strategy's getBalances() LP amounts, which are taken at the pool's spot price, using a TWAP tick, or the spot slot0 tick when twapWindowSeconds==0 or observe() reverts; an attacker can flash-swap the pool to push the spot price away from the TWAP, which inflates the reported LP value, redeem shares at the inflated convertToAssets() rate (the share-ratio slippage mins are computed from the same manipulated balances, so they pass), then swap back, taking the difference from the remaining shareholders.",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "deposit",
+   "confidence": 30,
+   "text": "When twapWindowSeconds is 0, or observe() reverts and the code falls back to slot0, convertToShares() is priced off the manipulable spot tick; an attacker can move the pool price in one transaction to lower the value of the vault's non-asset holdings, deposit (or depositWithReferral) to mint extra shares cheaply, restore the price, and redeem to dilute and drain existing depositors.",
+   "tier": "finding"
+  }
+ ]
+}

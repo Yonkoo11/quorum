@@ -1,0 +1,130 @@
+{
+ "entry": "UnistreetLaunchpad",
+ "contestant": "v4-1pass",
+ "version": "pashov/skills v23092026",
+ "source_sha256": "4fa649dafa04220486873441959351114c8893c94a8764a9b87baa8e262fb266",
+ "predicted_at": "2026-09-27T07:25:45+00:00",
+ "seconds": 586,
+ "cost_usd": 6.84,
+ "findings": [
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "launch",
+   "confidence": 95,
+   "text": "Any caller of launch takes the LP position of every earlier launch",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchTokenAuto",
+   "function": "pushDistribute",
+   "confidence": 90,
+   "text": "Dust holders make harvest fail for every caller, forever",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "harvest",
+   "confidence": 85,
+   "text": "An attacker buys before harvest and takes most holder fees",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "launch",
+   "confidence": 85,
+   "text": "The launcher can mint the pool position to their own address",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchTokenAuto",
+   "function": "pushDistribute",
+   "confidence": 85,
+   "text": "pushDistribute pays by the balance at one instant",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "launch",
+   "confidence": 80,
+   "text": "A launch with no mint takes the position id of the next launch",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "harvest",
+   "confidence": 75,
+   "text": "harvest does not check that the position is in the token pool",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "harvest",
+   "confidence": 75,
+   "text": "harvest fails with paired tokens that return no bool",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "launch",
+   "confidence": 75,
+   "text": "Any caller can use a pending launch salt first",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchTokenAuto",
+   "function": "pushDistribute",
+   "confidence": 75,
+   "text": "One blocked holder makes every harvest revert",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "_seedBuys",
+   "confidence": 0,
+   "text": "The launcher runs router commands as the factory: Code smells: caller `preCommands` run with the factory as `msgSender`; Permit2 allowances with `type(uint48).max` expiry stay after use \u2014 A launcher can spend an old Permit2 allowance of the factory. We did not find a token balance that stays in the factory between transactions.",
+   "tier": "lead"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "harvest",
+   "confidence": 0,
+   "text": "A fee-on-transfer paired token makes the payout larger than the balance: Code smells: `pushDistribute(userCut)` gets the requested amount, not the received amount \u2014 With a fee-on-transfer paired token, the last holder transfers revert. We did not confirm that a launcher would pick such a token.",
+   "tier": "lead"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "launch",
+   "confidence": 0,
+   "text": "The next launcher takes all ETH that the factory holds: Code smells: refund of `address(this).balance`, not the unused `msg.value`; open `receive()` \u2014 Any ETH that stays in the factory goes to the next caller of `launch`. We did not find a normal path that leaves ETH in the factory.",
+   "tier": "lead"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "launch",
+   "confidence": 0,
+   "text": "An attacker can initialize the pool first at a chosen price: Code smells: public salt, fixed pool key, `initializePool` does not revert on an existing pool, `amountOutMinimum` is 0 \u2014 An attacker can create the pool before the launch at a price the attacker chooses. We did not prove a profit from the seeded liquidity or the seed buys.",
+   "tier": "lead"
+  },
+  {
+   "contract": "LaunchTokenAuto",
+   "function": "_syncHolder",
+   "confidence": 0,
+   "text": "Contracts that hold the token receive fees that nobody claims: Code smells: only the factory and `POOL_MANAGER` are excluded from rewards \u2014 A v2 or v3 pair, a lending market or a bridge that holds the token gets a share of the fees that it cannot pass on. We did not measure the amount, or check if an attacker can skim it from a pair.",
+   "tier": "lead"
+  },
+  {
+   "contract": "LaunchTokenAuto",
+   "function": "pushDistribute",
+   "confidence": 0,
+   "text": "pushDistribute pays the nominal amount, not the amount received: Code smells: trusts the `amount` argument; unchecked `transfer` return values; any reward token the launcher chooses \u2014 A fee-on-transfer or rebasing reward token leaves the contract short, so the last transfers revert. We did not confirm which paired tokens the platform allows.",
+   "tier": "lead"
+  },
+  {
+   "contract": "LaunchTokenAuto",
+   "function": "pushDistribute",
+   "confidence": 0,
+   "text": "The rounding remainder of each payout stays in the token contract: Code smells: `amount * bal / total` rounds down; no sweep function for the reward token \u2014 The remainder of each payout stays in the token contract. The amount per harvest is small.",
+   "tier": "lead"
+  }
+ ]
+}

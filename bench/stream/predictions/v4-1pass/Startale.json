@@ -1,0 +1,123 @@
+{
+ "entry": "Startale",
+ "contestant": "v4-1pass",
+ "version": "pashov/skills v23092026",
+ "source_sha256": "9e066087a08979cd8a48a95578ca1f81a36cc267f0aea04496fef9769d5467bc",
+ "predicted_at": "2026-09-27T08:03:13+00:00",
+ "seconds": 514,
+ "cost_usd": 12.72,
+ "findings": [
+  {
+   "contract": "StartaleSmartAccount",
+   "function": "initializeAccount",
+   "confidence": 80,
+   "text": "Any caller in the deploy transaction can initialize the account again",
+   "tier": "finding"
+  },
+  {
+   "contract": "ModuleManager",
+   "function": "_uninstallAllInterfaces",
+   "confidence": 75,
+   "text": "onRedelegation reverts when the account has two or more interfaces",
+   "tier": "finding"
+  },
+  {
+   "contract": "ModuleManager",
+   "function": "_uninstallHook",
+   "confidence": 75,
+   "text": "The account calls onUninstall twice on a pre-validation hook",
+   "tier": "finding"
+  },
+  {
+   "contract": "BaseAccount",
+   "function": "withdrawDepositTo",
+   "confidence": 0,
+   "text": "withdrawDepositTo and the interface functions skip the hook: Code smells: `withdrawDepositTo`, `installInterface`, `installInterfaces` and `uninstallInterface` are `onlyEntryPointOrSelf` with no `withHook`, and the EntryPoint calls them directly from userOp call data \u2014 A userOp that calls `withdrawDepositTo` directly moves the EntryPoint deposit, and the inst",
+   "tier": "lead"
+  },
+  {
+   "contract": "DataParserLib",
+   "function": "parseMultiTypeInitData",
+   "confidence": 0,
+   "text": "The multi-type decoder does not keep pointers inside initData: Code smells: the bounds checks use `calldatasize()` and not the end of `initData`; `add(baseOffset, calldataload(offset))` can wrap; `mul(types.length, 32)` can overflow \u2014 Pointers in `initData` can point outside the slice. We found no caller other than the owner who controls those pointers.",
+   "tier": "lead"
+  },
+  {
+   "contract": "ModuleManager",
+   "function": "_enableMode",
+   "confidence": 0,
+   "text": "Any installed validator can approve a module install or a hook removal: Code smells: `_enableMode` and `_checkEmergencyUninstallSignature` take the validator from `signature[0:20]` and accept any installed validator \u2014 A limited validator, such as a session validator, can install a full-power validator. We did not confirm that a deployed validator signs these digests.",
+   "tier": "lead"
+  },
+  {
+   "contract": "ModuleManager",
+   "function": "_installFallbackHandler",
+   "confidence": 0,
+   "text": "The fallback install accepts selector 0x00000000 against its own comment: Code smells: the comment bans `bytes4(0)` but the `require` does not check it; calldata of 1 to 4 zero bytes reaches that handler \u2014 The owner can install a handler for selector `0x00000000`. We found no path for an attacker who is not the owner.",
+   "tier": "lead"
+  },
+  {
+   "contract": "ModuleManager",
+   "function": "_installInterface",
+   "confidence": 0,
+   "text": "The owner can install the same interface ID twice: Code smells: `installedIfaces.push` has no duplicate check; `_uninstallInterface` removes one copy and sets `supportedIfaces` to false \u2014 After two installs and one uninstall, the list keeps the ID while `supportsInterface` returns false. We found no party other than the owner who gains.",
+   "tier": "lead"
+  },
+  {
+   "contract": "ModuleManager",
+   "function": "_multiTypeInstall",
+   "confidence": 0,
+   "text": "Multi-type install skips unknown module types and still reports success: Code smells: `_installModule` reverts on an unknown type, but `_multiTypeInstall` ignores types 0, 5, 6 and 7; `installModule` still emits `ModuleInstalled` \u2014 Off-chain tools record a module role that the account does not have. We found no loss of tokens.",
+   "tier": "lead"
+  },
+  {
+   "contract": "StartaleSmartAccount",
+   "function": "checkERC7739Support",
+   "confidence": 0,
+   "text": "One reverting validator makes ERC-7739 detection revert: Code smells: `_get7739Version` calls `isValidSignatureWithSender` on each validator without `try` \u2014 One installed validator that reverts on an empty signature makes the detection call revert for every caller. We did not confirm an integrator that depends on this detection.",
+   "tier": "lead"
+  },
+  {
+   "contract": "StartaleSmartAccount",
+   "function": "emergencyUninstallHook",
+   "confidence": 0,
+   "text": "An old emergency timelock survives an uninstall and a reinstall of the hook: Code smells: `emergencyUninstallTimelock` uses the hook address as its key and not the hook type; only the removal branch clears it; the signed struct has no phase and no deadline, so the submitter picks start or remove \u2014 A signer can remove a reinstalled hook with no new one-day wait, because the o",
+   "tier": "lead"
+  },
+  {
+   "contract": "StartaleSmartAccount",
+   "function": "executeUserOp",
+   "confidence": 0,
+   "text": "The hook runs twice for one user operation: Code smells: `executeUserOp` has `withHook` and delegatecalls `address(this)`; the inner `execute` also has `withHook` \u2014 A hook that counts spend per call counts one operation twice. We did not test a real hook module.",
+   "tier": "lead"
+  },
+  {
+   "contract": "StartaleSmartAccount",
+   "function": "_initializeAccount",
+   "confidence": 0,
+   "text": "The initializer checks 24 bytes but reads a 64-byte header: Code smells: the check is `initData.length >= 24`; the code does not check the bootstrap offset or `bootstrapCall.length`; `bootstrap` keeps dirty upper bits \u2014 The initializer reads the bootstrap offset and length with no bounds check. Only the factory or the account calls it, so we found no outside",
+   "tier": "lead"
+  },
+  {
+   "contract": "StartaleSmartAccount",
+   "function": "isValidSignature",
+   "confidence": 0,
+   "text": "isValidSignature reverts instead of returning the ERC-1271 failure value: Code smells: `_handleValidator` reverts for a validator that is not installed; `signature[0:20]` reverts for a signature shorter than 20 bytes \u2014 The function reverts for a bad signature prefix instead of returning `0xffffffff`. We did not find a caller that breaks on the revert.",
+   "tier": "lead"
+  },
+  {
+   "contract": "StartaleSmartAccount",
+   "function": "_onRedelegation",
+   "confidence": 0,
+   "text": "onRedelegation leaves module state and account storage in place: Code smells: `popAll` clears the lists but calls no `onUninstall`; the `_DEFAULT_VALIDATOR` owner data, `emergencyUninstallTimelock` and `nonces` stay set \u2014 After the EOA redelegates and later delegates back, the old default-validator owner can sign again. We did not confirm a flow that expects a cl",
+   "tier": "lead"
+  },
+  {
+   "contract": "StartaleSmartAccount",
+   "function": "uninstallModule",
+   "confidence": 0,
+   "text": "uninstallModule accepts the zero address as an installed module: Code smells: `_isModuleInstalled` returns true for `address(0)` on an empty hook slot, an empty pre-validation slot or a selector with no fallback handler \u2014 The account emits `ModuleUninstalled` for a module that was never installed, so an indexer records a wrong state. We found no loss of tokens.",
+   "tier": "lead"
+  }
+ ]
+}

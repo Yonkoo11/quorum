@@ -1,0 +1,32 @@
+{
+ "entry": "ORB",
+ "contestant": "generic",
+ "version": "claude -p, one prompt",
+ "source_sha256": "22dca4915287b1658d7576e045a6ed9b0bb51cd0e1fc3875b1fca30958f903cb",
+ "predicted_at": "2026-09-27T07:03:51+00:00",
+ "seconds": 25,
+ "cost_usd": 0.21,
+ "findings": [
+  {
+   "contract": "ORBCore",
+   "function": "transferTokenAddOrder",
+   "confidence": 60,
+   "text": "The BNB value of deposited tokens comes from the pair's raw balanceOf spot price, so an attacker can donate or flash-swap WBNB into the pair, deposit a few tokens through the token contract and get an order worth up to the 1 BNB cap, then skim or unwind the donation; the order pays out 3-4x its value in newly minted tokens, and the attacker can repeat this from many Sybil accounts.",
+   "tier": "finding"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "everydayEarnArr",
+   "confidence": 45,
+   "text": "Daily rewards are minted at the spot BNB-to-token price read from pair balances in getOneBNBPriceToken, so an attacker can front-run the minter's everydayEarn/everydayEarnArr/everydayEarnArrPage call by donating tokens to the pair (skimmed back afterwards) to inflate tokens per BNB, which mints far more tokens to their orders and lets them dump those tokens into the pool for BNB.",
+   "tier": "finding"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "addPoolAndSell",
+   "confidence": 50,
+   "text": "User deposits call swapExactETHForTokens and addLiquidityETH, and user sells call swapExactTokensForETH, all with minimum outputs of 0, so an MEV attacker can sandwich every deposit and sell and take most of the user's BNB or tokens.",
+   "tier": "finding"
+  }
+ ]
+}

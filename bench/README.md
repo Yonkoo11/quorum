@@ -93,6 +93,13 @@ Per risk, two-witness against Slither strict (recall / precision):
 Files: [BENCHMARK.md](BENCHMARK.md), [HELDOUT.md](HELDOUT.md), [SLITHER.md](SLITHER.md),
 [SLITHER-HELDOUT.md](SLITHER-HELDOUT.md), [ACCOUNTING.md](ACCOUNTING.md) (the fourth pair, measured before it was posted), [MULTICHAIN.md](MULTICHAIN.md).
 
+## The stream
+
+[STREAM.md](STREAM.md) is the benchmark everything above could not be: hacks reproduced after a
+freeze date, scored before anyone reads the cause, with the order enforced in code. It has no
+entries yet; the table there is a calibration run on the nine in-sample 2026 hacks, where Pashov's
+solidity-auditor v4 finds the exact root cause of seven and the regex lenses of one.
+
 ## History of the lenses on SmartBugs-curated, corpus commit `230e649`
 
 | run | change | overall recall | overall precision | reentrancy recall | reentrancy precision |

@@ -1,0 +1,116 @@
+{
+ "entry": "RoyalRoyalties",
+ "contestant": "v4-1pass",
+ "version": "pashov/skills v23092026",
+ "source_sha256": "295ab15b24ccd680e56351f67419d4705375fc90fd395141dc07a18c537c0aad",
+ "predicted_at": "2026-09-27T07:45:23+00:00",
+ "seconds": 416,
+ "cost_usd": 9.09,
+ "findings": [
+  {
+   "contract": "Royal1155LDA",
+   "function": "_beforeTokenTransfer",
+   "confidence": 85,
+   "text": "A zero-amount transfer rewrites the owner record of any LDA",
+   "tier": "finding"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "mintLDAToOwner",
+   "confidence": 85,
+   "text": "An attacker reserves unminted LDA IDs, so the owner cannot mint them",
+   "tier": "finding"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "onExtraRedeemed",
+   "confidence": 85,
+   "text": "Redemption trusts the `_OWNERS_` record and not the real balance",
+   "tier": "finding"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "initializeV0_5_6",
+   "confidence": 75,
+   "text": "Any caller can run the V0_5_6 reinitializer and take the admin role",
+   "tier": "finding"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "_removeLDAFromTierTracking",
+   "confidence": 75,
+   "text": "A burned LDA ID keeps its old owner",
+   "tier": "finding"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "_beforeTokenTransfer",
+   "confidence": 70,
+   "text": "Zero-amount transfers raise tier balances while the backfill is open",
+   "tier": "below-threshold"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "_addTokenToTierTracking",
+   "confidence": 0,
+   "text": "The tier list uses a different index base on mint and on burn: Code smells: the index comes from `_CURRENT_SUPPLY_` after the increment; a bulk mint writes every ID to one slot \u2014 `_TIER_ENUMERATION_` starts at index 1 and a bulk mint keeps only the last ID. No function reads the list today, so we found no direct loss.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "_beforeTokenTransfer",
+   "confidence": 0,
+   "text": "Zero-amount transfers call the royalties hook with any from and to: Code smells: `beforeLdaTransfer(from, to, tierId)` runs for zero-amount transfers and for IDs that do not exist \u2014 Any caller can make the royalties hook see a transfer that did not happen. The royalties contract is not in the repository, so we did not prove a loss of royalty funds.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "onExtraRedeemed",
+   "confidence": 0,
+   "text": "A redemption re-mints at a tier index that is already in use: Code smells: the burn does not lower `_CURRENT_SUPPLY_`, and the new mint writes at index `_CURRENT_SUPPLY_` \u2014 Each redemption overwrites a valid ID in `_TIER_ENUMERATION_`. No function reads the list today, so we found no direct loss.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "onExtraRedeemed",
+   "confidence": 0,
+   "text": "A trade approval also gives the right to redeem extras: Code smells: `isApprovedForAll(tokenOwner, redeemer)` lets any transfer operator redeem; the version bump cancels open orders \u2014 An approved marketplace operator can redeem the extra of a holder. We did not see whether the extras contract sends the extra to `redeemer`.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "pause",
+   "confidence": 0,
+   "text": "A pause does not stop transfers, permits or redemptions: Code smells: `whenNotPaused` is only on owner functions; `_beforeTokenTransfer`, `permit` and `onExtraRedeemed` have no pause check \u2014 When the owner pauses the contract, users can still use the zero-amount transfer path. We did not confirm what the pause is meant to stop.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "permit",
+   "confidence": 0,
+   "text": "A spender that loses PERMIT_SPENDER_ROLE keeps its approvals: Code smells: the role is checked once in `permit`; `safeTransferFrom` checks only `isApprovedForAll` \u2014 A revoked spender can still transfer the LDAs of each holder that signed a permit to it. The harm needs a trusted spender that turns hostile.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "_removeLDAFromTierTracking",
+   "confidence": 0,
+   "text": "The burn path treats supply minus one as the last tier index: Code smells: `lastLdaIndex = _CURRENT_SUPPLY_[tierId] - 1` while the mint path writes at `_CURRENT_SUPPLY_` \u2014 The swap-and-pop removes the wrong slot from `_TIER_ENUMERATION_`. No function reads the list today, so we found no direct loss.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "setOwnedTokens",
+   "confidence": 0,
+   "text": "The backfill overwrites tier balances while transfers stay live: Code smells: `setOwnedTokens` writes an off-chain snapshot; a sender with a zero tier balance skips the decrement; old list entries above the new length stay \u2014 A legacy holder who moves an LDA before the backfill lands is counted twice by `tierBalanceOf`. We did not check how the royalties contract ",
+   "tier": "lead"
+  },
+  {
+   "contract": "RoyalUtil",
+   "function": "composeLDA_ID",
+   "confidence": 0,
+   "text": "composeLDA_ID does not check the 112-bit width of the token number: Code smells: `tokenID` is a `uint128` but the layout gives it 112 bits; the parts are joined with `+` \u2014 A token number above 112 bits writes into the version bits. No internal caller passes such a value.",
+   "tier": "lead"
+  }
+ ]
+}

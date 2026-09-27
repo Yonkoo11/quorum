@@ -1,0 +1,109 @@
+{
+ "entry": "ORB",
+ "contestant": "v4-1pass",
+ "version": "pashov/skills v23092026",
+ "source_sha256": "22dca4915287b1658d7576e045a6ed9b0bb51cd0e1fc3875b1fca30958f903cb",
+ "predicted_at": "2026-09-27T07:38:27+00:00",
+ "seconds": 313,
+ "cost_usd": 5.82,
+ "findings": [
+  {
+   "contract": "ORBCore",
+   "function": "getOneTokenPriceBNB",
+   "confidence": 80,
+   "text": "The price functions read pair balances, not pair reserves",
+   "tier": "finding"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "transferTokenAddOrder",
+   "confidence": 80,
+   "text": "Token deposits are valued at a pool price the caller can move",
+   "tier": "finding"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "_everydayEarn",
+   "confidence": 75,
+   "text": "The daily mint converts BNB to tokens at a pool price the caller can move",
+   "tier": "finding"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "everydayEarnArr",
+   "confidence": 75,
+   "text": "The batch mint reads one pool price that the caller can move",
+   "tier": "finding"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "transferTokenAddOrder",
+   "confidence": 75,
+   "text": "The token deposit path skips the whitelist check",
+   "tier": "finding"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "_sellToken",
+   "confidence": 65,
+   "text": "An inflated principal lets a seller skip the profit tax",
+   "tier": "below-threshold"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "_addPool",
+   "confidence": 0,
+   "text": "An upline that rejects BNB blocks deposits from its downline: Code smells: `safeTransferETH` to up to 20 uplines inside the loop; one revert fails the whole deposit; only an owner `setBlackLists` call removes the block \u2014 An upline contract that reverts on receipt makes `_addPool` fail for every downline deposit. The attacker gains no tokens, and the owner can ",
+   "tier": "lead"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "_addPool",
+   "confidence": 0,
+   "text": "The deposit swap and liquidity add accept any output: Code smells: `swapExactETHForTokens(0, ...)`; `addLiquidityETH(..., 0, 0, ...)`; `deadline = block.timestamp` \u2014 An attacker who trades before and after a deposit takes part of the swapped BNB. We did not measure the profit after swap fees.",
+   "tier": "lead"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "_everydayEarn",
+   "confidence": 0,
+   "text": "Blacklisted uplines still collect speed credit: Code smells: the upline loop adds to `userSpeedBNBCount` with no `!blackList[superAccount]` check; `_addPool` has this check \u2014 A blacklisted upline collects speed credit and uses it after the owner removes the blacklist entry. We did not show a gain above `canTakeBNBTotal`.",
+   "tier": "lead"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "_sellToken",
+   "confidence": 0,
+   "text": "Any BNB that arrives during the sell swap goes to the seller: Code smells: `getBNBAmount` is the `address(this).balance` difference around the swap; `receive()` accepts BNB from any sender \u2014 BNB that reaches the core between the two balance reads counts as the seller's proceeds. We did not find a token hook that sends BNB there.",
+   "tier": "lead"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "_sellToken",
+   "confidence": 0,
+   "text": "The LP burn after a sell raises the price for the next seller: Code smells: `IToken(Token_Address).burnLP(sellTokenAmount * sellBurnTokenRatio / DENOMINATOR)` runs after the user payout \u2014 A holder who sells through the core and then sells on the DEX from a second account gets more BNB. We did not verify `burnLP` or the profit after the profit tax.",
+   "tier": "lead"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "_sellToken",
+   "confidence": 0,
+   "text": "Tokens moved to a high-principal account escape the profit tax: Code smells: the profit tax compares sales with the seller's own `userAddBNBCount`, but the sold tokens can come from any account \u2014 A reward holder moves tokens to an account with a high principal and no sales, and that account sells them with no profit tax. We did not verify that the token allows t",
+   "tier": "lead"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "_sellToken",
+   "confidence": 0,
+   "text": "The sell swap accepts any output: Code smells: `swapExactTokensForETH(sellTokenAmount, 0, ...)`; the user cannot set a minimum output \u2014 An attacker who trades before and after a user sell keeps part of the BNB of that user.",
+   "tier": "lead"
+  },
+  {
+   "contract": "ORBCore",
+   "function": "addPoolAndSell",
+   "confidence": 0,
+   "text": "The sell branch sends BNB back before it reads the token balance: Code smells: `safeTransferETH(account, BNBValue)` runs before `balanceOf(account)` and `_sellToken`; the account gets control first \u2014 The account can change its token balance or allowance before the sale. We did not confirm a re-entry path through the out-of-scope token.",
+   "tier": "lead"
+  }
+ ]
+}

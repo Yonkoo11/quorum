@@ -1,0 +1,18 @@
+{
+ "entry": "Startale",
+ "contestant": "generic",
+ "version": "claude -p, one prompt",
+ "source_sha256": "9e066087a08979cd8a48a95578ca1f81a36cc267f0aea04496fef9769d5467bc",
+ "predicted_at": "2026-09-27T07:05:36+00:00",
+ "seconds": 48,
+ "cost_usd": 0.58,
+ "findings": [
+  {
+   "contract": "StartaleSmartAccount",
+   "function": "initializeAccount",
+   "confidence": 20,
+   "text": "An attacker deploys a victim's pre-computed account through the factory in their own transaction, then calls initializeAccount again while the initializable flag is still set, adding their own validator through a malicious bootstrap and later draining funds sent to that address.",
+   "tier": "finding"
+  }
+ ]
+}

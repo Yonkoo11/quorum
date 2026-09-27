@@ -1,0 +1,46 @@
+{
+ "entry": "SandboxOFT",
+ "contestant": "v4-1pass",
+ "version": "pashov/skills v23092026",
+ "source_sha256": "35adddc25529ddbe1d4de510ae36729531d5b2b6e6a56a83a393630481a1d682",
+ "predicted_at": "2026-09-27T07:33:14+00:00",
+ "seconds": 449,
+ "cost_usd": 9.92,
+ "findings": [
+  {
+   "contract": "OFTSand",
+   "function": "approveAndCall",
+   "confidence": 100,
+   "text": "approveAndCall lets any caller become the OApp delegate and mint SAND",
+   "tier": "finding"
+  },
+  {
+   "contract": "OFTSand",
+   "function": "paidCall",
+   "confidence": 100,
+   "text": "paidCall lets any caller become the OApp delegate and mint SAND",
+   "tier": "finding"
+  },
+  {
+   "contract": "OFTSand",
+   "function": "send",
+   "confidence": 75,
+   "text": "send returns empty receipts after it burns the tokens",
+   "tier": "finding"
+  },
+  {
+   "contract": "OFTSand",
+   "function": "_credit",
+   "confidence": 0,
+   "text": "_credit reverts on a zero recipient or a zero amount: Code smells: `_mint` reverts when `to == address(0)` and when the amount is 0, and `_credit` has no `address(0)` to `0xdead` remap like the upstream OFT \u2014 A message with a zero recipient or a zero amount fails on every retry, so the source chain keeps the burned or locked tokens. We found no victim ",
+   "tier": "lead"
+  },
+  {
+   "contract": "OFTSand",
+   "function": "enable",
+   "confidence": 0,
+   "text": "The enable flag stops only send: Code smells: `_enabled` gates `send` only; `lzReceive`, `approveAndCall` and `paidCall` run when the contract is disabled \u2014 An admin who disables the contract does not stop inbound mints or the setDelegate path. We found no separate exploit.",
+   "tier": "lead"
+  }
+ ]
+}

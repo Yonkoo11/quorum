@@ -1,0 +1,32 @@
+{
+ "entry": "UnistreetLaunchpad",
+ "contestant": "generic",
+ "version": "claude -p, one prompt",
+ "source_sha256": "4fa649dafa04220486873441959351114c8893c94a8764a9b87baa8e262fb266",
+ "predicted_at": "2026-09-27T07:02:47+00:00",
+ "seconds": 33,
+ "cost_usd": 0.18,
+ "findings": [
+  {
+   "contract": "LaunchTokenAuto",
+   "function": "transfer",
+   "confidence": 65,
+   "text": "Anyone can send 1 wei of the launched token to thousands of fresh addresses. Each one is added to the unbounded holderList, so the loops in pushDistribute run out of gas. That makes LaunchpadFactoryAuto.harvest(token) revert every time, and the pool's paired-asset fees stay locked in the position for good, because nothing else can collect them.",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "harvest",
+   "confidence": 35,
+   "text": "pushDistribute pays every holder in one loop, so an attacker can hold a small balance at an address that can't receive the reward token (for example a USDC/USDT-blacklisted address). That holder's transfer fails, which reverts harvest for that token and locks all its collected fees.",
+   "tier": "finding"
+  },
+  {
+   "contract": "LaunchpadFactoryAuto",
+   "function": "launch",
+   "confidence": 30,
+   "text": "The launcher supplies initCalldata and modifyCalldata unchecked, so they can mint the liquidity-position NFT to themselves instead of the factory, while positionIdOf only records nextTokenId. The launcher then owns the seeded liquidity and can pull it out after buyers have bought in (a rug pull), and harvest for that token stops working.",
+   "tier": "finding"
+  }
+ ]
+}

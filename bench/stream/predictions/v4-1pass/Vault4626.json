@@ -1,0 +1,186 @@
+{
+ "entry": "Vault4626",
+ "contestant": "v4-1pass",
+ "version": "pashov/skills v23092026",
+ "source_sha256": "0035dc9b1934a4868c00beb903a38b1f8443e88f4a571c083ed21960103f9c07",
+ "predicted_at": "2026-09-27T08:13:14+00:00",
+ "seconds": 600,
+ "cost_usd": 11.36,
+ "findings": [
+  {
+   "contract": "Vault4626",
+   "function": "redeem",
+   "confidence": 90,
+   "text": "Redeem pays the whole idle asset balance to one redeemer",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "_consultTwap",
+   "confidence": 80,
+   "text": "TWAP falls back to the spot tick when observe reverts",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "_clampForReferralReserve",
+   "confidence": 75,
+   "text": "Reserve clamp does not run when tokens are in reverse order",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "_updateReferralShares",
+   "confidence": 75,
+   "text": "Redeem removes referral shares that the deposit never added",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "depositWithReferral",
+   "confidence": 75,
+   "text": "The first referrer bind credits only the new shares",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "distributeReferralFeesExact",
+   "confidence": 75,
+   "text": "Keeper can add its own address to the payee list",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "rebalanceWithTwap",
+   "confidence": 75,
+   "text": "Keeper-supplied baseAmount sets the rebalance minimums to zero",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "setReferrerAdmin",
+   "confidence": 75,
+   "text": "setReferrerAdmin adds any address to the referrer list",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "setStrategyParams",
+   "confidence": 75,
+   "text": "Keeper-callable setter writes the admin-level slippageBps",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "setStrategyParams",
+   "confidence": 75,
+   "text": "Pool check accepts any contract that returns the fee tier",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "swapVaultToken",
+   "confidence": 75,
+   "text": "Keeper can remove the TWAP floor in swapVaultToken",
+   "tier": "finding"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "totalAssets",
+   "confidence": 75,
+   "text": "Share price uses the spot tick when the TWAP window is zero",
+   "tier": "finding"
+  },
+  {
+   "contract": "RoleHub",
+   "function": "grantRole",
+   "confidence": 0,
+   "text": "The client admin can grant itself UPGRADER_ROLE: Code smells: `grantRole` checks only `DEFAULT_ADMIN_ROLE` for every role, but the comments say the client admin and the provider upgrader are distinct parties. \u2014 The client admin grants itself `UPGRADER_ROLE` and upgrades every vault on the hub. The actor is a trusted role, so the gate kept this as ",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "_collectPerformanceFees",
+   "confidence": 0,
+   "text": "A failed fee sweep still lowers the referral base: Code smells: a failed system or performance `sweepToken` is ignored in `catch {}` but `net0` and `net1` still drop, and `_accrueReferralFees` calls `sweepToken` with no `try`. \u2014 A failed fee sweep leaves the fee in the strategy and lowers the referral base, and a failed referral sweep makes redeem r",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "deposit",
+   "confidence": 0,
+   "text": "Deposit mints shares at a spot-priced totalAssets: Code smells: `convertToShares` reads `totalAssets`, which uses `slot0` when the window is zero or `observe` reverts. \u2014 A depositor who moves the spot price mints shares at a low totalAssets and redeems at the fair value. We did not compare the swap cost with the TVL.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "deposit",
+   "confidence": 0,
+   "text": "A replaced admin still gets referral credits and the referral pot: Code smells: `deposit` sets `referrer[receiver] = admin`, `_clearPendingReferralFees` pays `admin` when `feeRecipient` is zero, and V2 rotates roles in the Hub and leaves `admin` unchanged. \u2014 A replaced admin still gets new referral credits and the referral pot. We did not check how the off-chain pa",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "deposit",
+   "confidence": 0,
+   "text": "Asset calls decode a bool that some tokens do not return: Code smells: `asset.transferFrom` and `asset.transfer` check a `bool`, and `approve` changes one value to another with no reset to zero. \u2014 A vault whose asset returns no bool, such as USDT, reverts on every deposit and redeem. We did not confirm that such a vault exists.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "initialize",
+   "confidence": 0,
+   "text": "initialize has no caller check: Code smells: `Vault4626.initialize` and `RoleHub.initialize` check no caller, and the constructor does not lock the implementation. \u2014 Any caller who runs `initialize` first on a proxy deployed without init data becomes admin. We did not check how the deploy script creates the proxies.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "redeem",
+   "confidence": 0,
+   "text": "Redeem prices shares before it collects fees: Code smells: the liq>0 branch calls `convertToAssets(shares)` before `_collectPerformanceFees()`, and the liq==0 branch prices after it. \u2014 The redeemer is paid at the value before fees, so the other holders pay the redeemer's part of the fees. We did not confirm that `getBalances` includes uncollect",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "redeem",
+   "confidence": 0,
+   "text": "Redeem retries a failed withdraw with zero minimums: Code smells: `try withdrawToVault(liq, m0, m1) {} catch { _withdrawFromStrategyInternal(liq, 0, 0); }` makes the minimum check useless. \u2014 An attacker who moves the pool price makes the checked withdraw fail, and the retry burns liquidity with no minimum. We did not prove a profit, because a liquidit",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "redeem",
+   "confidence": 0,
+   "text": "Redeem pays at an old TWAP price after a fast move: Code smells: deposit and redeem price at the TWAP tick, and idle asset pays the full TWAP amount. \u2014 A holder redeems at an old TWAP price after a fast market move and takes value from the other holders. We did not measure the profit for a given window.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "redeem",
+   "confidence": 0,
+   "text": "Idle fallback gives the redeemer all non-asset that the strategy sends: Code smells: `_lpNa = _naBal - _feeNa` counts every non-asset token that arrives during `withdrawToVault`. \u2014 If the strategy also sends its own idle tokens, one redeemer gets them. We did not confirm what `withdrawToVault` sends.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "setReferrerAdmin",
+   "confidence": 0,
+   "text": "A referrer change leaves level 2 and level 3 totals on the old chain: Code smells: `setReferrerAdmin` moves only the user's own shares, not the shares of the user's referees. \u2014 When the keeper changes the referrer of X, the `level2Shares` and `level3Shares` that X's referees added stay on the old chain. We did not confirm how the off-chain payout reads them.",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "sweepReferralDust",
+   "confidence": 0,
+   "text": "sweepReferralDust sends the whole pending pot, not only the dust: Code smells: the keeper can call it at any time, and it sends all of `pendingReferralFees0` and `pendingReferralFees1`. \u2014 The keeper sends the whole pending referral pot to `feeRecipient` before a distribution, so the referrers get nothing. The admin sets the recipient, so the keeper gets nothing di",
+   "tier": "lead"
+  },
+  {
+   "contract": "Vault4626",
+   "function": "totalAssets",
+   "confidence": 0,
+   "text": "totalAssets skips the reserve subtraction when idle is below it: Code smells: `if (pendingAsset > 0 && idle >= pendingAsset) idle -= pendingAsset;` subtracts nothing when idle is smaller. \u2014 When the idle balance is below the referral reserve, totalAssets counts the whole reserve as vault value. We did not find an unprivileged path that takes idle below the reserv",
+   "tier": "lead"
+  }
+ ]
+}

@@ -1,0 +1,109 @@
+{
+ "entry": "Reddio",
+ "contestant": "v4-1pass",
+ "version": "pashov/skills v23092026",
+ "source_sha256": "c46edf3882bbf2d83d25b8071306aae518d2acbc42aaec3d32a53eac3dbc5020",
+ "predicted_at": "2026-09-27T07:15:59+00:00",
+ "seconds": 311,
+ "cost_usd": 6.97,
+ "findings": [
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "invest",
+   "confidence": 75,
+   "text": "Invest into an unlisted provider takes the reserve below the minimum ratio",
+   "tier": "finding"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "rebalance",
+   "confidence": 75,
+   "text": "Rebalance reverts when the prepared withdrawal exceeds the shortfall",
+   "tier": "finding"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "removeProvider",
+   "confidence": 75,
+   "text": "Operators can still invest in a provider that the owner removed",
+   "tier": "finding"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "addProvider",
+   "confidence": 0,
+   "text": "A provider with an old storage namespace skips initialize: Code smells: `isInitialized` is read from diamond storage by delegatecall; `removeProvider` does not clear provider storage \u2014 An upgraded or re-added provider that uses the same storage namespace skips `initialize`, so `addProvider` ignores the new params. We did not check any provider storage layou",
+   "tier": "lead"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "delegateBySelf",
+   "confidence": 0,
+   "text": "delegateBySelf delegatecalls any address with only a self-call guard: Code smells: public non-view function; only guard is `msg.sender == address(this)`; no `isProvider(providerAddress)` check; any `callData` \u2014 Any facet that makes the diamond call itself with user calldata gives that user a delegatecall to any address. We found no such facet in scope.",
+   "tier": "lead"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "disableAssetPoolsForProvider",
+   "confidence": 0,
+   "text": "Disabling a funded pool hides its tokens and blocks withdrawal: Code smells: no zero-balance check; every withdraw path, `emergencyWithdraw` included, requires `onlyAssetPoolEnabled` \u2014 The owner can disable a pool that holds tokens, so the total drops and no operator can withdraw them until the owner enables it again.",
+   "tier": "lead"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "getTotalAssetBalance",
+   "confidence": 0,
+   "text": "Two providers can report one position twice: Code smells: providers run by delegatecall, so each `getAssetBalance` reads balances that the diamond holds; nothing separates the positions of two providers \u2014 If two providers read the same storage or receipt token, the total counts it twice and `invest` allows too much. Provider code is out of sco",
+   "tier": "lead"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "getTotalAssetBalance",
+   "confidence": 0,
+   "text": "The total leaves out funds in removed providers and disabled pools: Code smells: the loop reads only `ds.providers`; `getAssetBalance` returns 0 for a disabled pool; neither `removeProvider` nor `disableAssetPoolsForProvider` checks for a zero balance \u2014 The reserve limits use a total that omits tokens still held by providers. The path to a loss needs an owner action",
+   "tier": "lead"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "getTotalAssetBalance",
+   "confidence": 0,
+   "text": "One reverting provider blocks invest and rebalance for the asset: Code smells: the loop makes a static call to every provider, and one revert stops the whole sum \u2014 One provider whose `getAssetBalance` reverts makes `invest` and `rebalance` fail for every provider of that token. The owner can remove the provider to recover.",
+   "tier": "lead"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "rebalance",
+   "confidence": 0,
+   "text": "Rebalance has no role check, but only operators can complete it: Code smells: `rebalance` is external with no modifier; it calls the public `onlyOperator` functions `invest`, `directlyWithdraw`, `finishWithdrawal` and `prepareWithdrawal`, and they check the external `msg.sender` \u2014 A keeper that is not an operator gets a revert on every branch that moves tokens. W",
+   "tier": "lead"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "rebalance",
+   "confidence": 0,
+   "text": "Rebalance asks one provider for the full shortfall: Code smells: `amount = investmentReserve - remainingBalance` uses the total of all providers, and nothing caps it at `getAssetBalance(providerAddress, asset)` \u2014 With several providers, `rebalance` asks one provider for more than it holds, so the provider can revert. We did not confirm the revert wit",
+   "tier": "lead"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "reinvest",
+   "confidence": 0,
+   "text": "Reinvest takes any amount with no reserve check: Code smells: `reinvest(provider, asset, amount)` has no `minimumReserveRatio` check, while `invest` has one \u2014 An operator can move more than the reserve allows through `reinvest`. We did not confirm whether providers take `amount` from the idle balance of the diamond.",
+   "tier": "lead"
+  },
+  {
+   "contract": "InvestmentManagerFacet",
+   "function": "supportedAssets",
+   "confidence": 0,
+   "text": "View helpers delegatecall any provider address the caller chooses: Code smells: `supportedAssets`, `canDirectlyWithdraw` and `supportsEarnings` have no `onlyAssetPoolEnabled` and no `isProvider` check before `_staticToProvider` \u2014 Any caller can make the diamond delegatecall the caller's own contract. The static context blocks state writes, and we found no path that",
+   "tier": "lead"
+  },
+  {
+   "contract": "LibAddress",
+   "function": "safeTokenTransfer",
+   "confidence": 0,
+   "text": "safeTokenTransfer always reverts when the recipient is the sender: Code smells: the check `balanceAfter == balanceBefore + amount` fails for a self-transfer; `require(success, string(returndata))` casts ABI revert data to a string \u2014 A transfer to the calling contract itself reverts because the recipient balance does not change. We found no caller in scope that does",
+   "tier": "lead"
+  }
+ ]
+}

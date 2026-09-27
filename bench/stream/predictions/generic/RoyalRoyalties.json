@@ -1,0 +1,25 @@
+{
+ "entry": "RoyalRoyalties",
+ "contestant": "generic",
+ "version": "claude -p, one prompt",
+ "source_sha256": "295ab15b24ccd680e56351f67419d4705375fc90fd395141dc07a18c537c0aad",
+ "predicted_at": "2026-09-27T07:04:29+00:00",
+ "seconds": 38,
+ "cost_usd": 0.29,
+ "findings": [
+  {
+   "contract": "Royal1155LDA",
+   "function": "safeTransferFrom",
+   "confidence": 55,
+   "text": "Transfers of zero tokens still run `_beforeTokenTransfer`, so an attacker can send 0 units of any LDA ID, including one they don't own. That call rewrites `_OWNERS_[ldaId]` to the attacker's chosen address, moves `_BALANCES_`/`_OWNED_TOKENS_` entries per tier, and fires the Royalties contract's `beforeLdaTransfer(from,to,tierId)` hook, while the real ERC1155 balances stay the same. While the backfill is incomplete and the sender's tier balance is 0, the decrement is skipped, so repeated zero-amount transfers can inflate a colluding address's `tierBalanceOf` without limit and let it take royalty payouts that belong to real holders.",
+   "tier": "finding"
+  },
+  {
+   "contract": "Royal1155LDA",
+   "function": "safeBatchTransferFrom",
+   "confidence": 40,
+   "text": "Using a zero-amount (batch) transfer of a victim's LDA ID, an attacker sets `_OWNERS_[victimLdaId]` to their own address. After that, `onExtraRedeemed` always fails for the real holder: the owner check fails for the victim, and the `_burn` from the spoofed owner reverts. The victim's extras are locked permanently, and their owned-token index and enumeration data are corrupted.",
+   "tier": "finding"
+  }
+ ]
+}

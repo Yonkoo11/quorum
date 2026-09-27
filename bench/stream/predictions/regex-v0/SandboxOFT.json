@@ -1,0 +1,39 @@
+{
+ "entry": "SandboxOFT",
+ "contestant": "regex-v0",
+ "version": "quorum v0.7.1 lenses",
+ "source_sha256": "35adddc25529ddbe1d4de510ae36729531d5b2b6e6a56a83a393630481a1d682",
+ "predicted_at": "2026-09-27T07:01:01+00:00",
+ "seconds": 3,
+ "cost_usd": 0.0,
+ "findings": [
+  {
+   "contract": "",
+   "function": "approve",
+   "confidence": 100,
+   "tier": "finding",
+   "text": "unguarded-state-write, corroborated by consistency-lens, modifier-lens"
+  },
+  {
+   "contract": "",
+   "function": "approveAndCall",
+   "confidence": 100,
+   "tier": "finding",
+   "text": "reentrancy, corroborated by callorder-lens, guard-lens"
+  },
+  {
+   "contract": "",
+   "function": "approveAndCall",
+   "confidence": 100,
+   "tier": "finding",
+   "text": "unguarded-state-write, corroborated by forward-lens, modifier-lens"
+  },
+  {
+   "contract": "",
+   "function": "transfer",
+   "confidence": 100,
+   "tier": "finding",
+   "text": "unguarded-state-write, corroborated by consistency-lens, modifier-lens"
+  }
+ ]
+}

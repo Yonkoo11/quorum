@@ -1,0 +1,10 @@
+{
+ "entry": "EtherFiAtomicQueue",
+ "contestant": "generic",
+ "version": "claude -p, one prompt",
+ "source_sha256": "62138e69e8f6f0067935683f7d31ceaeb90c374780babe49bd29def9fb9cdcd2",
+ "predicted_at": "2026-09-27T07:01:52+00:00",
+ "seconds": 19,
+ "cost_usd": 0.13,
+ "findings": []
+}

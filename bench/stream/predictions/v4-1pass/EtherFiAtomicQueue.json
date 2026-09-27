@@ -1,0 +1,88 @@
+{
+ "entry": "EtherFiAtomicQueue",
+ "contestant": "v4-1pass",
+ "version": "pashov/skills v23092026",
+ "source_sha256": "62138e69e8f6f0067935683f7d31ceaeb90c374780babe49bd29def9fb9cdcd2",
+ "predicted_at": "2026-09-27T07:10:48+00:00",
+ "seconds": 269,
+ "cost_usd": 4.63,
+ "findings": [
+  {
+   "contract": "AtomicQueue",
+   "function": "solve",
+   "confidence": 90,
+   "text": "Solve pulls want tokens from a solver that the caller chooses",
+   "tier": "finding"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "solve",
+   "confidence": 70,
+   "text": "Solve pays users with a want token that has no code",
+   "tier": "below-threshold"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "isAtomicRequestValid",
+   "confidence": 0,
+   "text": "The validity check accepts an order that pays zero: Code smells: `isAtomicRequestValid` checks only `atomicPrice != 0`, not that `_calculateAssetAmount` is more than zero, and `viewSolveMetaData` has no zero-price flag. \u2014 The helpers tell a solver that an order is valid when it pays zero want tokens. We found a loss of under one unit of `want` only.",
+   "tier": "lead"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "solve",
+   "confidence": 0,
+   "text": "One failed user transfer reverts the whole batch: Code smells: one failed `safeTransferFrom` reverts `solve`, and the function has no per-user skip. \u2014 A blacklisted user or a user who lowers the allowance makes the batch fail for the other users. The solver can remove that user and try again.",
+   "tier": "lead"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "solve",
+   "confidence": 0,
+   "text": "Solve does not measure what a fee-on-transfer token delivers: Code smells: `want.safeTransferFrom` and `offer.safeTransferFrom` count the amount sent, not the amount received, and `assetsToOffer` reports the full `offerAmount` to the solver. \u2014 A token that takes a fee on transfer gives the user less than the order price. We did not find a supported token that ",
+   "tier": "lead"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "solve",
+   "confidence": 0,
+   "text": "Solve has no maximum price for the solver: Code smells: `solve` reads `atomicPrice` from storage when it runs and has no expected-price parameter. \u2014 A user can send `updateAtomicRequest` with a higher price before a pending `solve`, so a solver that does not check `assetsForWant` pays too much. We did not confirm such a solver.",
+   "tier": "lead"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "solve",
+   "confidence": 0,
+   "text": "A caller can close an order by naming the user as solver: Code smells: `solve` accepts `solver == users[i]`, so both transfers go from the user to the user and `offerAmount` becomes 0. \u2014 An attacker can delete the order of a smart-wallet user and move no value. This works only for a wallet with a no-op fallback and a want-token allowance.",
+   "tier": "lead"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "solve",
+   "confidence": 0,
+   "text": "Old orders stay fillable until the deadline: Code smells: an order stays live after the user's balance or allowance changes, and any caller can fill it. \u2014 An attacker can fill a forgotten order at its old price when the user gets offer tokens and allowance again. This needs the user to leave the order open.",
+   "tier": "lead"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "solve",
+   "confidence": 0,
+   "text": "Solve fills orders that pay zero want tokens: Code smells: `solve` does not check `atomicPrice == 0`, and it does not check that `assetsToUser` is more than zero after `mulDivDown` rounds down. \u2014 Any caller can take the offer tokens of an order with a zero price or a very small payout. We found only orders that the user sets, and the NatSpec do",
+   "tier": "lead"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "updateAtomicRequest",
+   "confidence": 0,
+   "text": "The order struct limits the offer amount to uint96: Code smells: `offerAmount` is `uint96` and `atomicPrice` is `uint88`. \u2014 The struct limits an order to about 7.9e10 tokens with 18 decimals. We found no token where this limit causes a loss, only a failed order.",
+   "tier": "lead"
+  },
+  {
+   "contract": "AtomicQueue",
+   "function": "updateAtomicRequest",
+   "confidence": 0,
+   "text": "The function stores an order with a zero price: Code smells: `updateAtomicRequest` accepts `atomicPrice == 0`, but `isAtomicRequestValid` rejects the same order. \u2014 Any caller can fill the order and pay zero want tokens. Only the user can create the order, and the NatSpec documents it.",
+   "tier": "lead"
+  }
+ ]
+}

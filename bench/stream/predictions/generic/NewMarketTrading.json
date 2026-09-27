@@ -1,0 +1,18 @@
+{
+ "entry": "NewMarketTrading",
+ "contestant": "generic",
+ "version": "claude -p, one prompt",
+ "source_sha256": "17ce8e64b20361928e55b4dfc98fd09f5a4a60cdd7f66924d9915ec70c33e647",
+ "predicted_at": "2026-09-27T07:04:48+00:00",
+ "seconds": 19,
+ "cost_usd": 0.2,
+ "findings": [
+  {
+   "contract": "SquidRouterModule",
+   "function": "executeWithToken",
+   "confidence": 65,
+   "text": "`_executeWithToken` only checks that the source-chain sender is the permissionless `squidRouter`. So an attacker can call `SquidRouter.bridgeCall` on the source chain with a small amount of tokens and a payload of their own naming this module, a victim Safe, and one of that Safe's permissioned delegates (both are public). The module then runs actions in the victim's name: V2/V3 swaps with `amountOutMin` = 0 or an inflated `amountInMax`, plus the approvals they need, over the victim's whole balance. The attacker sandwiches those swaps and keeps the victim's funds.",
+   "tier": "finding"
+  }
+ ]
+}

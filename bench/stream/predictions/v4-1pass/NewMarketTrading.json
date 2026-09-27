@@ -1,0 +1,102 @@
+{
+ "entry": "NewMarketTrading",
+ "contestant": "v4-1pass",
+ "version": "pashov/skills v23092026",
+ "source_sha256": "17ce8e64b20361928e55b4dfc98fd09f5a4a60cdd7f66924d9915ec70c33e647",
+ "predicted_at": "2026-09-27T07:54:40+00:00",
+ "seconds": 557,
+ "cost_usd": 8.41,
+ "findings": [
+  {
+   "contract": "SquidRouterModule",
+   "function": "_executeWithToken",
+   "confidence": 90,
+   "text": "The source check trusts any payload that the public Squid router carries",
+   "tier": "finding"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_processPayload",
+   "confidence": 90,
+   "text": "The module trusts the safe and delegate that the payload names",
+   "tier": "finding"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "expressExecuteWithToken",
+   "confidence": 90,
+   "text": "Any caller runs a forged payload through expressExecuteWithToken with zero tokens",
+   "tier": "finding"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_handleUniV2SwapExactIn",
+   "confidence": 85,
+   "text": "V2 swap actions encode the path as bytes, so every swap fails",
+   "tier": "finding"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_handleActions",
+   "confidence": 75,
+   "text": "Non-strict mode still reverts when a permission or spender check fails",
+   "tier": "finding"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_handleUniV3SwapExactIn",
+   "confidence": 75,
+   "text": "A swap delegate can sell all Safe tokens into its own pool",
+   "tier": "finding"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_processPayload",
+   "confidence": 75,
+   "text": "A reverted destination action keeps the bridged tokens in the gateway",
+   "tier": "finding"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_executeWithToken",
+   "confidence": 0,
+   "text": "The module ignores the source chain of a message: Code smells: the `sourceChain` parameter is unnamed and never checked \u2014 The module accepts a message from any chain whose sender string equals the local squidRouter. We did not find a chain where another party controls that address.",
+   "tier": "lead"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_handleActions",
+   "confidence": 0,
+   "text": "A strict destination swap with an old deadline fails on every retry: Code smells: the swap `deadline` and `amountIn` are fixed on the source chain before a bridge delay of unknown length \u2014 With isStrict true, an expired deadline makes every `executeWithToken` retry revert, so the gateway keeps the bridged tokens. We did not check whether Axelar offers a recovery path",
+   "tier": "lead"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_handleUniV2SwapExactIn",
+   "confidence": 0,
+   "text": "V2 swap actions accept any amountOutMin with no slippage check: Code smells: `amountOutMin` comes straight from the delegate's data, `_checkAmountSlippage` is never called \u2014 A destination swap runs at a price that nobody checks at delivery time. We did not prove a loss beyond normal slippage.",
+   "tier": "lead"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_processPayload",
+   "confidence": 0,
+   "text": "The payload sends the bridged tokens to the source-chain Safe address: Code smells: the source-chain `safe` address is reused on the destination chain, no check that it is a deployed Safe with the same owners \u2014 The module sends the bridged tokens to the same Safe address on the destination chain. We did not prove that other owners control that address.",
+   "tier": "lead"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_squidRouterBridgeTokens",
+   "confidence": 0,
+   "text": "The bridge assumes the module has the same address on the destination chain: Code smells: `destinationAddress = address(this).toHexString()`, no check of `destinationChain` against a supported list \u2014 A delegate with BRIDGE_DEPOSIT_PERMISSION can bridge the Safe's tokens to a chain where this module address has no code. We did not confirm that the gateway then keeps the token",
+   "tier": "lead"
+  },
+  {
+   "contract": "SquidRouterModule",
+   "function": "_tryCallPermit2Approve",
+   "confidence": 0,
+   "text": "Permit2 approvals never expire: Code smells: the expiration is `type(uint48).max` \u2014 The Permit2 approval stays in place after the delegate's task ends. We did not find a separate path that uses the old allowance.",
+   "tier": "lead"
+  }
+ ]
+}

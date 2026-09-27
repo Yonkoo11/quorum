@@ -1,0 +1,10 @@
+{
+ "entry": "Reddio",
+ "contestant": "generic",
+ "version": "claude -p, one prompt",
+ "source_sha256": "c46edf3882bbf2d83d25b8071306aae518d2acbc42aaec3d32a53eac3dbc5020",
+ "predicted_at": "2026-09-27T07:02:14+00:00",
+ "seconds": 22,
+ "cost_usd": 0.23,
+ "findings": []
+}

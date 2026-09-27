@@ -1,0 +1,10 @@
+{
+ "entry": "Reddio",
+ "contestant": "regex-v0",
+ "version": "quorum v0.7.1 lenses",
+ "source_sha256": "c46edf3882bbf2d83d25b8071306aae518d2acbc42aaec3d32a53eac3dbc5020",
+ "predicted_at": "2026-09-27T07:00:58+00:00",
+ "seconds": 1,
+ "cost_usd": 0.0,
+ "findings": []
+}

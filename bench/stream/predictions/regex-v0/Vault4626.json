@@ -1,0 +1,25 @@
+{
+ "entry": "Vault4626",
+ "contestant": "regex-v0",
+ "version": "quorum v0.7.1 lenses",
+ "source_sha256": "0035dc9b1934a4868c00beb903a38b1f8443e88f4a571c083ed21960103f9c07",
+ "predicted_at": "2026-09-27T07:01:14+00:00",
+ "seconds": 1,
+ "cost_usd": 0.0,
+ "findings": [
+  {
+   "contract": "",
+   "function": "initialize",
+   "confidence": 100,
+   "tier": "finding",
+   "text": "unguarded-state-write, corroborated by modifier-lens, sender-lens"
+  },
+  {
+   "contract": "",
+   "function": "swapVaultToken",
+   "confidence": 100,
+   "tier": "finding",
+   "text": "unsafe-math, corroborated by bound-lens, wrap-lens"
+  }
+ ]
+}

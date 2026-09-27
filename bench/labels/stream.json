@@ -1,0 +1,187 @@
+{
+ "note": "Blind benchmark ledger. set=dev: the nine 2026 hacks with readable victim source, labelled by hand before this harness existed and used to build lenses, so in-sample. set=stream: proofs of concept added to DeFiHackLabs after commit 0520ddb (see stream-freeze.txt); intake, predictions and labels written by bench/stream.py in that order.",
+ "freeze": {
+  "repo": "SunWeb3Sec/DeFiHackLabs",
+  "commit": "0520ddb",
+  "date": "2026-09-27",
+  "manifest": "bench/labels/stream-freeze.txt"
+ },
+ "contestants": [
+  "regex-v0",
+  "generic",
+  "v4-1pass"
+ ],
+ "entries": [
+  {
+   "id": "EtherFiAtomicQueue",
+   "poc": "src/test/2026-09/EtherFiAtomicQueue_exp.sol",
+   "set": "dev",
+   "chain": "ethereum",
+   "address": "0xD45884B592E316eB816199615A95C182F75dea07",
+   "name": "AtomicQueue",
+   "sha256": "62138e69e8f6f0067935683f7d31ceaeb90c374780babe49bd29def9fb9cdcd2",
+   "status": "fetched",
+   "label": {
+    "entry_points": [
+     "AtomicQueue.solve"
+    ],
+    "class": "access-control",
+    "mechanism": "solve() takes a `solver` address with no check that it is the caller or consented, and pulls on that address's standing allowance",
+    "labelled_at": "2026-09-25T00:00:00+00:00",
+    "labelled_by": "hand, from the proof of concept's root-cause note, 2026-09-25 (bench/labels/hacks-2026.json)"
+   }
+  },
+  {
+   "id": "Reddio",
+   "poc": "src/test/2026-09/Reddio_exp.sol",
+   "set": "dev",
+   "chain": "ethereum",
+   "address": "0x47F018dc00307cd48Fd71d489d92e550646598De",
+   "name": "InvestmentManagerFacet",
+   "sha256": "c46edf3882bbf2d83d25b8071306aae518d2acbc42aaec3d32a53eac3dbc5020",
+   "status": "fetched",
+   "label": {
+    "entry_points": [
+     "InvestmentManagerFacet.getTotalAssetBalance"
+    ],
+    "class": "accounting-mismatch",
+    "mechanism": "share pricing reads the vault's raw token balance with no per-share-class accounting of the stETH backing one class",
+    "labelled_at": "2026-09-25T00:00:00+00:00",
+    "labelled_by": "hand, from the proof of concept's root-cause note, 2026-09-25 (bench/labels/hacks-2026.json)"
+   }
+  },
+  {
+   "id": "UnistreetLaunchpad",
+   "poc": "src/test/2026-08/UnistreetLaunchpad_exp.sol",
+   "set": "dev",
+   "chain": "ethereum",
+   "address": "0xFB60CD0B36aD4bD839b91767a6Ad9055AB6aD825",
+   "name": "LaunchpadFactoryAuto",
+   "sha256": "4fa649dafa04220486873441959351114c8893c94a8764a9b87baa8e262fb266",
+   "status": "fetched",
+   "label": {
+    "entry_points": [
+     "LaunchpadFactoryAuto.launch"
+    ],
+    "class": "access-control",
+    "mechanism": "launch() is permissionless and forwards the caller's calldata verbatim into the V4 PositionManager as the factory, unvalidated",
+    "labelled_at": "2026-09-25T00:00:00+00:00",
+    "labelled_by": "hand, from the proof of concept's root-cause note, 2026-09-25 (bench/labels/hacks-2026.json)"
+   }
+  },
+  {
+   "id": "SandboxOFT",
+   "poc": "src/test/2026-08/SandboxOFT_exp.sol",
+   "set": "dev",
+   "chain": "base",
+   "address": "0xac531Eb26Ca1d21b85126De8FB87E80E09002DcF",
+   "name": "OFTSand",
+   "sha256": "35adddc25529ddbe1d4de510ae36729531d5b2b6e6a56a83a393630481a1d682",
+   "status": "fetched",
+   "label": {
+    "entry_points": [
+     "OFTSand.approveAndCall"
+    ],
+    "class": "access-control",
+    "mechanism": "approveAndCall calls an arbitrary target as the token itself, guarded only by the first word of calldata equalling the caller",
+    "labelled_at": "2026-09-25T00:00:00+00:00",
+    "labelled_by": "hand, from the proof of concept's root-cause note, 2026-09-25 (bench/labels/hacks-2026.json)"
+   }
+  },
+  {
+   "id": "ORB",
+   "poc": "src/test/2026-09/ORB_exp.sol",
+   "set": "dev",
+   "chain": "bsc",
+   "address": "0x24B6308AB84B182d0598b73d21a42f4C2bb33C18",
+   "name": "ORBCore",
+   "sha256": "22dca4915287b1658d7576e045a6ed9b0bb51cd0e1fc3875b1fca30958f903cb",
+   "status": "fetched",
+   "label": {
+    "entry_points": [
+     "ORBCore.addPoolAndSell"
+    ],
+    "class": "reentrancy",
+    "mechanism": "addPoolAndSell and _sellToken both refund BNB to the caller before their remaining state work, with no guard on the path",
+    "labelled_at": "2026-09-25T00:00:00+00:00",
+    "labelled_by": "hand, from the proof of concept's root-cause note, 2026-09-25 (bench/labels/hacks-2026.json)"
+   }
+  },
+  {
+   "id": "RoyalRoyalties",
+   "poc": "src/test/2026-06/RoyalRoyalties_exp.sol",
+   "set": "dev",
+   "chain": "polygon",
+   "address": "0xd5b297c08d890376b6cbdba6023a39ffbdf65c78",
+   "name": "Royal1155LDA",
+   "sha256": "295ab15b24ccd680e56351f67419d4705375fc90fd395141dc07a18c537c0aad",
+   "status": "fetched",
+   "label": {
+    "entry_points": [
+     "Royal1155LDA.safeBatchTransferFrom"
+    ],
+    "class": "accounting-mismatch",
+    "mechanism": "per-tier bookkeeping is credited for every batch item even when amounts[i] == 0, so a zero-balance sender inflates the record without moving value",
+    "labelled_at": "2026-09-25T00:00:00+00:00",
+    "labelled_by": "hand, from the proof of concept's root-cause note, 2026-09-25 (bench/labels/hacks-2026.json)"
+   }
+  },
+  {
+   "id": "NewMarketTrading",
+   "poc": "src/test/2026-05/NewMarketTrading_exp.sol",
+   "set": "dev",
+   "chain": "ethereum",
+   "address": "0x1f1d37a3Bf840e35c6a860c7C2dA71Fe555123ca",
+   "name": "SquidRouterModule",
+   "sha256": "17ce8e64b20361928e55b4dfc98fd09f5a4a60cdd7f66924d9915ec70c33e647",
+   "status": "fetched",
+   "label": {
+    "entry_points": [
+     "SquidRouterModule._executeWithToken"
+    ],
+    "class": "access-control",
+    "mechanism": "the Axelar express path is callable by anyone and the module authorizes against a sourceAddress string the caller supplied, not the caller",
+    "labelled_at": "2026-09-25T00:00:00+00:00",
+    "labelled_by": "hand, from the proof of concept's root-cause note, 2026-09-25 (bench/labels/hacks-2026.json)"
+   }
+  },
+  {
+   "id": "Startale",
+   "poc": "src/test/2026-09/Startale_exp.sol",
+   "set": "dev",
+   "chain": "ethereum",
+   "address": "0x000000b8f5f723A680d3D7EE624Fe0bC84a6E05A",
+   "name": "StartaleSmartAccount",
+   "sha256": "9e066087a08979cd8a48a95578ca1f81a36cc267f0aea04496fef9769d5467bc",
+   "status": "fetched",
+   "label": {
+    "entry_points": [
+     "StartaleSmartAccount.initializeAccount"
+    ],
+    "class": "access-control",
+    "mechanism": "initializeAccount is gated only on a transient flag that EIP-1153 keeps set for the whole transaction, with no already-initialized guard",
+    "labelled_at": "2026-09-25T00:00:00+00:00",
+    "labelled_by": "hand, from the proof of concept's root-cause note, 2026-09-25 (bench/labels/hacks-2026.json)"
+   }
+  },
+  {
+   "id": "Vault4626",
+   "poc": "src/test/2026-06/Vault4626_exp.sol",
+   "set": "dev",
+   "chain": "base",
+   "address": "0xD08579102fc28355C5839019b730Ce58F84E6a4d",
+   "name": "Vault4626",
+   "sha256": "0035dc9b1934a4868c00beb903a38b1f8443e88f4a571c083ed21960103f9c07",
+   "status": "fetched",
+   "label": {
+    "entry_points": [
+     "Vault4626.totalAssets"
+    ],
+    "class": "accounting-mismatch",
+    "mechanism": "totalAssets() values idle non-asset WETH as asset while redeem() hands that same WETH out, so the books count it twice",
+    "labelled_at": "2026-09-25T00:00:00+00:00",
+    "labelled_by": "hand, from the proof of concept's root-cause note, 2026-09-25 (bench/labels/hacks-2026.json)"
+   }
+  }
+ ]
+}

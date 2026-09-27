@@ -1,0 +1,10 @@
+{
+ "entry": "SandboxOFT",
+ "contestant": "generic",
+ "version": "claude -p, one prompt",
+ "source_sha256": "35adddc25529ddbe1d4de510ae36729531d5b2b6e6a56a83a393630481a1d682",
+ "predicted_at": "2026-09-27T07:03:26+00:00",
+ "seconds": 39,
+ "cost_usd": 0.28,
+ "findings": []
+}
