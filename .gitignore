@@ -16,3 +16,11 @@ proposals/
 contracts/out/
 contracts/cache/
 contracts/broadcast/
+
+# prove stage: local build + workspace artifacts, not the harness itself
+prove/scaffold/out/
+prove/scaffold/cache/
+prove/scaffold/lib/
+prove/scaffold/target/
+prove/scaffold/broadcast/
+prove/proofs/*.json

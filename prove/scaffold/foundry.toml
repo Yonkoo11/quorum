@@ -1,0 +1,16 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+test = "test"
+fs_permissions = [{ access = "read", path = "./target" }]
+
+# The chain a PoC forks is chosen in code with vm.createSelectFork(vm.rpcUrl("<name>"), block).
+# Endpoints come from the environment, so no key is ever written into the repo.
+[rpc_endpoints]
+ethereum = "${ETHEREUM_RPC_URL}"
+base = "${BASE_RPC_URL}"
+bsc = "${BSC_RPC_URL}"
+polygon = "${POLYGON_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
+optimism = "${OPTIMISM_RPC_URL}"
