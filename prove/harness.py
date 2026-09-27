@@ -88,7 +88,8 @@ def workspace(entry: dict, fork: dict, hyp: dict) -> Path:
     # the users actually funded (where the state is). fork["address"] carries the proxy when they differ.
     (ws / "TASK.md").write_text(TASK.format(
         chain=fork["chain"], block=fork["block"], address=fork.get("address") or entry.get("address", "see victim.sol"),
-        contract=hyp.get("contract") or entry["name"], function=hyp["function"], attack=hyp["text"]))
+        contract=hyp.get("contract") or entry["name"], function=hyp["function"], attack=hyp["text"],
+        rpc_env=CHAIN_ENV[fork["chain"]]))
     return ws
 
 
@@ -105,14 +106,26 @@ or `proveTokenProfit(<token>, this.attack)`, where `attack()` is an `external` f
 performs the exploit as `attacker`. The scaffold measures the attacker's profit and prints `[PROOF]`
 only if it grew, so you do not assert profit yourself.
 
+Finding the victim (do this before deciding it is unprovable):
+- The money may not sit in `{contract}` itself. If `{contract}` custodies nothing, the drain lands on a
+  THIRD PARTY that trusts it — a Safe that enabled it as a module, a vault or solver that granted it a
+  token allowance, a user with an open request, a pool it prices from. On the fork that victim exists
+  with its real balances and approvals; your job includes finding it and targeting it.
+- The fork has the whole chain at that block, so discover the victim on-chain. `cast` is available and
+  the RPC is in the env var `{rpc_env}`. Useful moves: `cast logs` for the contract's own events
+  (who registered, deposited, approved, opened a request), `cast call` to read allowances/balances,
+  `cast storage` to read a slot you can justify. You may also scan events inside the test with `vm`.
+- Once you have a concrete victim address with real state, target it. Draining a real victim's real
+  funds to `attacker` is a valid proof; inventing the victim's state is not.
+
 Rules:
 - The attack must run as `attacker`, an unprivileged address. Do not `vm.prank` the owner or any role.
 - You may give `attacker` seed capital with `deal`/`vm.deal`, or borrow via a real on-chain flash-loan
   pool. You may NOT use `vm.store`, `vm.etch` or `vm.mockCall` on the victim — that fakes the chain.
 - Run it yourself: `forge test --match-path test/Exploit.t.sol -vv`. Iterate until it passes with a
-  `[PROOF]` line. If after honest effort the exploit does not pay (the hypothesis is wrong, or needs
-  state the fork does not have), write `test/Exploit.t.sol` with a top comment `// UNPROVEN: <reason>`
-  and stop. Do not fake a pass.
+  `[PROOF]` line. If after honest effort — including looking for a real victim on-chain — the exploit
+  does not pay (the hypothesis is wrong, or the state genuinely is not on this fork), write
+  `test/Exploit.t.sol` with a top comment `// UNPROVEN: <reason>` and stop. Do not fake a pass.
 Report in your final message: PROVEN or UNPROVEN, and one sentence why."""
 
 
