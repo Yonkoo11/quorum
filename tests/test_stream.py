@@ -82,3 +82,21 @@ def test_intake_passes_on_nothing_but_the_victim(monkeypatch, tmp_path):
     monkeypatch.setattr(stream.fetcher, "fetch_source", lambda *a, **k: ("V", "contract V {}"))
     entry = stream.intake_one(tmp_path, tmp_path / "work", "src/test/2026-10/Hack_exp.sol")
     assert "root_cause" not in entry and entry["status"] == "fetched"
+
+
+def test_intake_records_the_proxy_and_block_for_proving(monkeypatch, tmp_path):
+    """A proof forks at the proxy (funds) and block; intake must capture both, and default the proxy
+    to the implementation when the note names no separate one."""
+    (tmp_path / "src" / "test" / "2026-10").mkdir(parents=True)
+    (tmp_path / "src" / "test" / "2026-10" / "H_exp.sol").write_text("// poc")
+    monkeypatch.setattr(stream.fetcher, "fetch_source", lambda *a, **k: ("V", "contract V {}"))
+
+    both = '{"chain":"base","address":"0xIMPL","proxy":"0xPROXY","block":123,"name":"V"}'
+    monkeypatch.setattr(stream, "claude", lambda *a, **k: {"result": both})
+    e = stream.intake_one(tmp_path, tmp_path / "w1", "src/test/2026-10/H_exp.sol")
+    assert e["address"] == "0xIMPL" and e["proxy"] == "0xPROXY" and e["block"] == 123
+
+    no_proxy = '{"chain":"base","address":"0xONLY","block":9,"name":"V"}'
+    monkeypatch.setattr(stream, "claude", lambda *a, **k: {"result": no_proxy})
+    e = stream.intake_one(tmp_path, tmp_path / "w2", "src/test/2026-10/H_exp.sol")
+    assert e["proxy"] == "0xONLY"
