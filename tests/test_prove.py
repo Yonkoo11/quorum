@@ -64,3 +64,13 @@ def test_pranking_the_attacker_is_allowed(ws, monkeypatch):
     monkeypatch.setenv("BASE_RPC_URL", "")   # stop before forge; we only test the static gate here
     v = harness.verdict(ws, "base")
     assert "impersonates" not in v.get("reason", "")
+
+
+def test_a_stream_hack_forks_from_its_own_ledger_row(tmp_path, monkeypatch):
+    """Stream hacks carry chain/block/proxy from intake; a proof must fork there, not at a dev pin."""
+    from bench import stream
+    monkeypatch.setattr(stream, "STREAM", tmp_path / "s.json")
+    stream.save({"contestants": [], "entries": [
+        {"id": "NewHack", "chain": "base", "block": 999, "address": "0xIMPL", "proxy": "0xPROXY"}]})
+    fork = harness.fork_of("NewHack")
+    assert fork == {"chain": "base", "block": 999, "address": "0xPROXY"}

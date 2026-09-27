@@ -96,10 +96,16 @@ def json_block(text: str):
 
 # --------------------------------------------------------------------------- intake
 
-INTAKE_PROMPT = """Read {poc}. It reproduces a smart-contract exploit. Name the ONE deployed contract that
-holds the vulnerable logic (the implementation or facet, not a proxy, not a token the attacker only
-traded, not the attacker's contract). Answer with JSON only:
-{{"chain": "<ethereum|base|arbitrum|optimism|polygon|bsc|other>", "address": "0x...", "name": "<contract name>"}}
+INTAKE_PROMPT = """Read {poc}. It reproduces a smart-contract exploit. Return two addresses, because a
+proof needs both and they are often different:
+  - `address`: the contract whose SOURCE holds the vulnerable logic (the implementation or facet). This
+    is where the bug is read from.
+  - `proxy`: the deployed contract the users actually funded and the attacker calls (the proxy in front
+    of that implementation, or the same address when there is no proxy). This is where the state is.
+Neither is a token the attacker only traded, nor the attacker's own contract. Also give `block`, the
+fork block the proof of concept uses (the exploit's parent block; resolve any named constant to its
+number). Answer with JSON only:
+{{"chain": "<ethereum|base|arbitrum|optimism|polygon|bsc|other>", "address": "0x...", "proxy": "0x...", "block": <number>, "name": "<contract name>"}}
 Do not describe the bug. If no single victim contract is named, answer {{"chain": "none"}}."""
 
 
@@ -115,7 +121,8 @@ def intake_one(dhl: Path, work: Path, poc: str) -> dict:
     with tempfile.TemporaryDirectory() as tmp:
         shutil.copy(dhl / poc, Path(tmp) / "poc.sol")
         victim = json_block(claude(INTAKE_PROMPT.format(poc="poc.sol"), Path(tmp), "Read")["result"])
-    victim = {k: victim.get(k) for k in ("chain", "address", "name")}   # nothing else leaves intake
+    victim = {k: victim.get(k) for k in ("chain", "address", "proxy", "block", "name")}  # nothing else leaves intake
+    victim["proxy"] = victim.get("proxy") or victim.get("address")               # same address when no proxy
     entry.update(victim)
     if victim["chain"] not in fetcher.SOURCE_CHAINS:
         return {**entry, "status": f"skipped: chain {victim['chain']}"}

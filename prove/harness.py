@@ -55,6 +55,12 @@ def now() -> str:
 
 
 def fork_of(entry_id: str) -> dict | None:
+    """Where and when to fork. Stream hacks carry chain/block/proxy from intake; the dev set, labelled
+    before intake existed, is pinned in fork-blocks.json. The ledger wins when it has the fields."""
+    entry = next((e for e in stream.load()["entries"] if e["id"] == entry_id), None)
+    if entry and entry.get("chain") in CHAIN_ENV and entry.get("block"):
+        return {"chain": entry["chain"], "block": entry["block"],
+                "address": entry.get("proxy") or entry.get("address")}
     return json.loads(FORK_BLOCK.read_text()).get(entry_id) if FORK_BLOCK.exists() else None
 
 
@@ -153,7 +159,8 @@ def prove(entry_id: str, contestant: str, item: int | None) -> None:
     print(f"workspace {ws}\nhypothesis: {hyp.get('contract')}.{hyp['function']} — {hyp['text'][:80]}")
     tools = "Bash Read Write Edit Glob Grep"
     try:
-        res = stream.claude((ws / "TASK.md").read_text(), ws, tools, timeout=1800)
+        res = stream.claude((ws / "TASK.md").read_text(), ws, tools,
+                            timeout=int(os.environ.get("QUORUM_PROVE_TIMEOUT", "1800")))
         said = str(res.get("result"))[:200]
         cost = res.get("total_cost_usd", 0.0)
     except Exception as exc:
