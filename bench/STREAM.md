@@ -55,3 +55,30 @@ What it says, with the caveats attached:
   mechanism in six of nine; one scan per file found all nine, at 2.3 times the cost ($75.76 against
   $32.76).
 - **n = 9.** Nothing here is a rate. The stream is how it becomes one.
+
+## Validation: the pipeline run blind on hacks the operator had never read
+
+Run 2026-09-28. Before any real post-freeze hack existed, the whole automated chain was exercised on
+**two 2026-09 hacks the operator had never examined** and that are not among the classified set — a
+sandbox run in a separate ledger, not real stream entries. The operator never read either root cause:
+intake and labelling are model steps that read the proof of concept, contestants see only the victim
+source, and predictions were frozen before the labels were written. Both hacks are dated after the
+models' training cutoff, so contamination is low.
+
+| contestant | hacks | exact root cause | items written | items on target | cost |
+|---|---|---|---|---|---|
+| regex-v0 | 2 | 0 | 0 | 0 | $0.00 |
+| generic (one prompt) | 2 | **2** | 4 | 2 | $0.63 |
+| v4, one pass | 2 | **2** | 23 | 7 | $14.20 |
+
+Both AI contestants named the exact root cause of both hacks (`GaslessReservoirEnabler` and an
+`InternetToken` liquidity unifier, both access-control); the regex engine caught neither. On this
+pair the single generic prompt matched v4's recall at a twentieth of the cost and a fifth of the
+noise — a real out-of-sample signal, though n = 2 proves nothing on its own.
+
+**What this shows and doesn't.** It shows the automated chain works end to end on cases the operator
+did not know — and it earned its keep by breaking twice on real bugs (a label answer wrapped in prose,
+and a JSON-array-vs-object parse) that are now fixed and tested, so the daily cron would have hit them.
+It does **not** show the live stream running on novel events: these hacks existed before the freeze, so
+they are "unread by the operator," not "the future." The real stream still fills only as new hacks are
+reproduced after the freeze date.
