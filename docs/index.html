@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="hey-research-verification" content="rma0A12gxSApa__ZoqScG3gBTUE6skm5">
-<title>Quorum: a swarm that coordinates through memory</title>
-<meta name="description" content="Ten security lenses that never talk to each other. A finding exists only when two agree, and every number on the page comes from a file in the repo.">
+<title>Quorum: prove it, or drop it</title>
+<meta name="description" content="Quorum finds exploitable bugs in EVM contracts and publishes only the ones it can prove by running the exploit on a fork — and publishes how often it is wrong on hacks it has never seen.">
 <link rel="icon" href="./favicon.svg" type="image/svg+xml">
 <link rel="icon" href="./favicon.ico" sizes="48x48">
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="theme-color" content="#f3eee4">
-<meta property="og:title" content="Quorum: a swarm that coordinates through memory">
-<meta property="og:description" content="Ten security lenses that never talk to each other. A finding exists only when two agree.">
+<meta property="og:title" content="Quorum: prove it, or drop it">
+<meta property="og:description" content="Four real 2026 hacks drained by a generated exploit, each reproducing to the wei. A finding is a claim until an exploit settles it.">
 <meta property="og:image" content="https://runquorum.site/post-2.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
@@ -44,26 +44,26 @@
   <div class="hero wrap">
     <div class="hero__content">
       <h1 class="display" id="h-stmt">
-        <span class="line" data-reveal style="--rv-delay:267ms;--rv-dur:483ms">Two lenses.</span>
-        <span class="line g" data-reveal style="--rv-delay:417ms;--rv-dur:450ms">One finding.</span>
+        <span class="line" data-reveal style="--rv-delay:267ms;--rv-dur:483ms">Prove it.</span>
+        <span class="line g" data-reveal style="--rv-delay:417ms;--rv-dur:450ms">Or drop it.</span>
       </h1>
-      <p class="lede" data-reveal style="--rv-delay:833ms;--rv-dur:617ms">Ten lenses read Solidity and never talk to each other. A finding exists only when two agree, and the only place they can agree is memory.</p>
+      <p class="lede" data-reveal style="--rv-delay:833ms;--rv-dur:617ms">A finding is a claim until an exploit settles it. Quorum hunts EVM contracts, then writes a Foundry exploit on a fork and publishes only what actually drains the attacker's balance. Four real 2026 hacks, proven to the wei. It began as a memory experiment &mdash; flip the switch below to see that origin.</p>
       <div class="test" data-reveal style="--rv-delay:833ms;--rv-dur:600ms">
         <div class="switch" role="group" aria-label="Memory"><button type="button" id="btn-on" aria-pressed="true" aria-controls="pane-on">Memory on</button><button type="button" id="btn-off" aria-pressed="false" aria-controls="pane-off">Memory off</button></div>
         <p class="answer"><span class="number" id="answer-n" aria-live="polite">2</span><span class="answer-word">confirmed</span></p>
       </div>
       <div class="measured" data-reveal style="--rv-delay:850ms;--rv-dur:600ms">
-        <p class="label">Measured against</p>
+        <p class="label">Proven by running the exploit</p>
         <ul class="label">
-          <li>SmartBugs-curated, 143 files</li>
-          <li>DeFiVulnLabs, 10 targets</li>
-          <li>Slither 0.11.4</li>
-          <li>GitHub Security tab</li>
+          <li>Unistreet &mdash; 0.0072 WETH</li>
+          <li>Sandbox &mdash; 1,000,000 SAND</li>
+          <li>Squid &mdash; 712 USDC</li>
+          <li>GaslessReservoir &mdash; 0.836 WETH, blind</li>
         </ul>
       </div>
       <p class="actions" data-reveal style="--rv-delay:1017ms;--rv-dur:500ms">
-        <a class="btn primary" href="./start/">Run it</a>
-        <a class="textlink" href="./lenses/">The ten lenses</a>
+        <a class="btn primary" href="https://github.com/Yonkoo11/quorum/tree/main/prove/proofs">The proofs</a>
+        <a class="textlink" href="./lenses/">The origin: ten lenses</a>
       </p>
     </div>
     <div class="hero__panel">
