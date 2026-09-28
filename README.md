@@ -6,16 +6,23 @@
 [![tests](https://github.com/Yonkoo11/quorum/actions/workflows/tests.yml/badge.svg)](https://github.com/Yonkoo11/quorum/actions/workflows/tests.yml)
 ![first paid claim](https://img.shields.io/badge/first%20paid%20claim-Robinhood%20Chain%20block%2060762176-121212)
 ![fee](https://img.shields.io/badge/fee-100%2C000%20QUORUM%20burned%20per%20claim-3fb950)
-![production code](https://img.shields.io/badge/audited%20production%20code-0%20confirmed%20%C2%B7%2014%20candidates%20held%20back-121212)
+![proven drains](https://img.shields.io/badge/proven%20by%20running%20the%20exploit-4%20real%202026%20hacks-3fb950)
 [![site](https://img.shields.io/badge/live-runquorum.site-3fb950)](https://runquorum.site)
 
-### Two lenses. One finding.
+### Prove it, or drop it.
 
-**A swarm of security lenses that never talk to each other. Sibyl Memory is the only channel between them, and it is the only reason the swarm can agree on anything, recognise anything, or forget anything.**
+**Quorum finds exploitable bugs in EVM contracts and publishes only the ones it can prove by running the exploit on a fork — and it publishes how often it is wrong on hacks it has never seen.**
 
-Ten independent lenses read Solidity source. No lens can publish a finding on its own. A finding becomes real only when two lenses that work from different evidence arrive at the same conclusion, and the count of who agreed lives in memory, not in any agent's head. Once a pattern is confirmed, the swarm recognises that idiom on sight in a completely different contract, in a completely different session, from a single sighting.
+A finding is a claim until an exploit settles it. Quorum hunts with the strongest reader available (Pashov's twelve-agent [solidity-auditor](https://github.com/pashov/skills)), scores every tool on a blind benchmark of hacks nobody tuned for, and then, for each candidate, has a model write a Foundry exploit on a fork at the block the bug was live. The scaffold measures the attacker's real balance change and publishes only what actually pays. Everything else is kept as a candidate, never asserted.
 
-Delete the memory layer and there is no swarm left. Just nine programs that each shout once and forget.
+> **This is a rebuild.** Quorum began as the lens-swarm described below (a Sibyl Labs hackathon entry). Measuring it honestly showed the regex lenses are the *weakest* reader — 1 of 9 real 2026 hacks, 0 of 2 on a blind pair — so they were demoted to a cheap baseline and the engine was rebuilt around proof. The lens-swarm sections that follow are kept as the origin story and still carry their real measured numbers.
+
+**What it does today, measured:**
+- **Four real 2026 hacks drained by a generated exploit**, each reproducing to the wei with the model gone, no faked state: Unistreet (+0.0072 WETH), Sandbox (+1,000,000 SAND), Squid (+712 USDC), and — through the whole pipeline blind, on a hack the operator never read — GaslessReservoirEnabler (+0.836 WETH). Proofs: [`prove/proofs/`](prove/proofs), method: [`prove/PROVE.md`](prove/PROVE.md).
+- **A benchmark that cannot be tuned for.** Only hacks reproduced after a freeze date count, scored before anyone reads the cause, order enforced in code: [`bench/STREAM.md`](bench/STREAM.md).
+- **The one number nobody else publishes:** how often it is wrong, on hacks it has never seen. That is the whole differentiator — a trust moat, re-derivable by anyone.
+
+**[ Read the hacks, proven ↗ ](learn/)** · **[ The prove stage ↗ ](prove/PROVE.md)** · **[ The blind benchmark ↗ ](bench/STREAM.md)**
 
 **[ Telegram ↗ ](https://t.me/runQuorumchat)** · **[ Live site ↗ ](https://runquorum.site)** · **[ Watch the demo ↗ ](https://github.com/Yonkoo11/quorum/releases/download/v0.1.0/quorum-demo-v2.mp4)** · **[ Verify it yourself ↗ ](#verify-it-yourself-in-60-seconds)** · **[ The paid claim ↗ ](https://robinhoodchain.blockscout.com/tx/0xb999d218981ad9985b587da6c4017ae7dc8557ef702e27c9bbc9ca4f68bf1655)**
 
@@ -43,8 +50,15 @@ Built for the Sibyl Labs Hackathon. Named one of fifteen consolation winners amo
 
 ## Table of contents
 
-- [The problem](#the-problem)
-- [What Quorum is](#what-quorum-is)
+**The engine today**
+- [Prove it, or drop it](#prove-it-or-drop-it) — what Quorum is now
+- [The prove stage](prove/PROVE.md) — a hypothesis is a finding only when its exploit runs and pays
+- [The blind benchmark](bench/STREAM.md) — hacks reproduced after a freeze, scored before the cause is read
+- [Learn: real hacks, proven](learn/) — the education arm, each card backed by a running exploit
+
+**The origin (hackathon lens swarm), kept with its measured numbers**
+- [The problem the lens swarm was built for](#the-problem-the-lens-swarm-was-built-for)
+- [The origin: the lens swarm](#the-origin-the-lens-swarm)
 - [Verify it yourself in 60 seconds](#verify-it-yourself-in-60-seconds)
 - [The headline result](#the-headline-result)
 - [Architecture](#architecture)
@@ -62,7 +76,9 @@ Built for the Sibyl Labs Hackathon. Named one of fifteen consolation winners amo
 
 ---
 
-## The problem
+## The problem the lens swarm was built for
+
+*This is the problem the origin architecture set out to solve. The problem Quorum solves today — telling a real finding from a plausible one — is answered by proof, not by memory; see [the top](#prove-it-or-drop-it).*
 
 A single detector that reports everything it sees is noise. Ten of them are ten times the noise.
 
@@ -73,7 +89,9 @@ A single detector that reports everything it sees is noise. Ten of them are ten 
 
 Every one of those is a memory problem, not a detection problem. Quorum is the coordination and memory layer; the lenses are the honest minimum needed to have something real to coordinate about.
 
-## What Quorum is
+## The origin: the lens swarm
+
+*This section describes the hackathon architecture Quorum grew out of. It is the weakest reader in the current benchmark (see [the rebuild note up top](#prove-it-or-drop-it)), kept because its coordination and memory ideas are real and its numbers are honestly measured. The engine that does the work today is the [prove-it pipeline](prove/PROVE.md).*
 
 Ten regex-and-brace-matching lenses over Solidity source, coordinated through one Sibyl Memory file and nothing else. The loop:
 
@@ -374,20 +392,30 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 ## Project layout
 
 ```
+prove/           # THE ENGINE TODAY — a hypothesis is a finding only when its exploit runs and pays
+  harness.py     # fork at the block the bug was live, a model writes the exploit, measure real profit
+  scaffold/      # ForkPoCBase: [PROOF] fires only on a measured attacker gain; the safety gates
+  proofs/        # the exploits that pay, reproducible with `forge test` (four real 2026 hacks)
+  PROVE.md       # the results and the method
+bench/
+  stream.py      # the blind benchmark: intake, contestants, labeller kept apart, order enforced in code
+  STREAM.md      # the scored table and the blind end-to-end validation
+learn/           # the education arm: each hack card backed by a running proof, plus defensive-habit guides
+bot/             # the QUORUM buy bot (v4 pool on Robinhood Chain), token read from env, never in the repo
 quorum/
-  agents.py      # the ten lenses, two to four per risk
+  agents.py      # the ten lenses, two to four per risk (the origin baseline; the weakest reader now)
   swarm.py       # the run: claim units, record sightings, promote, recall, retire
   memory.py      # every Sibyl Memory read and write (HOT, WARM, REFERENCE, ARCHIVE, COLD) and NoMemory
   chain.py       # claim digest, QUORUM1/2/3 calldata, fee schedule, burn check, attest, verify, reveal, import
   targets.py     # quorum fetch: verified source from six chains, Blockscout and Sourcify, no key
   sarif.py       # confirmed findings as SARIF 2.1.0: both witnesses, what each read, the idiom as the fingerprint
   cli.py         # the command line
-tests/           # 89 tests: test_quorum.py (the swarm), test_token.py (the token boundary), test_targets.py (what an explorer may do), test_diary.py (the diary)
+tests/           # 119 tests across the lenses, the token boundary, the stream harness, the prove gates and the buy bot
 fixtures/        # two teaching contracts, vulnerable on purpose
 docs/            # the site (runquorum.site): five pages, one stylesheet, one script, self-hosted fonts
 brand/           # the cards, marks and fonts the site and the posts are built from
   card-maker.html  # one file, no install: type the words, save the card as a PNG (see MAKING-CARDS.md)
-bench/           # the lenses and Slither scored on three corpora (two labelled, one of recent audit contests), re-run with one command each
+                 # bench/ also holds the lenses and Slither scored on three labelled corpora (the origin baseline)
 contracts/       # the ClaimRegistry (Foundry): source, 18 tests, a fuzz and an invariant, the deploy script
 diary/           # the Telegram diary: what the repo did, in plain words, every two hours, silent when nothing happened
 action.yml       # `uses: Yonkoo11/quorum@v0.4.2`: scan, write the page to the job summary, write SARIF, upload to the Security tab
