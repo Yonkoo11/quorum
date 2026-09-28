@@ -82,3 +82,12 @@ and a JSON-array-vs-object parse) that are now fixed and tested, so the daily cr
 It does **not** show the live stream running on novel events: these hacks existed before the freeze, so
 they are "unread by the operator," not "the future." The real stream still fills only as new hacks are
 reproduced after the freeze date.
+
+**The chain was completed through proof.** One of the two, `GaslessReservoirEnabler` (Polygon,
+allowance theft via `erc20WithTransfersAndExecute`), was then run through the prove stage from v4's
+own hypothesis. The model found a real victim who had given the enabler a max WETH allowance,
+asserted that allowance and balance on-chain, and drained it: **+0.836 WETH**, reproduces with the
+model gone, no faked state, only the attacker impersonated
+([`../prove/proofs/GaslessReservoirEnabler.t.sol`](../prove/proofs/GaslessReservoirEnabler.t.sol)).
+So the whole pipeline — find, score, and settle by a running exploit — has now closed on a hack the
+operator never read.
