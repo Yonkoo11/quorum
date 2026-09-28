@@ -203,21 +203,22 @@ def writer() -> tuple[str, str]:
     raise SystemExit("set GEMINI_API_KEY (free) or ANTHROPIC_API_KEY for the writer")
 
 
-def _post(req: urllib.request.Request, tries: int = 4) -> dict:
-    # A free-tier model can answer 429/500/503 on a demand spike ("usually temporary"); retry those a
-    # few times with a short backoff before giving up, so one busy moment does not skip an update.
+def _post(req: urllib.request.Request, tries: int = 7) -> dict:
+    # A free-tier model can answer 429/500/503 on a demand spike ("usually temporary"); retry those
+    # with a growing backoff (up to ~a minute total) before giving up, so a busy spell does not skip an
+    # update. A failed run leaves the cursor unmoved, so the next run retries the same slice regardless.
     for i in range(tries):
         try:
             with urllib.request.urlopen(req, timeout=60) as r:
                 return json.load(r)
         except urllib.error.HTTPError as e:
             if e.code in (429, 500, 503) and i < tries - 1:
-                time.sleep(min(2 ** i, 8))
+                time.sleep(min(2 ** i, 15))
                 continue
             raise SystemExit(f"the writer refused the request ({e.code}): {e.read().decode(errors='replace')[:300]}") from None
         except urllib.error.URLError:
             if i < tries - 1:
-                time.sleep(min(2 ** i, 8))
+                time.sleep(min(2 ** i, 15))
                 continue
             raise
     raise SystemExit("the writer did not answer")
