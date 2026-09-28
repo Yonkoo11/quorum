@@ -35,6 +35,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # The backfill cursor (how far through the backlog we have posted) rides between runs in the
+      # cache, oldest first. A fresh key each run saves a new copy; the prefix restores the latest.
+      - name: Restore the diary cursor
+        uses: actions/cache/restore@v4
+        with:
+          path: diary/.cursor
+          key: diary-cursor-${{ github.run_id }}
+          restore-keys: |
+            diary-cursor-
       - name: Write the entry
         env:
           GITHUB_REPO: ${{ github.repository }}
@@ -43,6 +52,8 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DIARY_STATE: diary/.cursor
+          DIARY_MAX_HOURS: "4"
           IN_HOURS: ${{ github.event.inputs.hours }}
           IN_DRY: ${{ github.event.inputs.dry }}
           IN_CHECK: ${{ github.event.inputs.check }}
@@ -53,3 +64,9 @@ jobs:
           if [ "$IN_DRY" = "true" ]; then ARGS="$ARGS --dry"; fi
           if [ "$IN_CHECK" = "true" ]; then ARGS="$ARGS --check"; fi
           python diary/diary.py $ARGS
+      - name: Save the diary cursor
+        if: success()
+        uses: actions/cache/save@v4
+        with:
+          path: diary/.cursor
+          key: diary-cursor-${{ github.run_id }}

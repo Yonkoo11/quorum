@@ -14,6 +14,10 @@ Google's free-tier Gemini when GEMINI_API_KEY is set, else Anthropic when
 ANTHROPIC_API_KEY is set; DIARY_MODEL overrides the model. Only the --dry path
 works without the Telegram values. Nothing here prints a secret.
 
+Backfill: set DIARY_STATE to a file the workflow carries between runs (via cache) and DIARY_MAX_HOURS
+to a per-run ceiling, and a long backlog is walked oldest-first one slice per run instead of collapsed
+into a single entry; once caught up it tracks the tip normally. Unset, the diary behaves as before.
+
 Rules the writer is held to: it says what changed and what broke, never mentions
 price, the market or the token, never invents, and answers NOTHING when the window
 holds only noise. Silence is the feature. Everything commit messages carry is
@@ -111,23 +115,65 @@ def _floor(ms: int) -> int:
     return ms // step * step
 
 
-def window(repo: str, now_ms: int, hours: int | None) -> tuple[int, int]:
-    """[start, end) in ms. End is the last closed two-hour boundary. Start is the
-    boundary the previous successful scheduled run stopped at (manual runs do not
-    count), so skipped runs are covered; without one (or with --hours) it is a fixed span back from end."""
-    end = _floor(now_ms)
-    if hours:
-        return end - hours * 3600 * 1000, end
+def _cap_ms() -> int:
+    """A per-run ceiling on the window (DIARY_MAX_HOURS), so a long backlog is posted oldest-first over
+    several runs instead of collapsed into one entry. 0 (the default) means no ceiling."""
+    return int(os.getenv("DIARY_MAX_HOURS", "0")) * 3600 * 1000
+
+
+def _cursor() -> int | None:
+    """Where the last run stopped, carried between runs by the workflow's cache. None when not backfilling."""
+    f = os.getenv("DIARY_STATE")
+    if f and os.path.exists(f):
+        try:
+            return _floor(int(open(f).read().strip()))
+        except (ValueError, OSError):
+            return None
+    return None
+
+
+def save_cursor(end: int) -> None:
+    """Record the boundary this run reached, so the next run continues from here (backfill only)."""
+    f = os.getenv("DIARY_STATE")
+    if f:
+        try:
+            open(f, "w").write(str(end))
+        except OSError:
+            pass
+
+
+def _since_last_success(repo: str, end: int) -> int:
     try:
         runs = _gh(repo, f"/actions/workflows/{WORKFLOW}/runs?status=success&event=schedule&per_page=1")
         prev = (runs.get("workflow_runs") or [{}])[0].get("run_started_at")
     except (urllib.error.URLError, KeyError, IndexError, ValueError):
         prev = None
     if not prev:
-        return end - STEP_H * 3600 * 1000, end
+        return end - STEP_H * 3600 * 1000
     prev_ms = int(time.mktime(time.strptime(prev, "%Y-%m-%dT%H:%M:%SZ")) - time.timezone) * 1000
-    start = _floor(prev_ms)
-    return (start if start < end else end - STEP_H * 3600 * 1000), end
+    return _floor(prev_ms)
+
+
+def window(repo: str, now_ms: int, hours: int | None) -> tuple[int, int]:
+    """[start, end) in ms, end the last closed two-hour boundary. Start is, in order: the cursor a
+    backfill carries between runs; a fixed --hours span; else the boundary the last successful scheduled
+    run stopped at (manual runs do not count), so skipped runs are covered. DIARY_MAX_HOURS caps the span,
+    so a long backlog is walked oldest-first one slice per run instead of collapsed into a single entry."""
+    end = _floor(now_ms)
+    cur = _cursor()
+    backfilling = hours is None and cur is not None    # --hours is a manual override; it wins over the cursor
+    if hours:
+        start = end - hours * 3600 * 1000
+    elif cur is not None:
+        start = cur
+    else:
+        start = _since_last_success(repo, end)
+    cap = _cap_ms()
+    if cap and end - start > cap:
+        end = _floor(start + cap)
+    if start >= end:                       # caught up: an empty slice when backfilling, else the last step
+        return (end, end) if backfilling else (end - STEP_H * 3600 * 1000, end)
+    return start, end
 
 
 def changes(repo: str, start: int, end: int) -> dict:
@@ -261,16 +307,23 @@ def main(argv: list[str] | None = None) -> int:
         for k in ("commits", "prs", "releases", "failures"):
             for item in activity[k]:
                 print(f"  {k[:-1]}: {item.get('message') or item.get('title') or item.get('tag') or item.get('name')}")
+    advance = not a.dry and not a.hours          # a --hours override must not move the backfill cursor
     if not n:
+        if advance:
+            save_cursor(end)
         return 0
     text = write(activity)
     if text == "NOTHING":
+        if advance:
+            save_cursor(end)
         print("nothing worth saying")
         return 0
     if a.dry:
         print("--- would post ---\n" + text)
         return 0
     send(text)
+    if advance:
+        save_cursor(end)
     print("posted:\n" + text)
     return 0
 

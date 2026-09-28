@@ -34,6 +34,48 @@ def test_nothing_rule_accepts_only_the_word():
     assert not diary.is_nothing("<b>Nothing broke</b>\nwe shipped the diary")
 
 
+def test_backfill_walks_the_cursor_in_capped_slices(monkeypatch, tmp_path):
+    cur = tmp_path / "cursor"
+    cur.write_text(str(10 * H))                       # posted up to 10:00
+    monkeypatch.setenv("DIARY_STATE", str(cur))
+    monkeypatch.setenv("DIARY_MAX_HOURS", "4")
+    start, end = diary.window("x/y", 30 * H, None)    # 20h of backlog, but only a 4h slice this run
+    assert start == 10 * H and end == 14 * H
+
+
+def test_backfill_is_an_empty_slice_once_caught_up(monkeypatch, tmp_path):
+    cur = tmp_path / "cursor"
+    cur.write_text(str(30 * H))
+    monkeypatch.setenv("DIARY_STATE", str(cur))
+    monkeypatch.setenv("DIARY_MAX_HOURS", "4")
+    assert diary.window("x/y", 30 * H, None) == (30 * H, 30 * H)
+
+
+def test_hours_override_beats_the_cursor(monkeypatch, tmp_path):
+    cur = tmp_path / "cursor"
+    cur.write_text(str(10 * H))
+    monkeypatch.setenv("DIARY_STATE", str(cur))
+    monkeypatch.delenv("DIARY_MAX_HOURS", raising=False)
+    start, end = diary.window("x/y", 30 * H, 6)       # a manual --hours 6 ignores the cursor
+    assert end == 30 * H and start == 30 * H - 6 * H
+
+
+def test_cursor_is_saved_and_read_back(monkeypatch, tmp_path):
+    cur = tmp_path / "cursor"
+    monkeypatch.setenv("DIARY_STATE", str(cur))
+    diary.save_cursor(14 * H)
+    assert cur.read_text() == str(14 * H) and diary._cursor() == 14 * H
+
+
+def test_a_missing_or_bad_cursor_reads_as_none(monkeypatch, tmp_path):
+    monkeypatch.delenv("DIARY_STATE", raising=False)
+    assert diary._cursor() is None
+    bad = tmp_path / "cursor"
+    bad.write_text("not-a-number")
+    monkeypatch.setenv("DIARY_STATE", str(bad))
+    assert diary._cursor() is None
+
+
 def test_writer_prefers_free_gemini_then_anthropic(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
