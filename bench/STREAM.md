@@ -91,3 +91,12 @@ model gone, no faked state, only the attacker impersonated
 ([`../prove/proofs/GaslessReservoirEnabler.t.sol`](../prove/proofs/GaslessReservoirEnabler.t.sol)).
 So the whole pipeline — find, score, and settle by a running exploit — has now closed on a hack the
 operator never read.
+
+The **second** blind hack, `InternetToken` (Base, `LiquidityUnifier.swapV3`), went the other way and
+that is the point. v4's hypothesis was a price-manipulation drain via a free reward-token mint. The
+model showed the mechanism is partly real — the mint moves the main pool's price and WETH does leave
+the pool on the fork — but it cannot pay: the contract's own `validateSupply` guard reverts the whole
+transaction ("supply cannot increase") the moment any minted token survives in the pool. So v4 named
+the right function and the wrong exploit, and the prove stage refused to confirm it rather than
+publish a plausible claim. Blind, on two unread hacks, the pipeline **proved one and refused one** —
+which is the whole job.
