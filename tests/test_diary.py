@@ -1,11 +1,36 @@
 """The diary's pure parts: the scrub, the window arithmetic, and the NOTHING rule. No network."""
+import io
 import sys
+import urllib.error
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "diary"))
 import diary  # noqa: E402
 
 H = 3600 * 1000
+
+
+class _Resp(io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_writer_retries_a_transient_503_then_succeeds(monkeypatch):
+    calls = {"n": 0}
+
+    def flaky(req, timeout=60):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise urllib.error.HTTPError("u", 503, "busy", {}, io.BytesIO(b'{"error":"high demand"}'))
+        return _Resp(b'{"ok": 1}')
+
+    monkeypatch.setattr(diary.urllib.request, "urlopen", flaky)
+    monkeypatch.setattr(diary.time, "sleep", lambda s: None)
+    out = diary._post(diary.urllib.request.Request("http://x", data=b"{}"))
+    assert out == {"ok": 1} and calls["n"] == 2
 
 
 def test_scrub_removes_links_keys_hashes_and_addresses():

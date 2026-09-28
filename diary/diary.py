@@ -203,12 +203,24 @@ def writer() -> tuple[str, str]:
     raise SystemExit("set GEMINI_API_KEY (free) or ANTHROPIC_API_KEY for the writer")
 
 
-def _post(req: urllib.request.Request) -> dict:
-    try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            return json.load(r)
-    except urllib.error.HTTPError as e:
-        raise SystemExit(f"the writer refused the request ({e.code}): {e.read().decode(errors='replace')[:300]}") from None
+def _post(req: urllib.request.Request, tries: int = 4) -> dict:
+    # A free-tier model can answer 429/500/503 on a demand spike ("usually temporary"); retry those a
+    # few times with a short backoff before giving up, so one busy moment does not skip an update.
+    for i in range(tries):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 500, 503) and i < tries - 1:
+                time.sleep(min(2 ** i, 8))
+                continue
+            raise SystemExit(f"the writer refused the request ({e.code}): {e.read().decode(errors='replace')[:300]}") from None
+        except urllib.error.URLError:
+            if i < tries - 1:
+                time.sleep(min(2 ** i, 8))
+                continue
+            raise
+    raise SystemExit("the writer did not answer")
 
 
 def ask_gemini(model: str, system: str, user: str) -> str:
