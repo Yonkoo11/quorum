@@ -96,11 +96,19 @@ def _from_sourcify(address: str, chain: str, chain_id: int, timeout: int) -> tup
 
 
 def fetch_source(address: str, chain: str = DEFAULT_CHAIN, timeout: int = 30) -> tuple[str, str]:
-    """Return (contract_name, source) for a verified address on one chain."""
+    """Return (contract_name, source) for a verified address on one chain.
+
+    Blockscout is tried first where it runs an instance; if it errors or holds no source, Sourcify is
+    the fallback, since it verifies the same chains (observed: base.blockscout.com 500s on a contract
+    Sourcify has as an exact match). BNB has no Blockscout instance and goes straight to Sourcify.
+    """
     host, chain_id = _chain(chain)
     if host is None:
         return _from_sourcify(address, chain, chain_id, timeout)
-    return _from_blockscout(address, chain, host, timeout)
+    try:
+        return _from_blockscout(address, chain, host, timeout)
+    except (RuntimeError, requests.RequestException):
+        return _from_sourcify(address, chain, chain_id, timeout)
 
 
 def save(address: str, chain: str = DEFAULT_CHAIN) -> Path:

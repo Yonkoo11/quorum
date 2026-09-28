@@ -67,6 +67,18 @@ def test_a_404_is_no_verified_source_not_a_traceback():
         assert str(exc.value).endswith("has no verified source on ethereum")
 
 
+def test_a_blockscout_failure_falls_back_to_sourcify():
+    """base.blockscout.com was seen 500ing on a contract Sourcify has as an exact match; a Blockscout
+    error must fall through to Sourcify on the same chain, not give up."""
+    sourcify = {"compilation": {"name": "OFTSand"}, "sources": {"OFTSand.sol": {"content": "contract OFTSand {}"}}}
+    with mock.patch.object(targets.requests, "get",
+                           side_effect=[_answer({}, status=500), _answer(sourcify)]) as get:
+        name, src = targets.fetch_source("0x" + "ac" * 20, "base")
+    assert name == "OFTSand" and "contract OFTSand" in src
+    assert get.call_count == 2
+    assert "sourcify.dev/server/v2/contract/8453/" in get.call_args_list[1].args[0]
+
+
 def test_bsc_reads_from_sourcify_because_it_has_no_blockscout_instance():
     payload = {"compilation": {"name": "Token"},
                "sources": {"src/Token.sol": {"content": "contract Token {}"},
@@ -107,8 +119,9 @@ def test_the_explorers_name_cannot_leave_the_chain_folder():
 
 
 def test_an_oversized_answer_is_refused():
+    # both explorers oversized (Blockscout, then the Sourcify fallback): still refused, not parsed
     big = b'{"is_verified": true, "source_code": "' + b"x" * (targets.MAX_BYTES + 10) + b'"}'
-    with mock.patch.object(targets.requests, "get", return_value=_answer(big)):
+    with mock.patch.object(targets.requests, "get", side_effect=[_answer(big), _answer(big)]):
         with pytest.raises(RuntimeError) as exc:
             targets.fetch_source("0x" + "01" * 20, "base")
         assert "over 5 MB" in str(exc.value)
@@ -116,7 +129,8 @@ def test_an_oversized_answer_is_refused():
 
 def test_fetch_command_keeps_going_and_reports_failure(capsys):
     good = {"is_verified": True, "name": "Good", "source_code": "contract Good {}"}
-    answers = [_answer({"is_verified": False}), _answer(good)]
+    # address one fails Blockscout then its Sourcify fallback; address two is found on Blockscout
+    answers = [_answer({"is_verified": False}), _answer({"sources": {}}), _answer(good)]
     with _tmp_targets(), mock.patch.object(targets.requests, "get", side_effect=answers):
         rc = cli.main(["fetch", "--chain", "optimism", "0x" + "01" * 20, "0x" + "02" * 20])
     out = capsys.readouterr().out
