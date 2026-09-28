@@ -34,6 +34,33 @@ def test_nothing_rule_accepts_only_the_word():
     assert not diary.is_nothing("<b>Nothing broke</b>\nwe shipped the diary")
 
 
+def test_writer_prefers_free_gemini_then_anthropic(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
+    assert diary.writer() == ("anthropic", "claude-sonnet-5")
+    monkeypatch.setenv("GEMINI_API_KEY", "g")            # gemini wins when both are present
+    assert diary.writer() == ("gemini", "gemini-2.5-flash")
+    monkeypatch.setenv("DIARY_MODEL", "gemini-2.0-flash")
+    assert diary.writer() == ("gemini", "gemini-2.0-flash")
+
+
+def test_write_uses_gemini_and_appends_release_links(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+    monkeypatch.delenv("DIARY_MODEL", raising=False)
+    monkeypatch.setattr(diary, "_post",
+                        lambda req: {"candidates": [{"content": {"parts": [{"text": "<b>Shipped</b>\nfetch fixed on two chains"}]}}]})
+    out = diary.write({"releases": [{"tag": "v0.1", "url": "http://x/v0.1"}]})
+    assert out.startswith("<b>Shipped</b>") and out.endswith("v0.1: http://x/v0.1")
+
+
+def test_write_honours_a_nothing_reply_from_gemini(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "g")
+    monkeypatch.setattr(diary, "_post",
+                        lambda req: {"candidates": [{"content": {"parts": [{"text": "NOTHING"}]}}]})
+    assert diary.write({"releases": []}) == "NOTHING"
+
+
 def test_gate_drops_what_the_rules_forbid():
     assert diary.unfit("<b>Fine</b>\nwe fixed the fetch on two chains") is None
     assert diary.unfit("we shipped it — finally") == "dash"

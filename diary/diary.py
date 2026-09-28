@@ -9,8 +9,10 @@ twice. There is no database.
     python diary/diary.py                      # the scheduled run
 
 Environment: GITHUB_REPO (owner/name), GITHUB_TOKEN (given by Actions; optional
-locally), ANTHROPIC_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID. Only the
---dry path works without the Telegram values. Nothing here prints a secret.
+locally), the writer key, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID. The writer uses
+Google's free-tier Gemini when GEMINI_API_KEY is set, else Anthropic when
+ANTHROPIC_API_KEY is set; DIARY_MODEL overrides the model. Only the --dry path
+works without the Telegram values. Nothing here prints a secret.
 
 Rules the writer is held to: it says what changed and what broke, never mentions
 price, the market or the token, never invents, and answers NOTHING when the window
@@ -29,7 +31,6 @@ import urllib.error
 import urllib.request
 
 STEP_H = 2
-MODEL = os.getenv("DIARY_MODEL", "claude-sonnet-5")
 WORKFLOW = "diary.yml"
 
 VOICE = """You write the diary entry for the Telegram group of Quorum, a smart-contract scanner that reports a finding only when two independent lenses agree. Your input is raw repository activity as JSON. Your output is one short entry, or the single word NOTHING.
@@ -147,24 +148,53 @@ def changes(repo: str, start: int, end: int) -> dict:
     return {"repo": repo, "since": s, "until": u, "commits": commits, "prs": prs, "releases": releases, "failures": failures}
 
 
-def write(activity: dict) -> str:
-    """One entry from the writer, or NOTHING. The release links are added by code, never by the model."""
-    key = os.getenv("ANTHROPIC_API_KEY")
-    if not key:
-        raise SystemExit("ANTHROPIC_API_KEY is not set")
-    for_model = {**activity, "releases": [{k: v for k, v in r.items() if k != "url"} for r in activity["releases"]]}
-    body = json.dumps({"model": MODEL, "max_tokens": 4000, "system": VOICE,
-                       "messages": [{"role": "user", "content": "Repository activity as JSON. Write the entry or reply NOTHING.\n\n" + json.dumps(for_model)}]}).encode()
-    req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=body, method="POST",
-                                 headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"})
+def writer() -> tuple[str, str]:
+    """Which model writes the entry: Google's free-tier Gemini if its key is set, else Anthropic."""
+    if os.getenv("GEMINI_API_KEY"):
+        return "gemini", os.getenv("DIARY_MODEL", "gemini-2.5-flash")
+    if os.getenv("ANTHROPIC_API_KEY"):
+        return "anthropic", os.getenv("DIARY_MODEL", "claude-sonnet-5")
+    raise SystemExit("set GEMINI_API_KEY (free) or ANTHROPIC_API_KEY for the writer")
+
+
+def _post(req: urllib.request.Request) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
-            out = json.load(r)
+            return json.load(r)
     except urllib.error.HTTPError as e:
         raise SystemExit(f"the writer refused the request ({e.code}): {e.read().decode(errors='replace')[:300]}") from None
-    text = "".join(c.get("text", "") for c in out.get("content", [])).strip()
+
+
+def ask_gemini(model: str, system: str, user: str) -> str:
+    body = json.dumps({"system_instruction": {"parts": [{"text": system}]},
+                       "contents": [{"parts": [{"text": user}]}],
+                       "generationConfig": {"maxOutputTokens": 4000, "temperature": 0.4}}).encode()
+    out = _post(urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        data=body, method="POST",
+        headers={"x-goog-api-key": os.getenv("GEMINI_API_KEY", ""), "content-type": "application/json"}))
+    cands = out.get("candidates") or []
+    parts = (cands[0].get("content", {}).get("parts") or []) if cands else []
+    return "".join(p.get("text", "") for p in parts).strip()
+
+
+def ask_anthropic(model: str, system: str, user: str) -> str:
+    body = json.dumps({"model": model, "max_tokens": 4000, "system": system,
+                       "messages": [{"role": "user", "content": user}]}).encode()
+    out = _post(urllib.request.Request("https://api.anthropic.com/v1/messages", data=body, method="POST",
+                headers={"x-api-key": os.getenv("ANTHROPIC_API_KEY", ""),
+                         "anthropic-version": "2023-06-01", "content-type": "application/json"}))
+    return "".join(c.get("text", "") for c in out.get("content", [])).strip()
+
+
+def write(activity: dict) -> str:
+    """One entry from the writer, or NOTHING. The release links are added by code, never by the model."""
+    for_model = {**activity, "releases": [{k: v for k, v in r.items() if k != "url"} for r in activity["releases"]]}
+    user = "Repository activity as JSON. Write the entry or reply NOTHING.\n\n" + json.dumps(for_model)
+    provider, model = writer()
+    text = (ask_gemini if provider == "gemini" else ask_anthropic)(model, VOICE, user)
     if is_nothing(text):
-        print(f"writer replied {text!r} (stop: {out.get('stop_reason')}, blocks: {[c.get('type') for c in out.get('content', [])]})")
+        print(f"writer ({provider}/{model}) replied NOTHING")
         return "NOTHING"
     why = unfit(text)
     if why:
