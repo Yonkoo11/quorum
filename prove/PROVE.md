@@ -13,6 +13,23 @@ python prove/harness.py prove <hack> --item <n>   # model writes + iterates the 
 python prove/harness.py check <hack>              # reproduce from the saved .t.sol, model gone
 ```
 
+## Prove your own contract
+
+The harness above runs on the benchmark's own hacks. The same engine, pointed at any verified contract
+you name, is [`prove/tool.py`](tool.py). Give it a chain, a verified address, the block the bug was
+live at, the function, and a one-line hypothesis; it fetches the verified source (no API key, six
+chains), forks at that block, and settles the claim by execution with every guard above still in force.
+
+```
+python prove/tool.py prove <chain> <address> --block <n> \
+    --function <fn> --attack "one sentence: what the exploit does" [--contract <name>]
+python prove/tool.py check <run-dir>              # reproduce a saved run, model gone
+```
+
+It prints `PROVEN` with the exploit that pays, `unproven` with the reason it does not, or `unprovable`
+when no archive endpoint is set for the chain. Needs Foundry and `<CHAIN>_RPC_URL`; run under
+`env -u ANTHROPIC_API_KEY` if an env key overrides your `claude` login.
+
 ## Results on the nine in-sample hacks (2026-09-27)
 
 Each row is v4's own hypothesis, run through the prove stage. Blocks are the exploit's parent block;

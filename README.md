@@ -15,6 +15,8 @@
 
 A finding is a claim until an exploit settles it. Quorum hunts with the strongest reader available (Pashov's twelve-agent [solidity-auditor](https://github.com/pashov/skills)), scores every tool on a blind benchmark of hacks nobody tuned for, and then, for each candidate, has a model write a Foundry exploit on a fork at the block the bug was live. The scaffold measures the attacker's real balance change and publishes only what actually pays. Everything else is kept as a candidate, never asserted.
 
+**Point it at your own contract.** The prove stage is not tied to the benchmark — give it a chain, a verified address, the block, and a one-line hypothesis and it settles the claim by execution: `python prove/tool.py prove base 0x… --block 27000000 --function swapV3 --attack "free-mint moves the pool price"`. It answers `PROVEN` with the exploit that pays, or `unproven` with the reason it does not. Method: [`prove/PROVE.md`](prove/PROVE.md#prove-your-own-contract).
+
 > **This is a rebuild.** Quorum began as the lens-swarm described below (a Sibyl Labs hackathon entry). Measuring it honestly showed the regex lenses are the *weakest* reader — 1 of 9 real 2026 hacks, 0 of 2 on a blind pair — so they were demoted to a cheap baseline and the engine was rebuilt around proof. The lens-swarm sections that follow are kept as the origin story and still carry their real measured numbers.
 
 **What it does today, measured:**
