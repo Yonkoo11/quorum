@@ -45,13 +45,15 @@ CHAIN_ENV = {"ethereum": "ETHEREUM_RPC_URL", "base": "BASE_RPC_URL", "bsc": "BSC
 # Cheatcodes that rewrite the fork's state. A hit in the exploit fails the proof: a drain must move
 # funds the fork already holds, not ones the exploit invented.
 FORBIDDEN = re.compile(r"vm\.(store|etch|mockCall|mockCallRevert)\b")
-# deal()/vm.deal mint a balance from nothing. The scaffold already funds the attacker's gas (in
-# forkAt, before the snapshot) and working capital must come from a real on-chain flash-loan pool, so
-# any deal in the exploit itself would fabricate the very balance this stage measures. Rejected.
-MINTS_BALANCE = re.compile(r"\b(?:vm\.)?deal\s*\(")
+# deal()/vm.deal mint a balance from nothing; hoax()/startHoax() mint ETH and prank in one call. The
+# scaffold already funds the attacker's gas (in forkAt, before the snapshot) and working capital must
+# come from a real on-chain flash-loan pool, so any of these in the exploit would fabricate the very
+# balance this stage measures. Rejected.
+MINTS_BALANCE = re.compile(r"\b(?:vm\.)?deal\s*\(|\b(?:start)?[Hh]oax\s*\(")
 # The exploit must run as the unprivileged attacker. Impersonating anyone else (the owner, a keeper)
-# and then routing funds to `attacker` would be a false proof, so only `attacker` may be pranked.
-PRANK = re.compile(r"vm\.(?:start)?[Pp]rank\s*\(\s*([^,)]+)")
+# and then routing funds to `attacker` would be a false proof, so only `attacker` may be pranked. This
+# also catches changePrank; hoax/startHoax (which prank too) are rejected as balance mints above.
+PRANK = re.compile(r"(?:vm\.(?:start)?[Pp]rank|changePrank)\s*\(\s*([^,)]+)")
 
 
 def now() -> str:

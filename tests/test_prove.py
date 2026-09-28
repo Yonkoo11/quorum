@@ -65,6 +65,21 @@ def test_vm_deal_in_the_exploit_is_rejected(ws):
     assert v["proven"] is False and "deal()" in v["reason"]
 
 
+def test_hoax_is_rejected_it_mints_and_pranks_in_one_call(ws):
+    """hoax/startHoax deal ETH and impersonate at once, slipping past a deal-only or prank-only scan."""
+    for body in ("contract E { function a() external { hoax(owner, 100 ether); v.f(); } }",
+                 "contract E { function a() external { startHoax(owner); v.f(); } }"):
+        write(ws, body)
+        assert harness.verdict(ws, "base")["proven"] is False
+
+
+def test_changeprank_to_a_non_attacker_is_rejected(ws):
+    """changePrank impersonates without a vm. prefix; it must be caught like vm.startPrank."""
+    write(ws, "contract E { function a() external { changePrank(owner); token.transfer(attacker,x); } }")
+    v = harness.verdict(ws, "base")
+    assert v["proven"] is False and "impersonates" in v["reason"]
+
+
 def test_pranking_a_non_attacker_is_rejected(ws):
     """Impersonating the owner and routing funds to attacker would be a false proof."""
     write(ws, "contract E { function a() external { vm.startPrank(owner); token.transfer(attacker,x); } }")
