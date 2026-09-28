@@ -51,12 +51,12 @@ def test_backfill_is_an_empty_slice_once_caught_up(monkeypatch, tmp_path):
     assert diary.window("x/y", 30 * H, None) == (30 * H, 30 * H)
 
 
-def test_hours_override_beats_the_cursor(monkeypatch, tmp_path):
+def test_hours_override_ignores_the_cursor_and_the_cap(monkeypatch, tmp_path):
     cur = tmp_path / "cursor"
     cur.write_text(str(10 * H))
     monkeypatch.setenv("DIARY_STATE", str(cur))
-    monkeypatch.delenv("DIARY_MAX_HOURS", raising=False)
-    start, end = diary.window("x/y", 30 * H, 6)       # a manual --hours 6 ignores the cursor
+    monkeypatch.setenv("DIARY_MAX_HOURS", "4")         # a manual --hours must not be truncated by the cap
+    start, end = diary.window("x/y", 30 * H, 6)
     assert end == 30 * H and start == 30 * H - 6 * H
 
 
@@ -82,7 +82,7 @@ def test_writer_prefers_free_gemini_then_anthropic(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
     assert diary.writer() == ("anthropic", "claude-sonnet-5")
     monkeypatch.setenv("GEMINI_API_KEY", "g")            # gemini wins when both are present
-    assert diary.writer() == ("gemini", "gemini-2.5-flash")
+    assert diary.writer() == ("gemini", "gemini-3.8-flash")
     monkeypatch.setenv("DIARY_MODEL", "gemini-2.0-flash")
     assert diary.writer() == ("gemini", "gemini-2.0-flash")
 

@@ -169,7 +169,7 @@ def window(repo: str, now_ms: int, hours: int | None) -> tuple[int, int]:
     else:
         start = _since_last_success(repo, end)
     cap = _cap_ms()
-    if cap and end - start > cap:
+    if cap and not hours and end - start > cap:    # a manual --hours override is shown in full, uncapped
         end = _floor(start + cap)
     if start >= end:                       # caught up: an empty slice when backfilling, else the last step
         return (end, end) if backfilling else (end - STEP_H * 3600 * 1000, end)
@@ -197,7 +197,7 @@ def changes(repo: str, start: int, end: int) -> dict:
 def writer() -> tuple[str, str]:
     """Which model writes the entry: Google's free-tier Gemini if its key is set, else Anthropic."""
     if os.getenv("GEMINI_API_KEY"):
-        return "gemini", os.getenv("DIARY_MODEL", "gemini-2.5-flash")
+        return "gemini", os.getenv("DIARY_MODEL", "gemini-3.8-flash")
     if os.getenv("ANTHROPIC_API_KEY"):
         return "anthropic", os.getenv("DIARY_MODEL", "claude-sonnet-5")
     raise SystemExit("set GEMINI_API_KEY (free) or ANTHROPIC_API_KEY for the writer")
