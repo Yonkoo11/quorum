@@ -74,6 +74,7 @@ def load_state(latest: int) -> dict:
 
 def save_state(state: dict) -> None:
     state["seen"] = state["seen"][-500:]      # enough to dedupe across a poll boundary
+    STATE.parent.mkdir(parents=True, exist_ok=True)   # a fresh host may not have the dir yet
     STATE.write_text(json.dumps(state))
 
 
