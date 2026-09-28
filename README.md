@@ -17,6 +17,8 @@ A finding is a claim until an exploit settles it. Quorum hunts with the stronges
 
 **Point it at your own contract.** The prove stage is not tied to the benchmark — give it a chain, a verified address, the block, and a one-line hypothesis and it settles the claim by execution: `python prove/tool.py prove base 0x… --block 27000000 --function swapV3 --attack "free-mint moves the pool price"`. It answers `PROVEN` with the exploit that pays, or `unproven` with the reason it does not. Method: [`prove/PROVE.md`](prove/PROVE.md#prove-your-own-contract).
 
+**Or let it hunt and prove in one shot.** `python prove/hunt.py base 0x… --block latest` reads the verified source, proposes candidate bugs, and settles the top few on a fork — so it finds *and* proves without you writing the hypothesis. It dedupes and ranks the finder's output and proves only the top handful, which is the answer to reader noise: the prover, not a person, decides which candidates were real. Method: [`prove/PROVE.md`](prove/PROVE.md#hunt-and-prove-in-one-shot).
+
 > **This is a rebuild.** Quorum began as the lens-swarm described below (a Sibyl Labs hackathon entry). Measuring it honestly showed the regex lenses are the *weakest* reader — 1 of 9 real 2026 hacks, 0 of 2 on a blind pair — so they were demoted to a cheap baseline and the engine was rebuilt around proof. The lens-swarm sections that follow are kept as the origin story and still carry their real measured numbers.
 
 **What it does today, measured:**

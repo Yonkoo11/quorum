@@ -32,6 +32,25 @@ It prints `PROVEN` with the exploit that pays, `unproven` with the reason it doe
 when no archive endpoint is set for the chain. Needs Foundry and `<CHAIN>_RPC_URL`; run under
 `env -u ANTHROPIC_API_KEY` if an env key overrides your `claude` login.
 
+## Hunt and prove in one shot
+
+`prove/tool.py` proves a hypothesis you already have. [`prove/hunt.py`](hunt.py) does the finding too:
+a finder reads the verified source and proposes candidates, and the top few are each handed to the
+prover above.
+
+```
+python prove/hunt.py <chain> <address> [--block <n|latest>] [--finder generic|regex-v0|v4-1pass] [--max-proofs K]
+```
+
+The finders are the blind benchmark's contestants (bench/STREAM.md), so their cost and noise are known:
+`generic` (one prompt) is the default and the best value; `regex-v0` is the free ten-lens baseline;
+`v4-1pass` is Pashov's deep reader — highest recall but it writes many items. Hunt dedupes candidates by
+`(contract, function)`, ranks findings above leads, and proves only the top `--max-proofs` (default 3) —
+so v4's long list becomes a few proof attempts, not a hundred. That is the answer to the noise the
+benchmark measured: the prover, not a human, decides which candidates were real. Output is the split the
+whole tool is built around — what pays (`PROVEN`) and what stays an unproven candidate — plus a report
+JSON. Proving is the cost: each candidate is a full model run on a fork.
+
 ## Results on the nine in-sample hacks (2026-09-27)
 
 Each row is v4's own hypothesis, run through the prove stage. Blocks are the exploit's parent block;

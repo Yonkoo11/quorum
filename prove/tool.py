@@ -33,17 +33,14 @@ from quorum.targets import fetch_source      # noqa: E402
 RUNS = Path(os.environ.get("QUORUM_TOOL_DIR", Path.home() / ".quorum-tool"))
 
 
-def build(chain: str, address: str, block: int, contract: str | None,
-          function: str, attack: str, slug: str) -> Path:
-    """Assemble a fork workspace: the fetched victim source and the one hypothesis, nothing else."""
-    if chain not in harness.CHAIN_ENV:
-        raise SystemExit(f"chain {chain!r}; one of {', '.join(sorted(harness.CHAIN_ENV))}")
-    name, src = fetch_source(address, chain)
+def assemble(chain: str, address: str, block: int, contract: str | None, function: str,
+             attack: str, slug: str, name: str, src: str) -> Path:
+    """Lay out a fork workspace from source already in hand: the victim and the one hypothesis."""
     ws = RUNS / slug
     if ws.exists():
         shutil.rmtree(ws)
     shutil.copytree(harness.SCAFFOLD, ws, symlinks=True)
-    (ws / "target").mkdir()
+    (ws / "target").mkdir(parents=True, exist_ok=True)
     (ws / "target" / "victim.sol").write_text(src)
     (ws / "TASK.md").write_text(harness.TASK.format(
         chain=chain, block=block, address=address, contract=contract or name,
@@ -51,11 +48,18 @@ def build(chain: str, address: str, block: int, contract: str | None,
     return ws
 
 
-def prove(chain: str, address: str, block: int, contract: str | None,
-          function: str, attack: str, name: str | None) -> dict:
-    slug = stream.slug(name or f"{chain}-{address[:10]}")
-    ws = build(chain, address, block, contract, function, attack, slug)
-    print(f"workspace {ws}\nhypothesis: {(contract or address)}.{function} — {attack[:80]}")
+def build(chain: str, address: str, block: int, contract: str | None,
+          function: str, attack: str, slug: str) -> Path:
+    """Fetch the verified source, then assemble the workspace."""
+    if chain not in harness.CHAIN_ENV:
+        raise SystemExit(f"chain {chain!r}; one of {', '.join(sorted(harness.CHAIN_ENV))}")
+    name, src = fetch_source(address, chain)
+    return assemble(chain, address, block, contract, function, attack, slug, name, src)
+
+
+def settle(ws: Path, chain: str, address: str, block: int, contract: str | None,
+           function: str, attack: str) -> dict:
+    """Run the model in the workspace, judge it by the scaffold, and record the verdict."""
     try:
         res = stream.claude((ws / "TASK.md").read_text(), ws, "Bash Read Write Edit Glob Grep",
                             timeout=int(os.environ.get("QUORUM_PROVE_TIMEOUT", "1800")))
@@ -67,6 +71,16 @@ def prove(chain: str, address: str, block: int, contract: str | None,
               "function": function, "attack": attack, "proved_at": harness.now(),
               "cost_usd": round(cost, 2), "model_said": said, **v}
     (ws / "result.json").write_text(json.dumps(record, indent=1) + "\n")
+    return record
+
+
+def prove(chain: str, address: str, block: int, contract: str | None,
+          function: str, attack: str, name: str | None) -> dict:
+    slug = stream.slug(name or f"{chain}-{address[:10]}")
+    ws = build(chain, address, block, contract, function, attack, slug)
+    print(f"workspace {ws}\nhypothesis: {(contract or address)}.{function} — {attack[:80]}")
+    record = settle(ws, chain, address, block, contract, function, attack)
+    v = record
     state = "PROVEN" if v["proven"] else "unproven" if v["proven"] is False else "unprovable"
     print(f"{state}: {v['reason']}  ${record['cost_usd']}\n{v.get('proof_line', '')}".rstrip())
     print(f"result: {ws / 'result.json'}" +
