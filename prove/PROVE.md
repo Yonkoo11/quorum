@@ -6,7 +6,9 @@ the victim's deployed address, and the one hypothesis, and writes an exploit. Th
 ([`scaffold/src/ForkPoCBase.sol`](scaffold/src/ForkPoCBase.sol)) measures the attacker's real balance
 change and prints `[PROOF]` only when it grew, so the proof is the measured profit, not anything the
 exploit asserts. The harness then re-runs the saved PoC with no model in the loop and rejects it if
-it rewrites the chain (`vm.store/etch/mockCall`) or impersonates anyone but the attacker.
+it rewrites the chain (`vm.store/etch/mockCall`), mints itself a balance (`deal`/`vm.deal`), or
+impersonates anyone but the attacker. The scaffold funds the attacker's gas; working capital must come
+from a real flash loan, so the measured profit is only ever funds the fork already held.
 
 ```
 python prove/harness.py prove <hack> --item <n>   # model writes + iterates the exploit

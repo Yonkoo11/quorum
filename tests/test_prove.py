@@ -51,6 +51,20 @@ def test_mockcall_is_also_forbidden(ws):
     assert harness.verdict(ws, "base")["proven"] is False
 
 
+def test_dealing_the_measured_token_is_rejected(ws):
+    """deal(token, attacker, X) fabricates exactly the balance the scaffold measures; not a proof."""
+    write(ws, "contract E { function a() external { deal(token, attacker, 1e24); } }")
+    v = harness.verdict(ws, "base")
+    assert v["proven"] is False and "deal()" in v["reason"]
+
+
+def test_vm_deal_in_the_exploit_is_rejected(ws):
+    """The scaffold funds gas; a vm.deal in the exploit itself mints the attacker native profit."""
+    write(ws, "contract E { function a() external { vm.deal(attacker, 100 ether); } }")
+    v = harness.verdict(ws, "base")
+    assert v["proven"] is False and "deal()" in v["reason"]
+
+
 def test_pranking_a_non_attacker_is_rejected(ws):
     """Impersonating the owner and routing funds to attacker would be a false proof."""
     write(ws, "contract E { function a() external { vm.startPrank(owner); token.transfer(attacker,x); } }")

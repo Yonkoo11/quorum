@@ -42,9 +42,13 @@ WORK = Path.home() / ".quorum-stream" / "prove"
 FORK_BLOCK = HERE / "fork-blocks.json"     # entry id -> {chain, block}, read from the proof of concept
 CHAIN_ENV = {"ethereum": "ETHEREUM_RPC_URL", "base": "BASE_RPC_URL", "bsc": "BSC_RPC_URL",
              "polygon": "POLYGON_RPC_URL", "arbitrum": "ARBITRUM_RPC_URL", "optimism": "OPTIMISM_RPC_URL"}
-# Cheatcodes that fabricate chain state. deal()/vm.deal give the attacker seed capital and are allowed
-# (a real attacker has funds or a flash loan); these rewrite the victim and are not.
+# Cheatcodes that rewrite the fork's state. A hit in the exploit fails the proof: a drain must move
+# funds the fork already holds, not ones the exploit invented.
 FORBIDDEN = re.compile(r"vm\.(store|etch|mockCall|mockCallRevert)\b")
+# deal()/vm.deal mint a balance from nothing. The scaffold already funds the attacker's gas (in
+# forkAt, before the snapshot) and working capital must come from a real on-chain flash-loan pool, so
+# any deal in the exploit itself would fabricate the very balance this stage measures. Rejected.
+MINTS_BALANCE = re.compile(r"\b(?:vm\.)?deal\s*\(")
 # The exploit must run as the unprivileged attacker. Impersonating anyone else (the owner, a keeper)
 # and then routing funds to `attacker` would be a false proof, so only `attacker` may be pranked.
 PRANK = re.compile(r"vm\.(?:start)?[Pp]rank\s*\(\s*([^,)]+)")
@@ -120,8 +124,10 @@ Finding the victim (do this before deciding it is unprovable):
 
 Rules:
 - The attack must run as `attacker`, an unprivileged address. Do not `vm.prank` the owner or any role.
-- You may give `attacker` seed capital with `deal`/`vm.deal`, or borrow via a real on-chain flash-loan
-  pool. You may NOT use `vm.store`, `vm.etch` or `vm.mockCall` on the victim — that fakes the chain.
+- The scaffold already funds the attacker's gas. Get any working capital from a real on-chain
+  flash-loan pool. Do NOT use `deal` or `vm.deal` to hand the attacker a balance, and do NOT use
+  `vm.store`, `vm.etch` or `vm.mockCall` — each fabricates the balance or state this stage measures
+  and fails the proof.
 - Run it yourself: `forge test --match-path test/Exploit.t.sol -vv`. Iterate until it passes with a
   `[PROOF]` line. If after honest effort — including looking for a real victim on-chain — the exploit
   does not pay (the hypothesis is wrong, or the state genuinely is not on this fork), write
@@ -148,6 +154,8 @@ def verdict(ws: Path, chain: str) -> dict:
     forbidden = FORBIDDEN.findall(body)
     if forbidden:
         return {"proven": False, "reason": f"fabricates state: vm.{forbidden[0]} on the fork"}
+    if MINTS_BALANCE.search(body):
+        return {"proven": False, "reason": "mints a balance with deal(): profit must come from the fork, not a cheat"}
     impostor = next((who.strip() for who in PRANK.findall(body) if who.strip() != "attacker"), None)
     if impostor:
         return {"proven": False, "reason": f"impersonates a non-attacker address: prank({impostor})"}
