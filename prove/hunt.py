@@ -1,11 +1,14 @@
 """Hunt then prove, in one shot: find candidate bugs in a verified contract and settle each by running it.
 
-    python prove/hunt.py <chain> <address> [--block <n|latest>] [--finder generic|regex-v0|v4-1pass] [--max-proofs K]
+    python prove/hunt.py <chain> <address> [--block <n|latest>] [--finder generic|regex-v0|v4-1pass]
+        [--samples N] [--max-proofs K]
 
 A finder reads the verified source and proposes candidate bugs (a function and a one-line attack). The
-top few candidates are then handed one at a time to the prove stage, which forks at the block and tries
-to write an exploit that actually pays — the same engine and guards as prove/tool.py. The output is the
-split the whole tool is built around: what pays (PROVEN), and what stays an unproven candidate.
+finder is sampled `--samples` times and its candidates pooled, because a one-prompt finder is cheap and
+nondeterministic (on OFTSand the generic finder surfaced the real bug in 1 of 5 runs); the top few pooled
+candidates are then handed one at a time to the prove stage, which forks at the block and tries to write
+an exploit that actually pays — the same engine and guards as prove/tool.py. The output is the split the
+whole tool is built around: what pays (PROVEN), and what stays an unproven candidate.
 
 Finders differ in cost and noise (measured on the blind benchmark, bench/STREAM.md): `generic` is one
 prompt and the best value, `regex-v0` is the free ten-lens baseline, `v4-1pass` is Pashov's deep reader
@@ -55,6 +58,23 @@ def find(finder: str, src: str, slug: str) -> tuple[list[dict], float]:
     return run(iso)
 
 
+def find_union(finder: str, src: str, slug: str, samples: int) -> tuple[list[dict], float]:
+    """Sample the finder `samples` times and pool the candidates.
+
+    A one-prompt finder is cheap (~$0.20) and nondeterministic: on OFTSand the generic finder surfaced
+    the real approveAndCall bug in only 1 of 5 runs. Proving is the expensive, capped step, so sampling
+    the finder several times and letting `rank` dedupe the pool recovers bugs a single run misses without
+    widening how many candidates are actually proven.
+    """
+    pooled: list[dict] = []
+    total = 0.0
+    for s in range(samples):
+        found, cost = find(finder, src, f"{slug}-s{s}")
+        pooled += found
+        total += cost
+    return pooled, total
+
+
 def rank(found: list[dict], k: int) -> list[dict]:
     """Dedupe by (contract, function) keeping the most confident, drop empties, findings before leads."""
     best: dict[tuple[str, str], dict] = {}
@@ -69,15 +89,16 @@ def rank(found: list[dict], k: int) -> list[dict]:
     return ranked[:k]
 
 
-def hunt(chain: str, address: str, block: int, finder: str, k: int, name: str | None) -> dict:
+def hunt(chain: str, address: str, block: int, finder: str, k: int, name: str | None,
+         samples: int = 5) -> dict:
     if chain not in harness.CHAIN_ENV:
         raise SystemExit(f"chain {chain!r}; one of {', '.join(sorted(harness.CHAIN_ENV))}")
     label = stream.slug(name or f"{chain}-{address[:10]}")
     cname, src = fetch_source(address, chain)
     print(f"target: {cname} {address} on {chain} @ block {block}")
-    found, fcost = find(finder, src, f"{label}-hunt")
+    found, fcost = find_union(finder, src, f"{label}-hunt", samples)
     picks = rank(found, k)
-    print(f"finder {finder}: {len(found)} candidate(s), proving top {len(picks)} (${fcost:.2f})")
+    print(f"finder {finder} x{samples}: {len(found)} candidate(s) pooled, proving top {len(picks)} (${fcost:.2f})")
     tried, proven = [], []
     for i, f in enumerate(picks):
         contract, fn, attack = f.get("contract") or cname, f["function"], f.get("text", "")
@@ -92,7 +113,8 @@ def hunt(chain: str, address: str, block: int, finder: str, k: int, name: str | 
         if rec["proven"]:
             proven.append(rec)
     report = {"target": {"chain": chain, "address": address, "block": block, "name": cname},
-              "finder": finder, "finder_cost_usd": round(fcost, 2), "candidates_found": len(found),
+              "finder": finder, "finder_samples": samples, "finder_cost_usd": round(fcost, 2),
+              "candidates_found": len(found),
               "proved": len(proven), "prove_cost_usd": round(sum(r["cost_usd"] for r in tried), 2),
               "hunted_at": harness.now(), "results": tried}
     out = tool.RUNS / f"{label}-report.json"
@@ -111,9 +133,11 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--finder", default="generic", choices=sorted(stream.CONTESTANTS),
                     help="who proposes candidates (default generic: the best value on the benchmark)")
     ap.add_argument("--max-proofs", type=int, default=3, dest="k", help="how many top candidates to prove")
+    ap.add_argument("--samples", type=int, default=5,
+                    help="times to sample the finder and pool candidates (it is cheap and nondeterministic; default 5)")
     ap.add_argument("--name", help="a label for the run folder")
     a = ap.parse_args(argv)
-    hunt(a.chain, a.address, resolve_block(a.chain, a.block), a.finder, a.k, a.name)
+    hunt(a.chain, a.address, resolve_block(a.chain, a.block), a.finder, a.k, a.name, a.samples)
 
 
 if __name__ == "__main__":

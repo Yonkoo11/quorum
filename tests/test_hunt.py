@@ -44,6 +44,27 @@ def _model(body):
     return run
 
 
+def test_find_union_samples_the_finder_and_recovers_a_flaky_finding(tmp_path, monkeypatch):
+    # The generic finder is nondeterministic (1 of 5 runs surfaced the real bug on OFTSand); find_union
+    # samples it several times and pools, so a finding a single run misses is still recovered.
+    monkeypatch.setattr(tool, "RUNS", tmp_path / "runs")
+    calls = {"n": 0}
+
+    def flaky(iso):
+        calls["n"] += 1
+        if calls["n"] == 3:                      # the real finding appears on only 1 of the 4 samples
+            return [{"contract": "V", "function": "approveAndCall", "confidence": 80,
+                     "tier": "finding", "text": "delegate hijack"}], 0.2
+        return [], 0.2
+
+    monkeypatch.setitem(stream.CONTESTANTS, "flaky", (flaky, lambda: "flaky"))
+    pooled, cost = hunt.find_union("flaky", "pragma solidity ^0.8.20;", "slug", 4)
+
+    assert calls["n"] == 4                        # sampled every time
+    assert round(cost, 2) == 0.8                  # cost summed across samples
+    assert [f["function"] for f in hunt.rank(pooled, 3)] == ["approveAndCall"]  # recovered and ranked
+
+
 def test_hunt_finds_ranks_and_settles_each_pick(tmp_path, monkeypatch):
     monkeypatch.setattr(tool, "RUNS", tmp_path / "runs")
     monkeypatch.setattr(hunt, "fetch_source",
@@ -59,7 +80,7 @@ def test_hunt_finds_ranks_and_settles_each_pick(tmp_path, monkeypatch):
                         _model("contract E { function a() external { vm.store(v,0,1); } }"))
     monkeypatch.delenv("BASE_RPC_URL", raising=False)
 
-    report = hunt.hunt("base", "0xabc", 123, "fake", 5, "case")
+    report = hunt.hunt("base", "0xabc", 123, "fake", 5, "case", samples=1)
 
     assert report["candidates_found"] == 4
     # deduped to two, findings before leads, empty function dropped
