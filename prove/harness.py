@@ -41,7 +41,8 @@ PROOFS = HERE / "proofs"
 WORK = Path.home() / ".quorum-stream" / "prove"
 FORK_BLOCK = HERE / "fork-blocks.json"     # entry id -> {chain, block}, read from the proof of concept
 CHAIN_ENV = {"ethereum": "ETHEREUM_RPC_URL", "base": "BASE_RPC_URL", "bsc": "BSC_RPC_URL",
-             "polygon": "POLYGON_RPC_URL", "arbitrum": "ARBITRUM_RPC_URL", "optimism": "OPTIMISM_RPC_URL"}
+             "polygon": "POLYGON_RPC_URL", "arbitrum": "ARBITRUM_RPC_URL", "optimism": "OPTIMISM_RPC_URL",
+             "robinhood": "ROBINHOOD_RPC_URL"}
 # Cheatcodes that rewrite the fork's state. A hit in the exploit fails the proof: a drain must move
 # funds the fork already holds, not ones the exploit invented.
 FORBIDDEN = re.compile(r"vm\.(store|etch|mockCall|mockCallRevert)\b")

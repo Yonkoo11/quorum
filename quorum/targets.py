@@ -30,6 +30,9 @@ SOURCE_CHAINS = {
     "polygon": ("https://polygon.blockscout.com", 137),
     # No Blockscout instance for BNB Smart Chain, so this one goes to Sourcify.
     "bsc": (None, 56),
+    # Robinhood Chain's Blockscout is Cloudflare-gated against scripts, so read its verified
+    # source from Sourcify (which serves chain 4663) instead.
+    "robinhood": (None, 4663),
 }
 DEFAULT_CHAIN = "base"
 MAX_BYTES = 5 * 1024 * 1024
