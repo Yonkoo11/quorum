@@ -97,8 +97,11 @@ def hunt(chain: str, address: str, block: int, finder: str, k: int, name: str | 
     cname, src = fetch_source(address, chain)
     print(f"target: {cname} {address} on {chain} @ block {block}")
     found, fcost = find_union(finder, src, f"{label}-hunt", samples)
-    picks = rank(found, k)
-    print(f"finder {finder} x{samples}: {len(found)} candidate(s) pooled, proving top {len(picks)} (${fcost:.2f})")
+    pool = rank(found, len(found) or 1)                    # the full deduped pool, for finder-recall
+    picks = pool[:k]
+    print(f"finder {finder} x{samples}: {len(found)} raw, {len(pool)} unique pooled, proving top {len(picks)} (${fcost:.2f})")
+    for p in pool:
+        print(f"    candidate: {(p.get('contract') or cname)}.{p['function']} (c{p.get('confidence')}, {p.get('tier')})")
     tried, proven = [], []
     for i, f in enumerate(picks):
         contract, fn, attack = f.get("contract") or cname, f["function"], f.get("text", "")
@@ -115,6 +118,8 @@ def hunt(chain: str, address: str, block: int, finder: str, k: int, name: str | 
     report = {"target": {"chain": chain, "address": address, "block": block, "name": cname},
               "finder": finder, "finder_samples": samples, "finder_cost_usd": round(fcost, 2),
               "candidates_found": len(found),
+              "pool": [{"contract": p.get("contract") or cname, "function": p["function"],
+                        "confidence": p.get("confidence"), "tier": p.get("tier")} for p in pool],
               "proved": len(proven), "prove_cost_usd": round(sum(r["cost_usd"] for r in tried), 2),
               "hunted_at": harness.now(), "results": tried}
     out = tool.RUNS / f"{label}-report.json"
