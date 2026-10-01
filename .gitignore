@@ -25,3 +25,6 @@ prove/scaffold/target/
 prove/scaffold/broadcast/
 prove/proofs/*.json
 bot/.buybot-state.json
+
+# private agent notes (Verified Facts / Open Unknowns)
+CLAUDE.md
