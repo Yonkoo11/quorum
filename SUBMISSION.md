@@ -54,13 +54,13 @@ Arbitrum One: 0xf35bE6FFEBF91AcC27A78696cf912595C6b08AAA — QUORUM
 
 **Factory contracts:** none. The registry is a single contract; it does not create pools, vaults, or child contracts.
 
-**Which parts were built during the Buildathon (2026-09-13 to 2026-10-04):** [fill from the commit note before filing]
+**Which parts were built during the Buildathon (2026-09-13 to 2026-10-04):** The repo's first commit is 2026-09-10, days before the window opened, as a memory + lenses experiment. Essentially everything that defines Quorum today was built inside the window (129 commits): the prove engine (a finding is kept only if its generated exploit runs and pays on a fork), the four wei-exact proofs, the blind benchmark, the on-chain `ClaimRegistry` + fee-burn claim layer, the Robinhood Chain and Arbitrum One deployments, and the prove-first site. The commit history is public and dated.
 
 **Prize wallet (Arbitrum One):** [your public address]
 
 ## Mapped to the judging criteria
 
-**1. Smart-contract quality.** `ClaimRegistry` is deliberately small: one fee, one claim, one invariant. A record is written only if at least the fee arrived and every token the registry held was burned, checked by balance before and after, so the fee can never be skipped and a stuck balance can never accrue. Verified source, 18 Foundry tests plus a fuzz test and an invariant. For a security product, the contract is held to the standard the product sells.
+**1. Smart-contract quality.** `ClaimRegistry` is deliberately small: one fee, one claim, one invariant. A record is written only if at least the fee arrived and every token the registry held was burned, checked by balance before and after, so the fee can never be skipped and a stuck balance can never accrue. Verified source on both chains, 18 Foundry tests plus a fuzz test and an invariant (19 green). Slither and Aderyn were run on it; both flag a reentrancy pattern on `claim`, and both are false positives (explicit guard, mark-before-call ordering, one external function, and a test that exercises the re-entrant path). We leave the flags and the reasoning on the record rather than reporting "zero findings" (`contracts/STATIC-ANALYSIS.md`). For a security product, the contract is held to the standard the product sells.
 
 **2. Product-market fit.** The user is a protocol team that needs to know a finding is real before it spends a week on it, and a researcher who needs to prove what they knew and when. The strongest signal to date: a live Robinhood-Chain protocol (Socket/Bungee) acknowledged a real bug Quorum's method surfaced in a money-holding contract and confirmed a fix is scheduled. Demand is early and we say so; this is the first protocol engagement, not the hundredth.
 
