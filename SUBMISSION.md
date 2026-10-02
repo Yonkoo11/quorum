@@ -27,7 +27,7 @@ Quorum hunts EVM contracts, then writes a Foundry exploit on a mainnet fork and 
 
 - **ClaimRegistry** (verified): `0xDeA0792cEc959CE6893C24dEeFc6FE9B047a3Ea3` on Robinhood Chain (chain id 4663).
 - **QUORUM token:** `0xa6452Fd7134218f62056a304eaf501F8714A26b9`. The fee is 100,000 QUORUM per claim, pulled from the claimant and burned in the same transaction.
-- **First paid claim:** recorded on-chain (tx `0xb999d218…1655`, block 60762176).
+- **Claims are live through the registry** (deployed 2026-09-18, block 66593107, verified source): a claim is recorded on-chain at block 66594959 (tx `0x2f22250d…ffc3d`), the fee pulled and burned in the same transaction. (An earlier self-addressed claim from 2026-09-12 predates the registry contract.)
 - Robinhood Chain is an Ethereum L2 built with Arbitrum Orbit (chain id 4663), so the deployment qualifies and sits in the reserved Robinhood-Chain slot.
 
 ## Also live on Arbitrum One (the reserved Arbitrum slot)
@@ -68,7 +68,11 @@ Arbitrum One: 0xf35bE6FFEBF91AcC27A78696cf912595C6b08AAA — QUORUM
 
 ## What happens after the deadline
 
-Quorum keeps running the hunt-and-prove loop on verified Robinhood-Chain contracts holding real value and publishes the counts, and follows up the open disclosures. The kill test is honest: if no Robinhood-Chain team asks for a proof of its own contract and the hunt proves nothing on deployed contracts, the focus stops.
+Prizes here are development-milestone-tied, and Quorum already runs past the deadline:
+
+- **By 2026-10-05:** run hunt-and-prove across every verified Arbitrum-chain contract (Robinhood Chain and Arbitrum One) holding more than $10k and publish the counts, proven and not.
+- **By 2026-10-12:** follow up the four open disclosures from 2026-09-18 and the Socket/Bungee acknowledgment, and record any protocol that asks for a proof of its own contract.
+- **By 2026-10-31:** the honest kill test. If no Arbitrum-chain team has asked for a proof of its own contract and the hunt has proven nothing on deployed contracts, the focus stops and the post-mortem is published.
 
 ## Links
 
