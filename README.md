@@ -389,7 +389,7 @@ Token: `QUORUM` on Robinhood Chain (chain id 4663), contract [`0xa6452Fd7134218f
 - **Language:** Python 3.10 to 3.13. No framework; the CLI is `argparse`.
 - **Memory:** [Sibyl Memory](https://github.com/Sibyl-Labs/Sibyl-Memory), all five tiers, load-bearing. Every read and write in one file.
 - **Chain:** `web3.py` against Robinhood Chain (chain id 4663) for the token, the fee burn, claims, reveals and imports; Base mainnet for the first claim. Verified target source comes from the Blockscout instances of Ethereum, Base, Arbitrum, Optimism and Polygon, and from Sourcify for BNB Smart Chain, which has no Blockscout instance and whose own explorer wants a key. No API key either way ([`bench/MULTICHAIN.md`](bench/MULTICHAIN.md)).
-- **Tests:** pytest, 89 tests, no chain access needed (the chain is mocked where it matters).
+- **Tests:** pytest, 142 tests, no chain access needed (the chain is mocked where it matters).
 - **Site:** static HTML, CSS and JavaScript in [`docs/`](docs/), served by GitHub Pages at [runquorum.site](https://runquorum.site); the in-browser verifier reads the chain through public JSON-RPC nodes.
 - **Demo:** the terminal recording lives in [`demo/`](demo/) and the video assembly in [`video/`](video/).
 
@@ -414,7 +414,7 @@ quorum/
   targets.py     # quorum fetch: verified source from six chains, Blockscout and Sourcify, no key
   sarif.py       # confirmed findings as SARIF 2.1.0: both witnesses, what each read, the idiom as the fingerprint
   cli.py         # the command line
-tests/           # 119 tests across the lenses, the token boundary, the stream harness, the prove gates and the buy bot
+tests/           # 142 tests across the lenses, the token boundary, the stream harness, the prove gates and the buy bot
 fixtures/        # two teaching contracts, vulnerable on purpose
 docs/            # the site (runquorum.site): five pages, one stylesheet, one script, self-hosted fonts
 brand/           # the cards, marks and fonts the site and the posts are built from
@@ -451,7 +451,7 @@ uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e .
 .venv/bin/quorum recall --since 2026-09-10T00:00:00+00:00   # what it learned since
 .venv/bin/quorum run --no-memory                # the deletion test
 .venv/bin/quorum run --sarif quorum.sarif       # the same run, findings written for the GitHub Security tab
-.venv/bin/python -m pytest tests -q             # 89 tests
+.venv/bin/python -m pytest tests -q             # 142 tests
 ```
 
 `quorum attest` additionally needs `DEPLOYER_PRIVATE_KEY` in the environment, gas on Robinhood Chain, and the claim fee in QUORUM. `QUORUM_RPC` overrides the public Robinhood Chain endpoint; `BASE_RPC` overrides the public Base endpoint used only to read the first claim.
