@@ -1,0 +1,81 @@
+QUORUM - ARBITRUM OPEN HOUSE SINGAPORE - SUBMISSION VALUES
+Plain text, ASCII only, each value on ONE line (triple-click to select). Deadline 2026-10-04 15:59 UTC.
+===================================================================================================
+
+
+========== SUBMISSION FORM (the "Submission Project" popup) ==========
+
+[1] Select the Project to Submit  -> pick from dropdown:
+Quorum
+
+[2] What is your contract address?  (paste)
+0xd2cad31A080b0daE98d9d6427e500B50bCb92774
+
+[3] Which Prize Track  -> click all three buttons:
+Overall Prize  +  Promising Products Track  +  Grants
+
+[4] Link to frontend/UI/website  (paste)
+https://runquorum.site
+
+[5] List your Core Protocol / Smart Contract Addresses  (paste)
+ClaimRegistry (Robinhood Chain, 4663): 0xDeA0792cEc959CE6893C24dEeFc6FE9B047a3Ea3 | ClaimRegistry (Arbitrum One, 42161): 0xd2cad31A080b0daE98d9d6427e500B50bCb92774. Verified source on both.
+
+[6] List your Factory / Pool Contracts  (paste)
+None. The registry is a single contract; it creates no pools, vaults, or child contracts.
+
+[7] List your Token Contract Address  (paste)
+QUORUM (Robinhood Chain, 4663): 0xa6452Fd7134218f62056a304eaf501F8714A26b9 | QUORUM (Arbitrum One, 42161): 0xf35bE6FFEBF91AcC27A78696cf912595C6b08AAA. 100,000 QUORUM burned per claim.
+
+[8] Which parts of your code were produced during the Buildathon?  (paste)
+The 2026-09-10 first commit predates the window; all of Quorum was built in-window: the prove engine (a finding survives only if its exploit runs and pays on a fork), the four wei-exact proofs, the blind benchmark, and the fee-burn claim layer on Robinhood Chain and Arbitrum One.
+
+[9] Which sponsor/partner technologies  -> click ONE button only:
+Robinhood Chain
+
+
+========== PROJECT PAGE (the "Quorum" setup page) ==========
+
+[Name]  (already set)
+Quorum
+
+[Intro]  (paste)
+Proven exploits as on-chain claims. Quorum publishes a smart-contract bug only after it runs the exploit that drains it on a mainnet fork.
+
+[GitHub Link]  (paste)
+https://github.com/Yonkoo11/quorum
+
+[Product Category]  -> click up to 3:
+Infra  +  AI  +  DeFi
+
+[Tech Stack]  -> click these, then "Add new" for Foundry:
+Python  +  Solidity  +  Web3  +  Foundry
+
+[Fundraising Status]  (paste, optional)
+Not raising; early.
+
+[Description]  (paste; this editor allows paragraphs, so line breaks are fine here)
+Quorum finds EVM smart-contract bugs and publishes only the ones it can prove. For each candidate it writes a Foundry exploit, runs it on a mainnet fork at the block the bug was live, and keeps the finding only if the attacker's balance actually goes up. It has reproduced four real 2026 hacks to the wei: Unistreet (+0.0072 WETH), Sandbox (+1,000,000 SAND), Squid (+712 USDC), and GaslessReservoir (+0.836 WETH, proven with the answer withheld from the model). It also publishes its own miss rate: 64% recall across 143 known-bug contracts over 11 runs, and it leaves on the page the one row where Slither still beats it. Each proof becomes a paid on-chain claim: the ClaimRegistry burns a 100,000 QUORUM fee and records the digest in one transaction, so a record cannot exist without paying for itself. It runs live on both Robinhood Chain (chain 4663) and Arbitrum One.
+
+[Progress During Buildathon]  (paste)
+Quorum entered the buildathon (window opened 2026-09-13) as an early contract scanner and left it as an engine that proves a bug by running the exploit, then records each proof as a paid on-chain claim. 132 commits in the window, all public and dated. In order:
+
+Sep 15: wrote the ClaimRegistry (one fee, one claim) with the Solidity contract, Foundry tests, and the Python client.
+Sep 18: deployed the ClaimRegistry live on Robinhood Chain with its tests in CI; read the public Robinhood Chain contract repos by hand and flagged four real bugs in money-handling code.
+Sep 19: verified the registry source on the explorer; ran the first measurement against modern audit contests, which surfaced three real defects.
+Sep 22 to 24: made the benchmark score the tool that actually ships, and began publishing the method's own miss rate, including one reader pair whose recall is 0 percent.
+Sep 27: added the prove stage, the change that defines the product. A hypothesis becomes a finding only when its generated exploit runs on a mainnet fork at the block the bug was live and the attacker's balance rises. Proved the first blind drains; Squid drained a real victim Safe for 712 USDC after locating that victim on-chain.
+Sep 28: reproduced four 2026 hacks to the wei, one of them end-to-end blind with the answer withheld from the model; closed the false-proof holes (a generated exploit may not mint, call deal, or impersonate anyone but the attacker); re-led the README and site with the prove engine.
+Oct 1: added Robinhood Chain (4663) to the fetch-and-prove path; wrote the company thesis for this entry.
+Oct 2: deployed the same claim layer to Arbitrum One (QUORUM token, ClaimRegistry, and a first claim with the 100,000 QUORUM fee burned, source verified on both chains); ran Slither and Aderyn on the registry and documented every flag as a false positive with the reason; surfaced the two-chain claim layer on the site; rebuilt the demo video.
+
+External signal in the window: Socket/Bungee, a cross-chain bridge, confirmed that a latent defect Quorum independently flagged in its RFQ vault contract deployed on Robinhood Chain is real and not currently reachable, and that a fix is scheduled.
+
+[Demo Video]  -> click the upload (cloud) icon and choose this file:
+/Users/yonko/Projects/quorum/video/out/demo.mp4
+
+
+========== YOU MUST DO THESE (I cannot) ==========
+- Connect Wallet, and pick the prize-receiving Arbitrum One address (deployer 0xf9946775891a24462cD4ec885d0D4E2675C84355 works, or any Arbitrum wallet you control).
+- Upload the demo video (file path above).
+- Click Submit.
+- Note: the GitHub link shows branch main, which is 43 versions behind and missing the prove/ folder, so judges won't see the proofs yet. Publish main right after submitting.
