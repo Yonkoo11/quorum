@@ -28,3 +28,8 @@ bot/.buybot-state.json
 
 # private agent notes (Verified Facts / Open Unknowns)
 CLAUDE.md
+
+# internal working / strategy files — kept local, never public
+SUBMISSION-FORM.txt
+company/
+learn/FOR-COMMUNITY-MANAGER.md

@@ -7,5 +7,5 @@
 set -u
 ENV=$HOME/.quorum-buybot.env
 [ -f "$ENV" ] && source "$ENV"
-cd /Users/yonko/Projects/quorum
+cd "$(dirname "$0")/.." || exit 1
 exec .venv/bin/python bot/buybot.py "$@"
