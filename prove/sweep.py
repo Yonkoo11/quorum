@@ -15,7 +15,6 @@ import argparse
 import json
 import shutil
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -84,16 +83,27 @@ def main() -> int:
         print("no targets in the list; run prove/sweep_targets.py first", file=sys.stderr)
         return 1
 
-    rows, t0 = [], time.time()
-    for i, t in enumerate(targets, 1):
-        print(f"\n===== [{i}/{len(targets)}] {t['address']} (${t.get('usd','?')}) =====", flush=True)
+    # resume: keep rows already recorded in --out, skip those addresses (a paid run is not re-paid)
+    rows: list[dict] = []
+    if Path(a.out).exists():
+        rows = json.loads(Path(a.out).read_text()).get("results", [])
+    done = {r["address"] for r in rows}
+    pending = [t for t in targets if t["address"] not in done]
+    print(f"{len(rows)} already done, {len(pending)} to run", flush=True)
+    for i, t in enumerate(pending, 1):
+        print(f"\n===== [{i}/{len(pending)}] {t['address']} (${t.get('usd','?')}) =====", flush=True)
         rows.append(run_one(t, a.finder, a.k, a.samples))
+        write_report(rows, a)  # checkpoint after every target
+    write_report(rows, a, final=True)
+    return 0
 
+
+def write_report(rows: list[dict], a, final: bool = False) -> None:
     tally = {s: sum(1 for r in rows if r["state"] == s) for s in ("proven", "unproven", "errored")}
     report = {"generated": harness.now(), "source": a.targets, "finder": a.finder,
               "samples": a.samples, "max_proofs": a.k, "targets_run": len(rows),
               "tally": tally, "total_cost_usd": round(sum(r["cost_usd"] for r in rows), 2),
-              "wall_seconds": round(time.time() - t0), "results": rows}
+              "results": rows}
     Path(a.out).write_text(json.dumps(report, indent=2) + "\n")
     md = ["# Robinhood Chain sweep", "",
           f"{tally['proven']} proven, {tally['unproven']} unproven, {tally['errored']} errored "
@@ -103,8 +113,8 @@ def main() -> int:
         md.append(f"| `{r['address']}` | {r.get('usd','?')} | {r['state']} | {r.get('found','-')} | "
                   f"{(r.get('proof_lines') or [r.get('error','')])[0][:60]} |")
     Path(a.out).with_suffix(".md").write_text("\n".join(md) + "\n")
-    print(f"\n=== sweep: {tally} — ${report['total_cost_usd']} — {a.out} ===")
-    return 0
+    if final:
+        print(f"\n=== sweep: {tally} — ${report['total_cost_usd']} — {a.out} ===")
 
 
 if __name__ == "__main__":
