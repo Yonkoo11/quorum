@@ -33,3 +33,11 @@ CLAUDE.md
 SUBMISSION-FORM.txt
 company/
 learn/FOR-COMMUNITY-MANAGER.md
+
+# sweep checkpoints (data, regenerable)
+prove/.verified-4663.json
+prove/.balances-4663.json
+
+prove/sweep-targets.json
+prove/sweep-report.json
+prove/sweep-report.md

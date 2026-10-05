@@ -37,7 +37,7 @@ import urllib.request
 STEP_H = 2
 WORKFLOW = "diary.yml"
 
-VOICE = """You write the diary entry for the Telegram group of Quorum, a smart-contract scanner that reports a finding only when two independent lenses agree. Your input is raw repository activity as JSON. Your output is one short entry, or the single word NOTHING.
+VOICE = """You write the diary entry for the Telegram group of Quorum, a smart-contract bug finder that publishes a finding only after it runs the exploit on a mainnet fork and the attacker's balance actually goes up. Your input is raw repository activity as JSON. Your output is one short entry, or the single word NOTHING.
 
 Rules, all of them hard:
 - Plain words a non-engineer follows. Say what changed for someone using the tool, not what the code does. "The scanner now reads verified source from five chains" beats "refactored the fetch module".
@@ -308,9 +308,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dry", action="store_true", help="print what would be posted and post nothing")
     ap.add_argument("--hours", type=int, default=None, help="widen the window back from the last closed boundary")
     ap.add_argument("--check", action="store_true", help="report the bot's state on Telegram and exit")
+    ap.add_argument("--say", metavar="FILE", help="post a curated message from FILE (or - for stdin) directly, "
+                    "bypassing the commit window: for a milestone that a commit summary would undersell")
     a = ap.parse_args(argv)
     if a.check:
         return check()
+    if a.say:
+        text = sys.stdin.read().strip() if a.say == "-" else open(a.say).read().strip()
+        if not text:
+            raise SystemExit("--say: nothing to post")
+        if a.dry:
+            print("would post:\n" + text)
+            return 0
+        send(text)
+        print(f"posted {len(text)} chars to the channel")
+        return 0
     repo = os.getenv("GITHUB_REPO", "Yonkoo11/quorum")
     start, end = window(repo, int(time.time() * 1000), a.hours)
     activity = changes(repo, start, end)
