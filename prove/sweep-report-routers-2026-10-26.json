@@ -1,0 +1,46 @@
+{
+  "generated": "2026-10-26T19:17:03+00:00",
+  "source": "/private/tmp/claude-501/-Users-yonko/81d6a6af-d122-4829-bd9c-e3336b230186/scratchpad/shortlist-targets.json",
+  "finder": "generic",
+  "samples": 5,
+  "max_proofs": 3,
+  "targets_run": 3,
+  "tally": {
+    "proven": 0,
+    "unproven": 3,
+    "errored": 0
+  },
+  "total_cost_usd": 5.87,
+  "results": [
+    {
+      "address": "0x89A70b162bE7dBc8b5e7579066fA58190C48d693",
+      "chain": "robinhood",
+      "usd": 123648,
+      "state": "unproven",
+      "proved": 0,
+      "found": 4,
+      "cost_usd": 1.52,
+      "proof_lines": []
+    },
+    {
+      "address": "0x07964f135f276412b3182a3B2407b8dd45000000",
+      "chain": "robinhood",
+      "usd": 31162,
+      "state": "unproven",
+      "proved": 0,
+      "found": 1,
+      "cost_usd": 3.64,
+      "proof_lines": []
+    },
+    {
+      "address": "0x2Ec2560CBa6aeB2Fe13Bdb381700B505f5E9e4E8",
+      "chain": "robinhood",
+      "usd": 32184,
+      "state": "unproven",
+      "proved": 0,
+      "found": 0,
+      "cost_usd": 0.71,
+      "proof_lines": []
+    }
+  ]
+}
