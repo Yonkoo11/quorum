@@ -12,7 +12,7 @@ ENV=$HOME/.quorum-buybot.env
 source "$ENV"
 : "${BUYBOT_TG_TOKEN:?no bot token in $ENV}"
 api="https://api.telegram.org/bot$BUYBOT_TG_TOKEN"
-code="quorum-$(LC_ALL=C tr -dc 'a-z0-9' </dev/urandom | head -c 10)"
+code="quorum-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"   # (tr | head on urandom dies with SIGPIPE under pipefail)
 
 echo "Send this code to the Quorum buy bot from the chat you want alerts in (waiting up to 5 minutes):"
 echo
