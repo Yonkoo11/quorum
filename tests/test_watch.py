@@ -73,3 +73,47 @@ def test_unknown_is_not_clean():
     alerts, _ = evaluate_block(block(), ctx)
     flip = [a for a in alerts if a["rule"] == "7702_code_flip"]
     assert flip and flip[0]["unknowns"], "a failed read must surface as unknown, never as clean"
+
+
+def test_live_loop_catches_up_and_persists_state(tmp_path):
+    from watch.live import State, run
+
+    class HeadRpc(FakeRpc):
+        def __init__(self):
+            self.heads = iter([26300753, 26300753, 26300754])
+        def head(self):
+            return next(self.heads, 26300754)
+        def block(self, n):
+            b = block(); b["number"] = hex(n); return b
+
+    st = State(tmp_path / "state.json")
+    st.last = 26300751                      # two blocks behind head
+    sent = []
+    run("ethereum", {BINANCE_14: "Binance 14"}, st, str(tmp_path / "log.jsonl"), sent.append,
+        max_blocks=3, rpc=HeadRpc(), sleep=lambda s: None)
+    assert st.last == 26300754
+    assert json.loads((tmp_path / "state.json").read_text())["last_block"] == 26300754
+    lines = (tmp_path / "log.jsonl").read_text().splitlines()
+    assert len(lines) == 3
+    assert any("Binance 14" in m and "alert only" in m for m in sent)
+
+
+def test_repointing_and_bad_auth_are_not_silent():
+    class RepointRpc(FakeRpc):
+        def code(self, address, block="latest"):
+            if address.lower() == BINANCE_14 and block == 26300752:
+                return "0xef0100" + "11" * 20          # already delegated, to a different target
+            return super().code(address, block)
+    alerts, _ = evaluate_block(block(), Ctx(RepointRpc(), {BINANCE_14: "Binance 14"}))
+    flip = [a for a in alerts if a["rule"] == "7702_code_flip"]
+    assert flip and "was 0x" + "11" * 20 in flip[0]["reasons"][0]
+    assert recover_authority({"chainId": "0x1", "address": "0xzz", "nonce": "0x0",
+                              "yParity": "0x0", "r": "0x1", "s": "0x1"}) is None
+
+
+def test_crashing_rule_becomes_unknown_alert(monkeypatch):
+    import watch.replay as rp
+    def boom(block, ctx): raise KeyError("input")
+    monkeypatch.setattr(rp, "RULES", [boom])
+    alerts, timing = evaluate_block(block(), Ctx(FakeRpc(), {}))
+    assert alerts[0]["unknowns"] and "boom" in timing

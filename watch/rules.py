@@ -54,12 +54,12 @@ def recover_authority(auth: dict) -> str | None:
     """EIP-7702: authority = ecrecover(keccak(0x05 || rlp([chain_id, address, nonce])), sig)."""
     if _keys is None:
         return None
-    msg = _keccak(b"\x05" + rlp.encode([int(auth["chainId"], 16),
-                                        bytes.fromhex(auth["address"][2:]), int(auth["nonce"], 16)]))
-    sig = _keys.Signature(vrs=(int(auth["yParity"], 16), int(auth["r"], 16), int(auth["s"], 16)))
-    try:
+    try:  # any malformed field (attacker-controlled bytes) is reported as unknown, never raised
+        msg = _keccak(b"\x05" + rlp.encode([int(auth["chainId"], 16),
+                                            bytes.fromhex(auth["address"][2:]), int(auth["nonce"], 16)]))
+        sig = _keys.Signature(vrs=(int(auth["yParity"], 16), int(auth["r"], 16), int(auth["s"], 16)))
         return sig.recover_public_key_from_msg_hash(msg).to_address().lower()
-    except Exception:  # malformed signature: the chain rejects it, we report unknown
+    except Exception:
         return None
 
 
@@ -109,7 +109,7 @@ def rule_7702_type4(block: dict, ctx) -> list:
 
 
 def rule_7702_code_flip(block: dict, ctx) -> list:
-    """Watched wallet whose code becomes a delegation pointer in this block."""
+    """Watched wallet whose 7702 pointer appears or changes in this block (re-pointing counts)."""
     out = []
     n = int(block["number"], 16)
     for addr, label in ctx.watchlist.items():
@@ -121,9 +121,10 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
         if not now.startswith(DELEGATION_PREFIX):
             continue
         before = ctx.rpc.code(addr, n - 1)
-        if before is None or not before.startswith(DELEGATION_PREFIX):
+        if before is None or before != now:
+            was = "unknown" if before is None else ("none" if before == "0x" else f"0x{before[8:]}")
             out.append(_alert("7702_code_flip", block, None, addr,
-                              [f"{label}: code is now a 7702 pointer to 0x{now[8:]}"],
+                              [f"{label}: 7702 pointer is now 0x{now[8:]} (was {was})"],
                               [] if before is not None else [f"code of {addr} at {n - 1}"]))
     return out
 

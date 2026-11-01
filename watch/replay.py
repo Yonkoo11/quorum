@@ -45,7 +45,13 @@ def evaluate_block(block: dict, ctx: Ctx) -> tuple[list, dict]:
     alerts, timing = [], {}
     for rule in RULES:
         t0 = time.perf_counter()
-        alerts.extend(rule(block, ctx))
+        try:
+            alerts.extend(rule(block, ctx))
+        except Exception as exc:  # one rule crashing on odd input must not blind the others
+            alerts.append({"rule": rule.__name__, "version": 0, "level": "alert",
+                           "block": int(block["number"], 16), "block_ts": int(block["timestamp"], 16),
+                           "tx": None, "subject": "*", "reasons": ["rule crashed"],
+                           "unknowns": [f"{rule.__name__} raised {type(exc).__name__}: {exc}"]})
         timing[rule.__name__] = round(time.perf_counter() - t0, 3)
     return alerts, timing
 
