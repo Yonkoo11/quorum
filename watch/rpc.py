@@ -38,6 +38,7 @@ class Rpc:
         self.retries = retries
         self.calls = 0
         self.failures = 0
+        self.last_error = None      # the RPC's own error text for the most recent failed call
 
     def call(self, method: str, params: list):
         body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
@@ -50,8 +51,10 @@ class Rpc:
                     out = json.loads(r.read())
                 if "result" in out:
                     return out["result"]
+                self.last_error = f"{method}: {out.get('error')}"
                 break  # an RPC-level error will not fix itself on retry
-            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+                self.last_error = f"{method}: {exc}"
                 time.sleep(1.5 * (attempt + 1))
         self.failures += 1
         return None

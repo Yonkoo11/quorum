@@ -44,32 +44,51 @@ def format_alert(chain: str, al: dict) -> str:
     body = "\n".join(f"- {r}" for r in al["reasons"])
     unk = f"\nUNKNOWN: {', '.join(al['unknowns'])}" if al["unknowns"] else ""
     tx = f"\ntx {al['tx']}" if al["tx"] else ""
-    return f"{head}\nsubject {al['subject']}{tx}\n{body}{unk}\nalert only: no pause role is granted."
+    sim = al.get("simulation")
+    if sim:
+        if sim.get("unknown"):
+            sim_line = f"\nfork replay UNKNOWN: {sim['unknown']}"
+        else:
+            sim_line = (f"\nfork replay ({sim['seconds']}s): funds left = {sim['funds_left']}; "
+                        f"ETH delta {sim['eth_delta']}; {len(sim['transfers_out'])} token transfer(s) out")
+    else:
+        sim_line = ""
+    return f"{head}\nsubject {al['subject']}{tx}\n{body}{unk}{sim_line}\nalert only: no pause role is granted."
 
 
 class State:
     def __init__(self, path: Path):
         self.path = path
-        data = json.loads(path.read_text()) if path.exists() else {}
-        self.last = data.get("last_block")
-        self.seen = {tuple(x) for x in data.get("seen_batches", [])}
+        self.last, self.seen, self.note = None, set(), None
+        if not path.exists():
+            return
+        try:
+            data = json.loads(path.read_text())
+            self.last = data.get("last_block")
+            self.seen = {(s, tuple(d)) for s, d in data.get("seen_batches", [])}
+        except (ValueError, TypeError) as exc:  # a damaged state file restarts from head, loudly
+            self.note = f"state file unreadable ({type(exc).__name__}); starting from head"
+            self.last, self.seen = None, set()
 
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps({"last_block": self.last,
-                                         "seen_batches": [list(x) for x in self.seen]}))
+                                         "seen_batches": [[s, list(d)] for s, d in self.seen]}))
 
 
-def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify) -> dict:
+def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=None) -> dict:
     block = rpc.block(n)
     if block is None:
         rec = {"chain": chain, "block": n, "unknown": "block fetch failed", "wall": time.time()}
         log.write(json.dumps(rec) + "\n"); log.flush()
+        notify(f"[Quorum watch] UNKNOWN: {chain} block {n} could not be fetched; it was NOT checked.")
         return rec
     t0 = time.perf_counter()
     alerts, timing = evaluate_block(block, ctx)
     real = [a for a in alerts if a["level"] == "alert"]
     for al in real:
+        if simulate and al["tx"] and al["rule"] != "7702_type4":   # a delegation moves nothing by itself
+            al["simulation"] = simulate(chain, al["tx"], ctx.watchlist)
         notify(format_alert(chain, al))
     rec = {"chain": chain, "block": n, "txs": len(block["transactions"]), "alerts": alerts,
            "seconds": timing, "eval_seconds": round(time.perf_counter() - t0, 3),
@@ -81,11 +100,13 @@ def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify) -> dict:
 
 
 def run(chain: str, watchlist: dict, state: State, log_path: str, notify, max_blocks: int | None,
-        catch_up: int = 50, rpc: Rpc | None = None, sleep=time.sleep) -> int:
+        catch_up: int = 50, rpc: Rpc | None = None, sleep=time.sleep, simulate=None) -> int:
     rpc = rpc or Rpc(chain)
     ctx = Ctx(rpc, watchlist)
     ctx.seen_batches = state.seen
     done = 0
+    if state.note:
+        notify(f"[Quorum watch] UNKNOWN: {state.note}")
     with open(log_path, "a") as log:
         while max_blocks is None or done < max_blocks:
             head = rpc.head()
@@ -98,9 +119,11 @@ def run(chain: str, watchlist: dict, state: State, log_path: str, notify, max_bl
             if head - start + 1 > catch_up:
                 log.write(json.dumps({"chain": chain, "unknown": f"skipped blocks {start}-{head - catch_up}",
                                       "wall": time.time()}) + "\n")
+                notify(f"[Quorum watch] UNKNOWN: {chain} blocks {start}-{head - catch_up} were NOT checked "
+                       f"(gap larger than the {catch_up}-block catch-up).")
                 start = head - catch_up + 1
             for n in range(start, head + 1):
-                process_block(n, chain, rpc, ctx, log, notify)
+                process_block(n, chain, rpc, ctx, log, notify, simulate)
                 state.last = n; state.save(); done += 1
                 if max_blocks is not None and done >= max_blocks:
                     break
@@ -115,11 +138,16 @@ def main(argv=None):
     p.add_argument("--log", default="ai/watch-live.jsonl")
     p.add_argument("--max-blocks", type=int)
     p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--simulate", action="store_true", help="replay flagged txs on an anvil fork (Stage 3)")
     a = p.parse_args(argv)
+    sim = None
+    if a.simulate:
+        from .simulate import simulate as sim
     has_tg = bool(os.environ.get("BUYBOT_TG_TOKEN")) and not a.dry_run
     notify = (lambda t: post_telegram(t) or print(t)) if has_tg else print
     print(f"watch live: {a.chain}, {'Telegram' if has_tg else 'print only'}, state {a.state}")
-    return run(a.chain, load_watchlist(a.watchlist), State(Path(a.state)), a.log, notify, a.max_blocks)
+    return run(a.chain, load_watchlist(a.watchlist), State(Path(a.state)), a.log, notify, a.max_blocks,
+               simulate=sim)
 
 
 if __name__ == "__main__":

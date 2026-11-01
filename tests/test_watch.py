@@ -117,3 +117,55 @@ def test_crashing_rule_becomes_unknown_alert(monkeypatch):
     monkeypatch.setattr(rp, "RULES", [boom])
     alerts, timing = evaluate_block(block(), Ctx(FakeRpc(), {}))
     assert alerts[0]["unknowns"] and "boom" in timing
+
+
+def test_state_roundtrip_and_damaged_file(tmp_path):
+    from watch.live import State
+    st = State(tmp_path / "s.json")
+    st.last = 5; st.seen = {("0xaa", ("0xbb", "0xcc"))}; st.save()
+    again = State(tmp_path / "s.json")
+    assert again.seen == {("0xaa", ("0xbb", "0xcc"))} and again.last == 5
+    (tmp_path / "s.json").write_text("{not json")
+    broken = State(tmp_path / "s.json")
+    assert broken.last is None and "unreadable" in broken.note
+
+
+def test_missing_block_is_notified(tmp_path):
+    from watch.live import State, run
+
+    class GapRpc(FakeRpc):
+        def head(self): return 10
+        def block(self, n): return None
+    sent = []
+    run("ethereum", {}, State(tmp_path / "s.json"), str(tmp_path / "l.jsonl"), sent.append,
+        max_blocks=1, rpc=GapRpc(), sleep=lambda s: None)
+    assert sent and "NOT checked" in sent[0]
+
+
+def test_sweep_receipt_shows_63_transfers_out_of_binance_14():
+    """Real receipt of the Binance 14 sweep tx (block 26300770), recorded 2026-11-01."""
+    from watch.simulate import _transfers_out
+    rcpt = json.loads((FIX.parent / "sweep-receipt-26300770.json").read_text())
+    out = _transfers_out(rcpt, {BINANCE_14: "Binance 14"})
+    assert len(out) == 63 and all(o["to"] == "0x5227f603c1ee34ce3c06efe6477003bdfccb2f8c" for o in out)
+
+
+def test_live_attaches_simulation_to_tx_alerts(tmp_path):
+    from watch.live import State, run
+
+    class AdminRpc(FakeRpc):
+        def head(self): return 26300753
+        def block(self, n):
+            b = block()
+            b["transactions"].append({"hash": "0xadmin", "from": "0xbad", "to": BINANCE_14,
+                                      "type": "0x2", "input": "0xf2fde38b" + "00" * 32})
+            return b
+    calls = []
+    def fake_sim(chain, tx, watch):
+        calls.append(tx); return {"seconds": 1.0, "funds_left": True, "eth_delta": {"Binance 14": -1.0},
+                                  "transfers_out": [], "unknown": None}
+    sent = []
+    run("ethereum", {BINANCE_14: "Binance 14"}, State(tmp_path / "s.json"), str(tmp_path / "l.jsonl"),
+        sent.append, max_blocks=1, rpc=AdminRpc(), sleep=lambda s: None, simulate=fake_sim)
+    assert calls == ["0xadmin"], "only the admin call is simulated; the delegation tx is not"
+    assert any("funds left = True" in m for m in sent)
