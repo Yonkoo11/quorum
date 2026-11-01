@@ -248,15 +248,21 @@ def test_notifier_spaces_caps_digests_and_dedupes():
 
 
 def test_notifier_digest_puts_watchlist_first_never_drops_and_marks_cuts():
+    from watch.live import is_watched_subject
     from watch.notify import TELEGRAM_MAX, Notifier, fit
+    watched = {BINANCE_14}
+    assert is_watched_subject(f"[Quorum watch] x\nsubject {BINANCE_14.upper()}\n- r", watched)
+    assert not is_watched_subject(f"[Quorum watch] x\nsubject 0x{'ab' * 20}\n- delegate {BINANCE_14}", watched), \
+        "a watched address planted in a reason line does not jump the queue"
+    assert not is_watched_subject("subject", watched) and not is_watched_subject("", watched)
     now, sent = [0.0], []
     n = Notifier(sent.append, clock=lambda: now[0], sleep=lambda s: None, per_minute=3,
-                 priority=lambda t: BINANCE_14 in t)
+                 priority=lambda t: is_watched_subject(t, watched))
     for i in range(3):
         n(f"fill {i}")
     for i in range(30):
-        n(f"noise {i} " + "x" * 600)
-    n(f"[Quorum watch] 7702_code_flip subject {BINANCE_14}")
+        n(f"noise {i} subject 0x{'ab' * 20}\n- delegate {BINANCE_14} " + "x" * 600)
+    n(f"[Quorum watch] 7702_code_flip\nsubject {BINANCE_14}")
     assert len(n.held) == 31
     now[0] += 61
     assert n.flush() is True

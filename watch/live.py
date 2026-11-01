@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -210,11 +211,22 @@ def has_telegram(dry_run: bool) -> bool:
 
 
 def make_notifier(dry_run: bool, watchlist: dict) -> Notifier:
-    """Telegram when the bot env is set, print otherwise; a message naming a watched address or
-    label goes first in any digest (review 2026-11-01: noise must not crowd out the watchlist)."""
+    """Telegram when the bot env is set, print otherwise; an alert whose subject is a watched address
+    goes first in any digest (review 2026-11-01: noise must not crowd out the watchlist, and a reason
+    line that merely mentions a watched address must not buy priority)."""
     send = (lambda t: post_telegram(t) or print(t)) if has_telegram(dry_run) else print
-    watched = [*watchlist] + [*watchlist.values()]
-    return Notifier(send, priority=lambda t: any(w in t for w in watched))
+    watched = {k.lower() for k in watchlist}
+    return Notifier(send, priority=lambda t: is_watched_subject(t, watched))
+
+
+SUBJECT_LINE = re.compile(r"^subject (\S+)$", re.M)
+
+
+def is_watched_subject(text: str, watched: set) -> bool:
+    """Only the alert's own `subject` line counts, matched exactly against the watchlist keys:
+    an address an attacker plants in a reason line (a delegate target, say) must not jump the queue."""
+    m = SUBJECT_LINE.search(text)
+    return bool(m) and m.group(1).lower() in watched
 
 
 if __name__ == "__main__":
