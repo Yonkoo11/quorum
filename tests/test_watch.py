@@ -169,3 +169,24 @@ def test_live_attaches_simulation_to_tx_alerts(tmp_path):
         sent.append, max_blocks=1, rpc=AdminRpc(), sleep=lambda s: None, simulate=fake_sim)
     assert calls == ["0xadmin"], "only the admin call is simulated; the delegation tx is not"
     assert any("funds left = True" in m for m in sent)
+
+
+def test_replay_failure_and_urls_never_reach_the_alert(tmp_path):
+    from watch.live import State, run
+    from watch.simulate import redact
+
+    class AdminRpc(FakeRpc):
+        def head(self): return 26300753
+        def block(self, n):
+            b = block()
+            b["transactions"].append({"hash": "0xadmin", "from": "0xbad", "to": BINANCE_14,
+                                      "type": "0x2", "input": "0xf2fde38b" + "00" * 32})
+            return b
+    def boom(chain, tx, watch): raise RuntimeError("https://rpc.example/key123 down")
+    sent = []
+    run("ethereum", {BINANCE_14: "Binance 14"}, State(tmp_path / "s.json"), str(tmp_path / "l.jsonl"),
+        sent.append, max_blocks=1, rpc=AdminRpc(), sleep=lambda s: None, simulate=boom)
+    assert any(m.startswith("[Quorum watch] watchlist_admin_call") for m in sent), "the alert itself still went out"
+    assert any("replay UNKNOWN: replay raised RuntimeError" in m for m in sent)
+    assert "key123" not in "".join(sent)
+    assert redact("eth_call: https://rpc.example/key123 refused") == "eth_call: <url> refused"

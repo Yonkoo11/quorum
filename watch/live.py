@@ -44,16 +44,15 @@ def format_alert(chain: str, al: dict) -> str:
     body = "\n".join(f"- {r}" for r in al["reasons"])
     unk = f"\nUNKNOWN: {', '.join(al['unknowns'])}" if al["unknowns"] else ""
     tx = f"\ntx {al['tx']}" if al["tx"] else ""
-    sim = al.get("simulation")
-    if sim:
-        if sim.get("unknown"):
-            sim_line = f"\nfork replay UNKNOWN: {sim['unknown']}"
-        else:
-            sim_line = (f"\nfork replay ({sim['seconds']}s): funds left = {sim['funds_left']}; "
-                        f"ETH delta {sim['eth_delta']}; {len(sim['transfers_out'])} token transfer(s) out")
-    else:
-        sim_line = ""
+    sim_line = format_simulation(al["simulation"]) if al.get("simulation") else ""
     return f"{head}\nsubject {al['subject']}{tx}\n{body}{unk}{sim_line}\nalert only: no pause role is granted."
+
+
+def format_simulation(sim: dict) -> str:
+    if sim.get("unknown"):
+        return f"\nfork replay UNKNOWN: {sim['unknown']}"
+    return (f"\nfork replay ({sim['seconds']}s): funds left = {sim['funds_left']}; "
+            f"ETH delta {sim['eth_delta']}; {len(sim['transfers_out'])} token transfer(s) out")
 
 
 class State:
@@ -87,9 +86,13 @@ def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=
     alerts, timing = evaluate_block(block, ctx)
     real = [a for a in alerts if a["level"] == "alert"]
     for al in real:
+        notify(format_alert(chain, al))   # the alert goes out first; a slow or broken replay never delays it
         if simulate and al["tx"] and al["rule"] != "7702_type4":   # a delegation moves nothing by itself
-            al["simulation"] = simulate(chain, al["tx"], ctx.watchlist)
-        notify(format_alert(chain, al))
+            try:
+                al["simulation"] = simulate(chain, al["tx"], ctx.watchlist)
+            except Exception as exc:
+                al["simulation"] = {"unknown": f"replay raised {type(exc).__name__}"}
+            notify(f"[Quorum watch] replay of {al['tx']} ({al['subject']}):{format_simulation(al['simulation'])}")
     rec = {"chain": chain, "block": n, "txs": len(block["transactions"]), "alerts": alerts,
            "seconds": timing, "eval_seconds": round(time.perf_counter() - t0, 3),
            "lag_seconds": round(time.time() - int(block["timestamp"], 16), 1), "wall": time.time()}
