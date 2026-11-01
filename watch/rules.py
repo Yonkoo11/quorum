@@ -146,11 +146,21 @@ def _watched_signers(auths: list, block: dict, ctx, escalate: list, unknowns: li
             escalate.append(f"{head} signature carried, but its code did not change (stale or replayed authorization)")
 
 
+def span_start(block: dict) -> int:
+    """First block this evaluation covers. Per-block mode: the block itself. Range mode (fast
+    chains): `range_start`, so code and log reads span every block since the last pass."""
+    return block.get("range_start", int(block["number"], 16))
+
+
 def rule_7702_code_flip(block: dict, ctx) -> list:
-    """Watched wallet whose 7702 pointer appears, changes or is cleared in this block. Addresses
-    holding ordinary contract code are skipped (one code read); wallets cost two reads per block."""
+    """Watched wallet whose 7702 pointer appears, changes or is cleared since the last checked
+    block. The code last seen is remembered (ctx.codes, persisted by the live loop), so a pass costs
+    one read per wallet and never needs old state: the public Arbitrum RPC serves state for the
+    last 64 blocks only (measured 2026-11-01). With no memory yet, the block before the span is read
+    once. Addresses holding ordinary contract code are skipped after one read."""
     out = []
-    n = int(block["number"], 16)
+    n, first = int(block["number"], 16), span_start(block)
+    where = f"in block {n}" if first == n else f"between blocks {first} and {n}"
     for addr, label in ctx.watchlist.items():
         now = ctx.rpc.code(addr, n)
         if now is None:
@@ -159,12 +169,15 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
             continue
         if now != "0x" and not now.startswith(DELEGATION_PREFIX):
             continue                                   # a contract, not a 7702 wallet
-        before = ctx.rpc.code(addr, n - 1)
+        before = ctx.codes.get(addr)
+        if before is None:
+            before = ctx.rpc.code(addr, first - 1)
+        ctx.codes[addr] = now
         if before == now:
             continue
-        unknown = [f"code of {addr} at {n - 1}"] if before is None else []
+        unknown = [f"code of {addr} at {first - 1}"] if before is None else []
         out.append(_alert("7702_code_flip", block, None, addr,
-                          [f"{label}: 7702 pointer is now {_pointer(now)} (was {_pointer(before)})"],
+                          [f"{label}: 7702 pointer is now {_pointer(now)} (was {_pointer(before)}) {where}"],
                           unknown, acted=[addr] if not unknown else (), watched=[addr]))
     return out
 
@@ -190,14 +203,24 @@ def rule_watchlist_admin_call(block: dict, ctx) -> list:
     return out
 
 
+LOG_SPAN = 100   # public Arbitrum RPC refuses eth_getLogs over more blocks (measured 2026-11-01: 100 ok, 110 refused)
+
+
 def rule_watchlist_admin_event(block: dict, ctx) -> list:
-    """An admin-shaped event emitted by a watched contract (catches calls via proxies/multisigs)."""
-    n = int(block["number"], 16)
-    logs = ctx.rpc.logs(list(ctx.watchlist), n, n) if ctx.watchlist else []
-    if logs is None:
-        return [_alert("watchlist_admin_event", block, None, "*",
-                       ["could not read logs"], [f"logs at {n}"])]
-    out = []
+    """An admin-shaped event emitted by a watched contract (catches calls via proxies/multisigs).
+    A long span is read in LOG_SPAN pieces; a piece that fails is one unknown, the rest still count."""
+    n, first = int(block["number"], 16), span_start(block)
+    if not ctx.watchlist:
+        return []
+    logs, unknown = [], []
+    for a in range(first, n + 1, LOG_SPAN):
+        b = min(a + LOG_SPAN - 1, n)
+        part = ctx.rpc.logs(list(ctx.watchlist), a, b)
+        if part is None:
+            unknown.append(f"logs at {a}-{b}" if a != b else f"logs at {b}")
+        else:
+            logs.extend(part)
+    out = [_alert("watchlist_admin_event", block, None, "*", ["could not read logs"], unknown)] if unknown else []
     for lg in logs:
         topic = (lg.get("topics") or [""])[0]
         if topic in ADMIN_TOPICS:

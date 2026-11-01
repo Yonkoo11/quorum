@@ -404,7 +404,7 @@ def test_heartbeat_reports_blocks_and_alerts(tmp_path):
 def test_telegram_429_waits_retry_after_and_retries_once(monkeypatch):
     import io, urllib.error, urllib.request
     from watch import live
-    monkeypatch.setenv("BUYBOT_TG_TOKEN", "t"); monkeypatch.setenv("BUYBOT_TG_CHAT", "c")
+    monkeypatch.setenv("BUYBOT_TG_TOKEN", "t"); monkeypatch.setenv("QUORUM_WATCH_TG_CHAT", "c")
     calls, naps = [], []
     class Ok:
         status = 200
@@ -419,3 +419,43 @@ def test_telegram_429_waits_retry_after_and_retries_once(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", fake_open)
     assert live.post_telegram("hi", sleep=naps.append) is True
     assert naps == [3] and len(calls) == 2
+
+
+def test_range_pass_reads_code_and_logs_over_the_span(tmp_path):
+    """Range mode (fast chains): one pass covers every block since the last one, code is compared
+    with the remembered value (no old state is ever read: the public Arbitrum RPC keeps 64 blocks),
+    logs are read in 100-block pieces, no block body is fetched, the record says which rules did
+    not run, and the new code is saved for the next pass."""
+    from watch.live import State, run
+    seen_logs = []
+
+    class RangeRpc(FakeRpc):
+        def head(self):
+            return 350
+        def header(self, n):
+            return {"number": hex(n), "timestamp": hex(1_700_000_000 + n)}
+        def block(self, n):
+            raise AssertionError("range mode must never fetch transaction bodies")
+        def code(self, address, block="latest"):
+            if block != 350:
+                return None                                   # old state: the endpoint refuses it
+            return "0xef0100" + SWEEPER[2:] if address.lower() == BINANCE_14 else "0x" + "60" * 100
+        def logs(self, addresses, a, b):
+            seen_logs.append((a, b)); return []
+
+    (tmp_path / "state.json").write_text(json.dumps({"last_block": 100, "codes": {BINANCE_14: "0x"}}))
+    st = State(tmp_path / "state.json")
+    sent = []
+    run("ethereum", {BINANCE_14: "Binance 14"}, st, str(tmp_path / "log.jsonl"), sent.append,
+        max_blocks=1, rpc=RangeRpc(), sleep=lambda s: None, range_mode=True, catch_up=5000)
+    lines = [json.loads(l) for l in (tmp_path / "log.jsonl").read_text().splitlines()]
+    assert len(lines) == 1 and lines[0]["blocks"] == [101, 350] and lines[0]["span"] == 250
+    assert seen_logs == [(101, 200), (201, 300), (301, 350)]
+    flips = [a for a in lines[0]["alerts"] if a["rule"] == "7702_code_flip"]
+    assert flips and flips[0]["acted"] == [BINANCE_14] and not flips[0]["unknowns"]
+    assert "between blocks 101 and 350" in flips[0]["reasons"][0]
+    assert any("not read" in u for u in lines[0]["unknowns"])
+    assert st.last == 350
+    saved = json.loads((tmp_path / "state.json").read_text())
+    assert saved["codes"][BINANCE_14] == "0xef0100" + SWEEPER[2:]
+    assert any("Binance 14" in m and "between blocks 101 and 350" in m for m in sent)

@@ -22,11 +22,12 @@ from .rules import RULES
 
 
 class Ctx:
-    def __init__(self, rpc: Rpc, watchlist: dict):
+    def __init__(self, rpc: Rpc, watchlist: dict, codes: dict | None = None):
         self.rpc = rpc
         self.watchlist = {k.lower(): v for k, v in watchlist.items()}
         self._code = {}
         self.seen_batches = set()   # (sender, delegates) batches already alerted this run
+        self.codes = {} if codes is None else codes   # watched address -> code last seen (live loop persists it)
 
     def cached_code(self, address: str):
         if address not in self._code:

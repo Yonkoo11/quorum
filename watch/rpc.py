@@ -53,6 +53,11 @@ class Rpc:
                     return out["result"]
                 self.last_error = f"{method}: {out.get('error')}"
                 break  # an RPC-level error will not fix itself on retry
+            except urllib.error.HTTPError as exc:
+                self.last_error = f"{method}: {exc}"
+                if 400 <= exc.code < 500 and exc.code != 429:
+                    break  # the endpoint refused the request (e.g. a span limit); retrying cannot help
+                time.sleep(1.5 * (attempt + 1))
             except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
                 self.last_error = f"{method}: {exc}"
                 time.sleep(1.5 * (attempt + 1))
@@ -61,6 +66,10 @@ class Rpc:
 
     def block(self, number: int) -> dict | None:
         return self.call("eth_getBlockByNumber", [hex(number), True])
+
+    def header(self, number: int) -> dict | None:
+        """Block without transaction bodies (range mode on fast chains reads only this)."""
+        return self.call("eth_getBlockByNumber", [hex(number), False])
 
     def head(self) -> int | None:
         h = self.call("eth_blockNumber", [])

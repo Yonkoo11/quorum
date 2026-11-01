@@ -4,11 +4,18 @@ Usage:
   python3 -m watch.live --chain ethereum --watchlist watch/seeds/binance14-2026-10-29.json \
       [--state ai/watch-state.json] [--log ai/watch-live.jsonl] [--max-blocks 3] [--dry-run]
 
-Telegram posting uses the same env names as bot/buybot.py (BUYBOT_TG_TOKEN, BUYBOT_TG_CHAT);
-without them, alerts are printed. Messages go through watch/notify.Notifier (1 s apart, 20 per
+Telegram posting reuses the buy bot's token (BUYBOT_TG_TOKEN) but posts to its own chat
+(QUORUM_WATCH_TG_CHAT): monitoring lines do not belong in the token's public group. Without
+both, alerts are printed. Messages go through watch/notify.Notifier (1 s apart, 20 per
 minute, overflow digested, repeats suppressed) and a heartbeat line goes out every
 --heartbeat-minutes. Catch-up: after a gap (sleep, crash) it processes every missed block up
 to --catch-up, and logs the gap it skipped beyond that as unknown.
+
+--range (sub-second chains such as Arbitrum): each poll handles every new block as ONE pass.
+Code and logs are read across the span, so a watched wallet's code flip or a watched contract's
+admin event is never missed; transaction bodies are not fetched, so the per-transaction rules
+(type-4, admin call, deploy) do not run, and every record says so. Measured 2026-11-01: per-block
+mode on arbitrum.drpc.org fell 148 s behind in 9 blocks (one call takes ~1 s, batches refused).
 """
 from __future__ import annotations
 
@@ -32,7 +39,7 @@ BLOCK_SECONDS = {"ethereum": 12, "arbitrum": 1, "base": 2}
 def post_telegram(text: str, sleep=time.sleep) -> bool:
     """One send; on HTTP 429 waits the API's own `retry_after` (Bot API ResponseParameters) and
     retries once. Any failure is printed (URLs redacted) and the message stays in the log."""
-    token, chat = os.environ.get("BUYBOT_TG_TOKEN"), os.environ.get("BUYBOT_TG_CHAT")
+    token, chat = os.environ.get("BUYBOT_TG_TOKEN"), os.environ.get("QUORUM_WATCH_TG_CHAT")
     if not token or not chat:
         return False
     body = json.dumps({"chat_id": chat, "text": text, "disable_web_page_preview": True}).encode()
@@ -68,7 +75,7 @@ class Heartbeat:
         self.since, self.blocks, self.alerts, self.info, self.lag = clock(), 0, 0, 0, None
 
     def tick(self, rec: dict):
-        self.blocks += 1
+        self.blocks += rec.get("span", 1)
         if "alerts" in rec:
             real = sum(1 for a in rec["alerts"] if a["level"] == "alert")
             self.alerts += real; self.info += len(rec["alerts"]) - real; self.lag = rec["lag_seconds"]
@@ -100,20 +107,21 @@ def format_simulation(sim: dict) -> str:
 class State:
     def __init__(self, path: Path):
         self.path = path
-        self.last, self.seen, self.note = None, set(), None
+        self.last, self.seen, self.codes, self.note = None, set(), {}, None
         if not path.exists():
             return
         try:
             data = json.loads(path.read_text())
             self.last = data.get("last_block")
             self.seen = {(s, tuple(d)) for s, d in data.get("seen_batches", [])}
-        except (ValueError, TypeError) as exc:  # a damaged state file restarts from head, loudly
+            self.codes = dict(data.get("codes", {}))   # watched address -> code last seen
+        except (ValueError, TypeError, AttributeError) as exc:  # a damaged state file restarts from head, loudly
             self.note = f"state file unreadable ({type(exc).__name__}); starting from head"
-            self.last, self.seen = None, set()
+            self.last, self.seen, self.codes = None, set(), {}
 
     def save(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps({"last_block": self.last,
+        self.path.write_text(json.dumps({"last_block": self.last, "codes": self.codes,
                                          "seen_batches": [[s, list(d)] for s, d in self.seen]}))
 
 
@@ -138,9 +146,37 @@ def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=
     rec = {"chain": chain, "block": n, "txs": len(block["transactions"]), "alerts": alerts,
            "seconds": timing, "eval_seconds": round(time.perf_counter() - t0, 3),
            "lag_seconds": round(time.time() - int(block["timestamp"], 16), 1), "wall": time.time()}
+    return _finish(rec, log, len(real))
+
+
+def process_range(start: int, end: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify) -> dict:
+    """Range mode (sub-second chains): one pass over blocks start..end. Code and logs are read
+    across the whole span, so the watched-address rules miss nothing; transaction bodies are not
+    fetched, so the per-transaction rules do not run and the record says so."""
+    header = rpc.header(end)
+    if header is None:
+        rec = {"chain": chain, "blocks": [start, end], "unknown": "head block fetch failed", "wall": time.time()}
+        log.write(json.dumps(rec) + "\n"); log.flush()
+        notify(f"[Quorum watch] UNKNOWN: {chain} blocks {start}-{end} could not be fetched; they were NOT checked.")
+        return rec
+    t0 = time.perf_counter()
+    alerts, timing = evaluate_block({**header, "transactions": [], "range_start": start}, ctx)
+    real = [a for a in alerts if a["level"] == "alert"]
+    for al in real:
+        _send(notify, format_alert(chain, al), al)
+    rec = {"chain": chain, "block": end, "blocks": [start, end], "span": end - start + 1, "txs": "not read",
+           "alerts": alerts, "seconds": timing, "eval_seconds": round(time.perf_counter() - t0, 3),
+           "lag_seconds": round(time.time() - int(header["timestamp"], 16), 1), "wall": time.time(),
+           "unknowns": [f"transaction bodies of blocks {start}-{end} not read "
+                        "(range mode: the type-4, admin-call and deploy rules did not run)"]}
+    return _finish(rec, log, len(real))
+
+
+def _finish(rec: dict, log, real: int) -> dict:
     log.write(json.dumps(rec) + "\n"); log.flush()
-    print(f"block {n}: {len(block['transactions'])} txs, {len(real)} alerts, "
-          f"{len(alerts) - len(real)} info, eval {rec['eval_seconds']}s, lag {rec['lag_seconds']}s")
+    span = f"blocks {rec['blocks'][0]}-{rec['blocks'][1]}" if "blocks" in rec else f"block {rec['block']}"
+    print(f"{span}: {rec['txs']} txs, {real} alerts, {len(rec['alerts']) - real} info, "
+          f"eval {rec['eval_seconds']}s, lag {rec['lag_seconds']}s")
     return rec
 
 
@@ -166,11 +202,17 @@ def _first_block(chain: str, state: State, head: int, catch_up: int, log, notify
     return start
 
 
+def _targets(start: int, head: int, range_mode: bool) -> list:
+    """Range mode: the whole span is one pass (flat cost on fast chains); else one block at a time.
+    A span of one block is read in full either way (its transaction rules can run, so they do)."""
+    return [(start, head)] if range_mode and head > start else [(n, n) for n in range(start, head + 1)]
+
+
 def run(chain: str, watchlist: dict, state: State, log_path: str, notify, max_blocks: int | None,
         catch_up: int = 50, rpc: Rpc | None = None, sleep=time.sleep, simulate=None,
-        heartbeat_seconds: int = 0, clock=time.time) -> int:
+        heartbeat_seconds: int = 0, clock=time.time, range_mode: bool = False) -> int:
     rpc = rpc or Rpc(chain)
-    ctx = Ctx(rpc, watchlist)
+    ctx = Ctx(rpc, watchlist, state.codes)
     ctx.seen_batches = state.seen
     done, beat = 0, Heartbeat(chain, notify, heartbeat_seconds, clock)
     if state.note:
@@ -184,9 +226,10 @@ def run(chain: str, watchlist: dict, state: State, log_path: str, notify, max_bl
             start = _first_block(chain, state, head, catch_up, log, notify)
             if start > head:
                 sleep(BLOCK_SECONDS.get(chain, 12)); continue
-            for n in range(start, head + 1):
-                beat.tick(process_block(n, chain, rpc, ctx, log, notify, simulate))
-                state.last = n; state.save(); done += 1
+            for a, b in _targets(start, head, range_mode):
+                beat.tick(process_block(a, chain, rpc, ctx, log, notify, simulate) if a == b
+                          else process_range(a, b, chain, rpc, ctx, log, notify))
+                state.last = b; state.save(); done += 1
                 if max_blocks is not None and done >= max_blocks:
                     break
             if hasattr(notify, "flush"):
@@ -204,20 +247,23 @@ def main(argv=None):
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--simulate", action="store_true", help="replay flagged txs on an anvil fork (Stage 3)")
     p.add_argument("--heartbeat-minutes", type=int, default=60, help="0 = no heartbeat")
+    p.add_argument("--range", action="store_true", help="one pass per poll over all new blocks (fast chains)")
+    p.add_argument("--catch-up", type=int, default=50, help="blocks processed after a gap; the rest is logged unknown")
     a = p.parse_args(argv)
     sim = None
     if a.simulate:
         from .simulate import simulate as sim
     watchlist = load_watchlist(a.watchlist)
     notify = make_notifier(a.dry_run)
-    print(f"watch live: {a.chain}, {'Telegram' if has_telegram(a.dry_run) else 'print only'}, "
-          f"state {a.state}, heartbeat every {a.heartbeat_minutes} min")
-    return run(a.chain, watchlist, State(Path(a.state)), a.log, notify, a.max_blocks,
-               simulate=sim, heartbeat_seconds=a.heartbeat_minutes * 60)
+    print(f"watch live: {a.chain}, {'range' if a.range else 'per-block'} mode, "
+          f"{'Telegram' if has_telegram(a.dry_run) else 'print only'}, state {a.state}, "
+          f"heartbeat every {a.heartbeat_minutes} min")
+    return run(a.chain, watchlist, State(Path(a.state)), a.log, notify, a.max_blocks, catch_up=a.catch_up,
+               simulate=sim, heartbeat_seconds=a.heartbeat_minutes * 60, range_mode=a.range)
 
 
 def has_telegram(dry_run: bool) -> bool:
-    return bool(os.environ.get("BUYBOT_TG_TOKEN")) and not dry_run
+    return bool(os.environ.get("BUYBOT_TG_TOKEN") and os.environ.get("QUORUM_WATCH_TG_CHAT")) and not dry_run
 
 
 def make_notifier(dry_run: bool) -> Notifier:
