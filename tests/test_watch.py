@@ -52,15 +52,16 @@ def test_delegation_escalates_only_with_evidence():
     assert hit["level"] == "alert"
     assert any("50 authorizations" in r for r in hit["reasons"])
     assert any("Binance 14" in r and "signed a delegation" in r for r in hit["reasons"])
+    assert hit["watched"] == [BINANCE_14], "the real hack's batch is marked as about the watched wallet"
     others = [o for o in out if o["tx"] != DELEGATION_TX]
-    assert others and all(o["level"] == "info" for o in others)
+    assert others and all(o["level"] == "info" and o["watched"] == [] for o in others)
 
 
 def test_code_flip_fires_for_watched_wallet():
     ctx = Ctx(FakeRpc(), {BINANCE_14: "Binance 14"})
     alerts, timing = evaluate_block(block(), ctx)
     flips = [a for a in alerts if a["rule"] == "7702_code_flip"]
-    assert len(flips) == 1 and flips[0]["subject"] == BINANCE_14
+    assert len(flips) == 1 and flips[0]["subject"] == BINANCE_14 and flips[0]["watched"] == [BINANCE_14]
     assert SWEEPER[2:] in flips[0]["reasons"][0]
     assert set(timing) == {r.__name__ for r in __import__("watch.rules", fromlist=["RULES"]).RULES}
 
@@ -248,29 +249,28 @@ def test_notifier_spaces_caps_digests_and_dedupes():
 
 
 def test_notifier_digest_puts_watchlist_first_never_drops_and_marks_cuts():
-    from watch.live import is_watched_subject
+    from watch.live import _send, format_alert
     from watch.notify import TELEGRAM_MAX, Notifier, fit
-    watched = {BINANCE_14}
-    assert is_watched_subject(f"[Quorum watch] x\nsubject {BINANCE_14.upper()}\n- r", watched)
-    assert not is_watched_subject(f"[Quorum watch] x\nsubject 0x{'ab' * 20}\n- delegate {BINANCE_14}", watched), \
-        "a watched address planted in a reason line does not jump the queue"
-    assert not is_watched_subject("subject", watched) and not is_watched_subject("", watched)
     now, sent = [0.0], []
-    n = Notifier(sent.append, clock=lambda: now[0], sleep=lambda s: None, per_minute=3,
-                 priority=lambda t: is_watched_subject(t, watched))
+    n = Notifier(sent.append, clock=lambda: now[0], sleep=lambda s: None, per_minute=3)
     for i in range(3):
         n(f"fill {i}")
-    for i in range(30):
-        n(f"noise {i} subject 0x{'ab' * 20}\n- delegate {BINANCE_14} " + "x" * 600)
-    n(f"[Quorum watch] 7702_code_flip\nsubject {BINANCE_14}")
-    assert len(n.held) == 31
+    base = {"rule": "7702_type4", "tx": None, "unknowns": [], "block": 7}
+    for i in range(30):   # noise that names the watched address in a reason line: no priority
+        _send(n, f"noise {i} " + format_alert("ethereum", {**base, "subject": f"0x{'ab' * 20}", "watched": [],
+                                                           "reasons": [f"delegate {BINANCE_14} " + "x" * 600]}), {"watched": []})
+    batch = {**base, "subject": f"0x{'cd' * 20}", "watched": [BINANCE_14],   # a batcher, but Binance signed it
+             "reasons": [f"watched wallet Binance 14 ({BINANCE_14}) signed a delegation"]}
+    _send(n, format_alert("ethereum", batch), batch)
+    assert len(n.held) == 31 and n.held[-1][0] is True, "priority comes from the rule's watched field"
     now[0] += 61
     assert n.flush() is True
     digests = [s for s in sent if s.startswith("[Quorum watch] digest")]
     assert len(digests) == 3 and all(len(d) <= TELEGRAM_MAX for d in digests), "this minute takes 3 posts"
-    assert BINANCE_14 in digests[0] and digests[0].index(BINANCE_14) < digests[0].index("noise"), "watched first"
+    assert "signed a delegation" in digests[0] and digests[0].index("signed a delegation") < digests[0].index("noise"), \
+        "the watched-wallet batch goes first, ahead of noise that merely mentions the address"
     assert digests[0].startswith("[Quorum watch] digest 1/")
-    assert n.held and all(m.startswith("noise") for m in n.held), "the rest waits, nothing dropped"
+    assert n.held and all(m.startswith("noise") and not u for u, m in n.held), "the rest waits, nothing dropped"
     total = sum(d.count("noise ") for d in digests) + len(n.held)
     assert total == 30
     big = fit("y" * 5000)

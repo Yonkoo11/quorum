@@ -111,7 +111,7 @@ def main(argv=None):
     with open(a.log, "a") as log:
         log.write(json.dumps(rows) + "\n")
     code, lines = report(rows)
-    notify = make_notifier(not a.notify, {})
+    notify = make_notifier(not a.notify)
     for line in lines:
         notify(line) if line.startswith("[Quorum drift]") else print(line)
     if hasattr(notify, "flush"):

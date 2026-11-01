@@ -15,7 +15,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 import time
 import urllib.error
@@ -129,7 +128,7 @@ def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=
     alerts, timing = evaluate_block(block, ctx)
     real = [a for a in alerts if a["level"] == "alert"]
     for al in real:
-        notify(format_alert(chain, al))   # the alert goes out first; a slow or broken replay never delays it
+        _send(notify, format_alert(chain, al), al)   # the alert goes out first; a slow or broken replay never delays it
         if simulate and al["tx"] and al["rule"] != "7702_type4":   # a delegation moves nothing by itself
             try:
                 al["simulation"] = simulate(chain, al["tx"], ctx.watchlist)
@@ -143,6 +142,16 @@ def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=
     print(f"block {n}: {len(block['transactions'])} txs, {len(real)} alerts, "
           f"{len(alerts) - len(real)} info, eval {rec['eval_seconds']}s, lag {rec['lag_seconds']}s")
     return rec
+
+
+def _send(notify, text: str, al: dict):
+    """An alert about a watched address goes out as urgent (first in any digest). Decided from the
+    rule's own `watched` field, never from the message text (review 2026-11-01: a watched address
+    planted in a reason line must not buy priority, and a batch signed by a watched wallet must get it)."""
+    if al.get("watched") and hasattr(notify, "urgent"):
+        notify.urgent(text)
+    else:
+        notify(text)
 
 
 def _first_block(chain: str, state: State, head: int, catch_up: int, log, notify) -> int:
@@ -199,7 +208,7 @@ def main(argv=None):
     if a.simulate:
         from .simulate import simulate as sim
     watchlist = load_watchlist(a.watchlist)
-    notify = make_notifier(a.dry_run, watchlist)
+    notify = make_notifier(a.dry_run)
     print(f"watch live: {a.chain}, {'Telegram' if has_telegram(a.dry_run) else 'print only'}, "
           f"state {a.state}, heartbeat every {a.heartbeat_minutes} min")
     return run(a.chain, watchlist, State(Path(a.state)), a.log, notify, a.max_blocks,
@@ -210,23 +219,11 @@ def has_telegram(dry_run: bool) -> bool:
     return bool(os.environ.get("BUYBOT_TG_TOKEN")) and not dry_run
 
 
-def make_notifier(dry_run: bool, watchlist: dict) -> Notifier:
-    """Telegram when the bot env is set, print otherwise; an alert whose subject is a watched address
-    goes first in any digest (review 2026-11-01: noise must not crowd out the watchlist, and a reason
-    line that merely mentions a watched address must not buy priority)."""
+def make_notifier(dry_run: bool) -> Notifier:
+    """Telegram when the bot env is set, print otherwise. Digest priority is the caller's call
+    (see _send): it comes from the alert's own fields, not from anything in the message text."""
     send = (lambda t: post_telegram(t) or print(t)) if has_telegram(dry_run) else print
-    watched = {k.lower() for k in watchlist}
-    return Notifier(send, priority=lambda t: is_watched_subject(t, watched))
-
-
-SUBJECT_LINE = re.compile(r"^subject (\S+)$", re.M)
-
-
-def is_watched_subject(text: str, watched: set) -> bool:
-    """Only the alert's own `subject` line counts, matched exactly against the watchlist keys:
-    an address an attacker plants in a reason line (a delegate target, say) must not jump the queue."""
-    m = SUBJECT_LINE.search(text)
-    return bool(m) and m.group(1).lower() in watched
+    return Notifier(send)
 
 
 if __name__ == "__main__":

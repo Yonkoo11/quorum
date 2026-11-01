@@ -131,7 +131,7 @@ def main(argv=None):
     p.add_argument("--once", action="store_true")
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args(argv)
-    return run(a.rpc, Path(a.state), a.log, make_notifier(a.dry_run, {"zcash": "zcash"}), a.every, a.once)
+    return run(a.rpc, Path(a.state), a.log, make_notifier(a.dry_run), a.every, a.once)
 
 
 if __name__ == "__main__":

@@ -42,12 +42,15 @@ except ImportError:  # pragma: no cover
     rlp = _keys = _keccak = None
 
 
-def _alert(rule: str, block: dict, tx: dict | None, subject: str, reasons: list, unknowns=(), level="alert"):
+def _alert(rule: str, block: dict, tx: dict | None, subject: str, reasons: list, unknowns=(), level="alert",
+           watched=()):
+    """`watched` lists the watchlist addresses this alert is about (signer, recipient, contract,
+    embedded target); the notifier puts such alerts first. It is set from the rule's own facts."""
     return {
         "rule": rule, "version": 2, "level": level,
         "block": int(block["number"], 16), "block_ts": int(block["timestamp"], 16),
         "tx": tx["hash"] if tx else None, "subject": subject.lower(),
-        "reasons": reasons, "unknowns": list(unknowns),
+        "reasons": reasons, "unknowns": list(unknowns), "watched": sorted(set(watched)),
     }
 
 
@@ -93,7 +96,7 @@ def rule_7702_type4(block: dict, ctx) -> list:
             continue
         auths = tx.get("authorizationList") or []
         reasons = [f"type-4 transaction with {len(auths)} authorization(s)"]
-        unknowns, escalate = [], []
+        unknowns, escalate, watched = [], [], []
         if _delegate_facts(sorted({a["address"].lower() for a in auths}), ctx, reasons, unknowns):
             escalate.append("delegate without code")
         pair = (tx["from"].lower(), tuple(sorted({a["address"].lower() for a in auths})))
@@ -102,13 +105,15 @@ def rule_7702_type4(block: dict, ctx) -> list:
             reasons.append(f"{len(auths)} authorizations in one tx (first batch from this sender)")
         if (tx.get("to") or "").lower() in ctx.watchlist:
             escalate.append(f"sent to watched {ctx.watchlist[tx['to'].lower()]}")
+            watched.append(tx["to"].lower())
         authorities = {recover_authority(a) for a in auths}
         if None in authorities:
             unknowns.append("authority of one or more authorizations (recovery unavailable)")
         for who in sorted(a for a in authorities if a and a in ctx.watchlist):
             escalate.append(f"watched wallet {ctx.watchlist[who]} ({who}) signed a delegation")
+            watched.append(who)
         level = "alert" if escalate else "info"
-        out.append(_alert("7702_type4", block, tx, tx["from"], reasons + escalate, unknowns, level))
+        out.append(_alert("7702_type4", block, tx, tx["from"], reasons + escalate, unknowns, level, watched))
     return out
 
 
@@ -120,7 +125,7 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
         now = ctx.rpc.code(addr, n)
         if now is None:
             out.append(_alert("7702_code_flip", block, None, addr,
-                              ["could not read code"], [f"code of {addr} at {n}"]))
+                              ["could not read code"], [f"code of {addr} at {n}"], watched=[addr]))
             continue
         if not now.startswith(DELEGATION_PREFIX):
             continue
@@ -129,7 +134,7 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
             was = "unknown" if before is None else ("none" if before == "0x" else f"0x{before[8:]}")
             out.append(_alert("7702_code_flip", block, None, addr,
                               [f"{label}: 7702 pointer is now 0x{now[8:]} (was {was})"],
-                              [] if before is not None else [f"code of {addr} at {n - 1}"]))
+                              [] if before is not None else [f"code of {addr} at {n - 1}"], watched=[addr]))
     return out
 
 
@@ -143,7 +148,8 @@ def rule_watchlist_admin_call(block: dict, ctx) -> list:
         sel = (tx.get("input") or "")[:10]
         if sel in ADMIN_SELECTORS:
             out.append(_alert("watchlist_admin_call", block, tx, to,
-                              [f"{ctx.watchlist[to]}: {ADMIN_SELECTORS[sel]} called by {tx['from']}"]))
+                              [f"{ctx.watchlist[to]}: {ADMIN_SELECTORS[sel]} called by {tx['from']}"],
+                              watched=[to]))
     return out
 
 
@@ -160,7 +166,7 @@ def rule_watchlist_admin_event(block: dict, ctx) -> list:
         if topic in ADMIN_TOPICS:
             addr = lg["address"].lower()
             out.append(_alert("watchlist_admin_event", block, {"hash": lg["transactionHash"]}, addr,
-                              [f"{ctx.watchlist[addr]}: {ADMIN_TOPICS[topic]} emitted"]))
+                              [f"{ctx.watchlist[addr]}: {ADMIN_TOPICS[topic]} emitted"], watched=[addr]))
     return out
 
 
@@ -171,10 +177,11 @@ def rule_deploy_targets_watchlist(block: dict, ctx) -> list:
         if tx.get("to") is not None:
             continue
         data = (tx.get("input") or "").lower()
-        hits = [label for a, label in ctx.watchlist.items() if a[2:] in data]
+        hits = {a: label for a, label in ctx.watchlist.items() if a[2:] in data}
         if hits:
             out.append(_alert("deploy_targets_watchlist", block, tx, tx["from"],
-                              [f"new contract from {tx['from']} embeds watched address(es): {', '.join(hits)}"]))
+                              [f"new contract from {tx['from']} embeds watched address(es): {', '.join(hits.values())}"],
+                              watched=hits))
     return out
 
 

@@ -40,14 +40,12 @@ def pack(msgs: list[str], budget: int = TELEGRAM_MAX - DIGEST_RESERVE) -> list[l
 
 
 class Notifier:
-    def __init__(self, send, clock=time.time, sleep=time.sleep, per_minute=20, dedupe_seconds=600,
-                 priority=None):
+    def __init__(self, send, clock=time.time, sleep=time.sleep, per_minute=20, dedupe_seconds=600):
         self.send, self.clock, self.sleep = send, clock, sleep
         self.per_minute, self.dedupe_seconds = per_minute, dedupe_seconds
-        self.priority = priority or (lambda text: False)   # True = goes first in a digest
         self.sent_at: list[float] = []            # send times inside the last minute
         self.last_seen: dict = {}                 # sha256(text) -> time of the last send
-        self.held: list[str] = []                 # overflow waiting for the digest
+        self.held: list[tuple[bool, str]] = []    # (urgent, text) overflow waiting for the digest
         self.stats = {"sent": 0, "held": 0, "suppressed": 0}
 
     def _room(self, now: float) -> bool:
@@ -55,6 +53,14 @@ class Notifier:
         return len(self.sent_at) < self.per_minute
 
     def __call__(self, text: str) -> bool:
+        return self._accept(text, urgent=False)
+
+    def urgent(self, text: str) -> bool:
+        """Same path, but goes first in any digest. The caller decides from the alert's own fields
+        (review 2026-11-01: deciding from the rendered text let a planted address buy priority)."""
+        return self._accept(text, urgent=True)
+
+    def _accept(self, text: str, urgent: bool) -> bool:
         """Only a byte-identical repeat is a repeat: a new tx, block or reason is a new message
         (review 2026-11-01: keying on rule+subject let one alert hide the next from the same sender)."""
         now = self.clock()
@@ -64,11 +70,11 @@ class Notifier:
             self.stats["suppressed"] += 1
             return False
         self.last_seen[key] = now
-        return self._deliver(text, now)
+        return self._deliver(text, now, urgent)
 
-    def _deliver(self, text: str, now: float) -> bool:
+    def _deliver(self, text: str, now: float, urgent: bool = False) -> bool:
         if not self._room(now):
-            self.held.append(text); self.stats["held"] += 1
+            self.held.append((urgent, text)); self.stats["held"] += 1
             return False
         if self.sent_at and now - self.sent_at[-1] < 1:
             self.sleep(1 - (now - self.sent_at[-1]))
@@ -82,11 +88,12 @@ class Notifier:
         cannot take stays held for the next pass. Nothing is dropped."""
         if not self.held or not self._room(self.clock()):
             return False
-        self.held.sort(key=lambda t: not self.priority(t))   # stable: priority first, then arrival
-        chunks, self.held = pack(self.held), []
+        self.held.sort(key=lambda it: not it[0])   # stable: urgent first, then arrival
+        urgent = {text for u, text in self.held if u}
+        chunks, self.held = pack([text for _, text in self.held]), []
         for i, chunk in enumerate(chunks):
             if not self._room(self.clock()):
-                self.held = [m for c in chunks[i:] for m in c]
+                self.held = [(m in urgent, m) for c in chunks[i:] for m in c]
                 break
             head = f"[Quorum watch] digest {i + 1}/{len(chunks)}: {len(chunk)} message(s) held by the rate limit\n"
             self._deliver(head + SEP.join(chunk), self.clock())
