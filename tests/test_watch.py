@@ -57,6 +57,29 @@ def test_delegation_escalates_only_with_evidence():
     assert others and all(o["level"] == "info" and o["watched"] == [] == o["acted"] for o in others)
 
 
+def test_replayed_authorization_is_not_urgent():
+    """Anyone can copy Binance 14's signed authorization into their own tx; the chain skips the
+    stale nonce, so the wallet's code never changes. Alert, but not urgent (review 2026-11-01)."""
+    b = block()
+    real = next(t for t in b["transactions"] if t["hash"] == DELEGATION_TX)
+    replay = {**real, "hash": "0x" + "ee" * 32, "from": "0x" + "ab" * 20, "to": "0x" + "ab" * 20}
+    b["transactions"] = [replay]
+
+    class UnchangedRpc(FakeRpc):
+        def code(self, address, block="latest"):
+            return "0x" if address.lower() == BINANCE_14 else super().code(address, block)
+    out = rule_7702_type4(b, Ctx(UnchangedRpc(), {BINANCE_14: "Binance 14"}))
+    assert len(out) == 1 and out[0]["level"] == "alert"
+    assert out[0]["watched"] == [BINANCE_14] and out[0]["acted"] == []
+    assert any("replayed" in r for r in out[0]["reasons"])
+
+    class DeadRpc(FakeRpc):
+        def code(self, address, block="latest"):
+            return None
+    out = rule_7702_type4(b, Ctx(DeadRpc(), {BINANCE_14: "Binance 14"}))
+    assert out[0]["acted"] == [] and out[0]["watched"] == [BINANCE_14] and out[0]["unknowns"]
+
+
 def test_code_flip_fires_for_watched_wallet():
     ctx = Ctx(FakeRpc(), {BINANCE_14: "Binance 14"})
     alerts, timing = evaluate_block(block(), ctx)

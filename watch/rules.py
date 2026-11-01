@@ -109,15 +109,37 @@ def rule_7702_type4(block: dict, ctx) -> list:
         if (tx.get("to") or "").lower() in ctx.watchlist:
             escalate.append(f"sent to watched {ctx.watchlist[tx['to'].lower()]}")
             watched.append(tx["to"].lower())
-        authorities = {recover_authority(a) for a in auths}
-        if None in authorities:
-            unknowns.append("authority of one or more authorizations (recovery unavailable)")
-        for who in sorted(a for a in authorities if a and a in ctx.watchlist):
-            escalate.append(f"watched wallet {ctx.watchlist[who]} ({who}) signed a delegation")
-            acted.append(who)
+        _watched_signers(auths, block, ctx, escalate, unknowns, watched, acted)
         level = "alert" if escalate else "info"
         out.append(_alert("7702_type4", block, tx, tx["from"], reasons + escalate, unknowns, level, watched, acted))
     return out
+
+
+def _watched_signers(auths: list, block: dict, ctx, escalate: list, unknowns: list, watched: list, acted: list):
+    """A watched authority counts as having acted only when the chain applied its authorization:
+    its code at this block is 0xef0100 || the delegate it signed for. A valid-looking signature
+    alone is replayable by anyone (copy the tuple from an old tx; a stale nonce makes the chain
+    skip it), so a recovered signer whose code does not match is an alert, not urgent (review 2026-11-01)."""
+    n = int(block["number"], 16)
+    signed = {}
+    for a in auths:
+        who = recover_authority(a)
+        if who is None:
+            unknowns.append("authority of one or more authorizations (recovery unavailable)")
+        elif who in ctx.watchlist:
+            signed.setdefault(who, set()).add(a["address"].lower())
+    for who, delegates in sorted(signed.items()):
+        head, code = f"watched wallet {ctx.watchlist[who]} ({who})", ctx.rpc.code(who, n)
+        if code is not None and code.lower() in {DELEGATION_PREFIX + d[2:] for d in delegates}:
+            acted.append(who)
+            escalate.append(f"{head} signed a delegation and it took effect")
+            continue
+        watched.append(who)
+        if code is None:
+            unknowns.append(f"code of {who} at {n} (cannot tell if the authorization took effect)")
+            escalate.append(f"{head} signed a delegation (effect unknown)")
+        else:
+            escalate.append(f"{head} signature carried, but its code does not match (stale or replayed authorization)")
 
 
 def rule_7702_code_flip(block: dict, ctx) -> list:
