@@ -190,3 +190,91 @@ def test_replay_failure_and_urls_never_reach_the_alert(tmp_path):
     assert any("replay UNKNOWN: replay raised RuntimeError" in m for m in sent)
     assert "key123" not in "".join(sent)
     assert redact("eth_call: https://rpc.example/key123 refused") == "eth_call: <url> refused"
+
+
+ZERO = "0x" + "00" * 20
+
+
+def type4_block(delegate, n_auths):
+    auth = {"chainId": "0x1", "address": delegate, "nonce": "0x0", "yParity": "0x0", "r": "0x1", "s": "0x1"}
+    tx = {"hash": "0xt4", "from": "0xsender", "to": "0xsender", "type": "0x4", "authorizationList": [auth] * n_auths}
+    return {"number": "0x10", "timestamp": "0x0", "transactions": [tx]}
+
+
+def test_zero_address_delegate_is_a_clear_not_an_alert():
+    """Live run 2026-11-01: 4 of 7 alerts were wallets clearing a delegation (EIP-7702: zero address clears)."""
+    class ZeroRpc(FakeRpc):
+        def code(self, address, block="latest"):
+            return "0x" if address == ZERO else super().code(address, block)
+    out = rule_7702_type4(type4_block(ZERO, 1), Ctx(ZeroRpc(), {}))
+    assert out[0]["level"] == "info" and any("delegation cleared" in r for r in out[0]["reasons"])
+    assert not any("NO code" in r for r in out[0]["reasons"])
+
+
+def test_big_batch_to_a_real_contract_is_info_but_empty_delegate_still_alerts():
+    out = rule_7702_type4(type4_block("0x" + "ab" * 20, 7), Ctx(FakeRpc(), {}))
+    assert out[0]["level"] == "info" and any("7 authorizations in one tx" in r for r in out[0]["reasons"])
+
+    class EmptyRpc(FakeRpc):
+        def code(self, address, block="latest"): return "0x"
+    out = rule_7702_type4(type4_block("0x" + "cd" * 20, 1), Ctx(EmptyRpc(), {}))
+    assert out[0]["level"] == "alert" and "delegate without code" in out[0]["reasons"]
+
+
+def test_notifier_spaces_caps_digests_and_dedupes():
+    from watch.live import format_alert
+    from watch.notify import Notifier
+    now, sent, naps = [1000.0], [], []
+    n = Notifier(sent.append, clock=lambda: now[0], sleep=naps.append, per_minute=20, dedupe_seconds=600)
+    n("a"); now[0] += 0.25; n("b")
+    assert naps == [0.75], "second message waits for the 1 s gap"
+    for i in range(25):
+        n(f"msg {i}")
+    assert len(sent) == 20 and len(n.held) == 7, "the 20/min cap holds the overflow"
+    assert n.flush() is False, "no room in the minute yet"
+    now[0] += 61
+    assert n.flush() and sent[-1].startswith("[Quorum watch] digest: 7 message(s)") and "msg 24" in sent[-1]
+    al = {"rule": "7702_code_flip", "block": 5, "tx": None, "subject": BINANCE_14, "reasons": ["x"], "unknowns": []}
+    assert n(format_alert("ethereum", al)) is True
+    al["block"] = 6
+    assert n(format_alert("ethereum", al)) is False and n.stats["suppressed"] == 1
+    now[0] += 601
+    assert n(format_alert("ethereum", al)) is True, "after the window the same alert goes out again"
+    assert "suppressed" in n.summary()
+
+
+def test_heartbeat_reports_blocks_and_alerts(tmp_path):
+    from watch.live import State, run
+
+    class HeadRpc(FakeRpc):
+        n = 26300752
+        def head(self): self.n += 1; return self.n
+        def block(self, n): return block()
+    now = [0.0]
+    def clock():
+        now[0] += 30; return now[0]
+    sent = []
+    run("ethereum", {BINANCE_14: "Binance 14"}, State(tmp_path / "s.json"), str(tmp_path / "l.jsonl"),
+        sent.append, max_blocks=3, rpc=HeadRpc(), sleep=lambda s: None, heartbeat_seconds=60, clock=clock)
+    beats = [m for m in sent if "heartbeat" in m]
+    assert beats and "alert(s)" in beats[0] and "blocks in" in beats[0]
+
+
+def test_telegram_429_waits_retry_after_and_retries_once(monkeypatch):
+    import io, urllib.error, urllib.request
+    from watch import live
+    monkeypatch.setenv("BUYBOT_TG_TOKEN", "t"); monkeypatch.setenv("BUYBOT_TG_CHAT", "c")
+    calls, naps = [], []
+    class Ok:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+    def fake_open(req, timeout):
+        calls.append(req)
+        if len(calls) == 1:
+            raise urllib.error.HTTPError(req.full_url, 429, "Too Many Requests", {},
+                                         io.BytesIO(b'{"ok":false,"parameters":{"retry_after":3}}'))
+        return Ok()
+    monkeypatch.setattr(urllib.request, "urlopen", fake_open)
+    assert live.post_telegram("hi", sleep=naps.append) is True
+    assert naps == [3] and len(calls) == 2

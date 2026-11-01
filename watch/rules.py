@@ -9,6 +9,7 @@ from __future__ import annotations
 
 DELEGATION_PREFIX = "0xef0100"          # EIP-7702: code = 0xef0100 || address
 TYPE_SET_CODE = "0x4"                   # EIP-7702 transaction type
+ZERO_ADDRESS = "0x" + "00" * 20         # as a 7702 delegate it clears the delegation (spec)
 
 # Admin-shaped function selectors (first 4 bytes of calldata).
 ADMIN_SELECTORS = {
@@ -64,9 +65,13 @@ def recover_authority(auth: dict) -> str | None:
 
 
 def _delegate_facts(delegates: list, ctx, reasons: list, unknowns: list) -> bool:
-    """Append code facts per delegate; True when any delegate has no code."""
+    """Append code facts per delegate; True when any real delegate has no code.
+    The zero address is the spec's way to clear a delegation (EIP-7702), not a target."""
     empty = False
     for d in delegates:
+        if d == ZERO_ADDRESS:
+            reasons.append("delegation cleared (zero-address delegate)")
+            continue
         code = ctx.cached_code(d)
         if code is None:
             unknowns.append(f"code of delegate {d}")
@@ -80,7 +85,8 @@ def _delegate_facts(delegates: list, ctx, reasons: list, unknowns: list) -> bool
 
 def rule_7702_type4(block: dict, ctx) -> list:
     """Every type-4 tx is logged (info). It becomes an alert when: a watched wallet is the
-    authority or the recipient, 5+ authorizations, or a delegate with no code."""
+    authority or the recipient, or a delegate with no code. A big batch alone stays info:
+    live run 2026-11-01, 84 blocks: every batch alert was an ordinary batcher (~250/day)."""
     out = []
     for tx in block.get("transactions", []):
         if tx.get("type") != TYPE_SET_CODE:
@@ -92,10 +98,8 @@ def rule_7702_type4(block: dict, ctx) -> list:
             escalate.append("delegate without code")
         pair = (tx["from"].lower(), tuple(sorted({a["address"].lower() for a in auths})))
         if len(auths) >= BATCH_AUTHS and pair not in ctx.seen_batches:
-            # measured 2026-11-01: one sender re-sending the same delegate batch every few
-            # blocks was 11 of 12 alerts in a 23-block window; repeats are logged as info
-            ctx.seen_batches.add(pair)
-            escalate.append(f"{len(auths)} authorizations in one tx")
+            ctx.seen_batches.add(pair)             # first batch from this sender: worth a line, not an alert
+            reasons.append(f"{len(auths)} authorizations in one tx (first batch from this sender)")
         if (tx.get("to") or "").lower() in ctx.watchlist:
             escalate.append(f"sent to watched {ctx.watchlist[tx['to'].lower()]}")
         authorities = {recover_authority(a) for a in auths}

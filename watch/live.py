@@ -5,8 +5,10 @@ Usage:
       [--state ai/watch-state.json] [--log ai/watch-live.jsonl] [--max-blocks 3] [--dry-run]
 
 Telegram posting uses the same env names as bot/buybot.py (BUYBOT_TG_TOKEN, BUYBOT_TG_CHAT);
-without them, alerts are printed. Catch-up: after a gap (sleep, crash) it processes every
-missed block up to --catch-up, and logs the gap it skipped beyond that as unknown.
+without them, alerts are printed. Messages go through watch/notify.Notifier (1 s apart, 20 per
+minute, overflow digested, repeats suppressed) and a heartbeat line goes out every
+--heartbeat-minutes. Catch-up: after a gap (sleep, crash) it processes every missed block up
+to --catch-up, and logs the gap it skipped beyond that as unknown.
 """
 from __future__ import annotations
 
@@ -15,28 +17,68 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
+from .notify import Notifier
 from .replay import Ctx, evaluate_block, load_watchlist
 from .rpc import Rpc
+from .simulate import redact
 
 BLOCK_SECONDS = {"ethereum": 12, "arbitrum": 1, "base": 2}
 
 
-def post_telegram(text: str) -> bool:
+def post_telegram(text: str, sleep=time.sleep) -> bool:
+    """One send; on HTTP 429 waits the API's own `retry_after` (Bot API ResponseParameters) and
+    retries once. Any failure is printed (URLs redacted) and the message stays in the log."""
     token, chat = os.environ.get("BUYBOT_TG_TOKEN"), os.environ.get("BUYBOT_TG_CHAT")
     if not token or not chat:
         return False
     body = json.dumps({"chat_id": chat, "text": text, "disable_web_page_preview": True}).encode()
-    req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", body,
-                                 {"content-type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=20) as r:
-            return r.status == 200
-    except Exception as exc:  # the alert still reaches stdout and the log
-        print(f"telegram post failed: {exc}")
+    for attempt in (1, 2):
+        req = urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", body,
+                                     {"content-type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=20) as r:
+                return r.status == 200
+        except urllib.error.HTTPError as exc:
+            if exc.code == 429 and attempt == 1:
+                wait = _retry_after(exc)
+                print(f"telegram flood control: waiting {wait}s")
+                sleep(wait); continue
+            print(f"telegram post failed: HTTP {exc.code}")
+        except Exception as exc:  # the alert still reaches stdout and the log
+            print(f"telegram post failed: {redact(exc)}")
         return False
+    return False
+
+
+def _retry_after(exc) -> int:
+    try:
+        return max(1, int(json.load(exc)["parameters"]["retry_after"]))
+    except Exception:
+        return 5
+
+
+class Heartbeat:
+    """Every `every` seconds, one line: blocks checked, alerts, info rows, lag, notifier stats."""
+    def __init__(self, chain: str, notify, every: int, clock=time.time):
+        self.chain, self.notify, self.every, self.clock = chain, notify, every, clock
+        self.since, self.blocks, self.alerts, self.info, self.lag = clock(), 0, 0, 0, None
+
+    def tick(self, rec: dict):
+        self.blocks += 1
+        if "alerts" in rec:
+            real = sum(1 for a in rec["alerts"] if a["level"] == "alert")
+            self.alerts += real; self.info += len(rec["alerts"]) - real; self.lag = rec["lag_seconds"]
+        now = self.clock()
+        if self.every and now - self.since >= self.every:
+            stats = f"; {self.notify.summary()}" if hasattr(self.notify, "summary") else ""
+            self.notify(f"[Quorum watch] heartbeat: {self.chain} watching, {self.blocks} blocks in "
+                        f"{round((now - self.since) / 60)} min, {self.alerts} alert(s), {self.info} info, "
+                        f"lag {self.lag}s{stats}")
+            self.since, self.blocks, self.alerts, self.info = now, 0, 0, 0
 
 
 def format_alert(chain: str, al: dict) -> str:
@@ -102,12 +144,24 @@ def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=
     return rec
 
 
+def _first_block(chain: str, state: State, head: int, catch_up: int, log, notify) -> int:
+    start = head if state.last is None else state.last + 1
+    if head - start + 1 > catch_up:
+        log.write(json.dumps({"chain": chain, "unknown": f"skipped blocks {start}-{head - catch_up}",
+                              "wall": time.time()}) + "\n")
+        notify(f"[Quorum watch] UNKNOWN: {chain} blocks {start}-{head - catch_up} were NOT checked "
+               f"(gap larger than the {catch_up}-block catch-up).")
+        start = head - catch_up + 1
+    return start
+
+
 def run(chain: str, watchlist: dict, state: State, log_path: str, notify, max_blocks: int | None,
-        catch_up: int = 50, rpc: Rpc | None = None, sleep=time.sleep, simulate=None) -> int:
+        catch_up: int = 50, rpc: Rpc | None = None, sleep=time.sleep, simulate=None,
+        heartbeat_seconds: int = 0, clock=time.time) -> int:
     rpc = rpc or Rpc(chain)
     ctx = Ctx(rpc, watchlist)
     ctx.seen_batches = state.seen
-    done = 0
+    done, beat = 0, Heartbeat(chain, notify, heartbeat_seconds, clock)
     if state.note:
         notify(f"[Quorum watch] UNKNOWN: {state.note}")
     with open(log_path, "a") as log:
@@ -116,20 +170,16 @@ def run(chain: str, watchlist: dict, state: State, log_path: str, notify, max_bl
             if head is None:
                 log.write(json.dumps({"chain": chain, "unknown": "head fetch failed", "wall": time.time()}) + "\n")
                 sleep(BLOCK_SECONDS.get(chain, 12)); continue
-            start = head if state.last is None else state.last + 1
+            start = _first_block(chain, state, head, catch_up, log, notify)
             if start > head:
                 sleep(BLOCK_SECONDS.get(chain, 12)); continue
-            if head - start + 1 > catch_up:
-                log.write(json.dumps({"chain": chain, "unknown": f"skipped blocks {start}-{head - catch_up}",
-                                      "wall": time.time()}) + "\n")
-                notify(f"[Quorum watch] UNKNOWN: {chain} blocks {start}-{head - catch_up} were NOT checked "
-                       f"(gap larger than the {catch_up}-block catch-up).")
-                start = head - catch_up + 1
             for n in range(start, head + 1):
-                process_block(n, chain, rpc, ctx, log, notify, simulate)
+                beat.tick(process_block(n, chain, rpc, ctx, log, notify, simulate))
                 state.last = n; state.save(); done += 1
                 if max_blocks is not None and done >= max_blocks:
                     break
+            if hasattr(notify, "flush"):
+                notify.flush()          # anything the rate limit held back goes out as one digest
     return 0
 
 
@@ -142,15 +192,17 @@ def main(argv=None):
     p.add_argument("--max-blocks", type=int)
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--simulate", action="store_true", help="replay flagged txs on an anvil fork (Stage 3)")
+    p.add_argument("--heartbeat-minutes", type=int, default=60, help="0 = no heartbeat")
     a = p.parse_args(argv)
     sim = None
     if a.simulate:
         from .simulate import simulate as sim
     has_tg = bool(os.environ.get("BUYBOT_TG_TOKEN")) and not a.dry_run
-    notify = (lambda t: post_telegram(t) or print(t)) if has_tg else print
-    print(f"watch live: {a.chain}, {'Telegram' if has_tg else 'print only'}, state {a.state}")
+    notify = Notifier((lambda t: post_telegram(t) or print(t)) if has_tg else print)
+    print(f"watch live: {a.chain}, {'Telegram' if has_tg else 'print only'}, state {a.state}, "
+          f"heartbeat every {a.heartbeat_minutes} min")
     return run(a.chain, load_watchlist(a.watchlist), State(Path(a.state)), a.log, notify, a.max_blocks,
-               simulate=sim)
+               simulate=sim, heartbeat_seconds=a.heartbeat_minutes * 60)
 
 
 if __name__ == "__main__":
