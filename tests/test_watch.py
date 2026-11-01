@@ -79,6 +79,33 @@ def test_replayed_authorization_is_not_urgent():
     out = rule_7702_type4(b, Ctx(DeadRpc(), {BINANCE_14: "Binance 14"}))
     assert out[0]["acted"] == [] and out[0]["watched"] == [BINANCE_14] and out[0]["unknowns"]
 
+    class AlreadyRpc(FakeRpc):   # the delegation is already in place: the code matches at n-1 and n
+        def code(self, address, block="latest"):
+            return "0xef0100" + SWEEPER[2:] if address.lower() == BINANCE_14 else super().code(address, block)
+    out = rule_7702_type4(b, Ctx(AlreadyRpc(), {BINANCE_14: "Binance 14"}))
+    assert out[0]["acted"] == [] and any("replayed" in r for r in out[0]["reasons"])
+
+
+def test_cleared_delegation_counts_as_acted(monkeypatch):
+    """A watched wallet signing the zero-address delegate clears its code: that is the wallet acting."""
+    import watch.rules as rules
+    monkeypatch.setattr(rules, "recover_authority", lambda a: BINANCE_14)
+    b = block()
+    b["transactions"] = [{"hash": "0x" + "ee" * 32, "type": "0x4", "from": "0x" + "ab" * 20, "to": "0x" + "ab" * 20,
+                          "authorizationList": [{"address": rules.ZERO_ADDRESS}]}]
+
+    class ClearRpc(FakeRpc):
+        def code(self, address, block="latest"):
+            if address.lower() == BINANCE_14:
+                return "0xef0100" + SWEEPER[2:] if block == 26300752 else "0x"
+            return super().code(address, block)
+    ctx = Ctx(ClearRpc(), {BINANCE_14: "Binance 14"})
+    out = rules.rule_7702_type4(b, ctx)
+    assert out[0]["acted"] == [BINANCE_14] and out[0]["level"] == "alert"
+    flips = rules.rule_7702_code_flip(b, ctx)
+    assert len(flips) == 1 and flips[0]["acted"] == [BINANCE_14] and "cleared" in flips[0]["reasons"][0]
+    assert rules.rule_7702_code_flip(block(), Ctx(FakeRpc(), {SWEEPER: "contract"})) == [], "contracts are skipped"
+
 
 def test_code_flip_fires_for_watched_wallet():
     ctx = Ctx(FakeRpc(), {BINANCE_14: "Binance 14"})

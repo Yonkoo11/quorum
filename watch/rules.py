@@ -116,10 +116,12 @@ def rule_7702_type4(block: dict, ctx) -> list:
 
 
 def _watched_signers(auths: list, block: dict, ctx, escalate: list, unknowns: list, watched: list, acted: list):
-    """A watched authority counts as having acted only when the chain applied its authorization:
-    its code at this block is 0xef0100 || the delegate it signed for. A valid-looking signature
-    alone is replayable by anyone (copy the tuple from an old tx; a stale nonce makes the chain
-    skip it), so a recovered signer whose code does not match is an alert, not urgent (review 2026-11-01)."""
+    """A watched authority counts as having acted only when the chain applied its authorization in
+    this block: its code changed between n-1 and n, and now equals 0xef0100 || the delegate it signed
+    for (or no code, for the zero-address delegate that clears a delegation). A valid-looking
+    signature alone is replayable by anyone (copy the tuple from an old tx; a stale nonce makes the
+    chain skip it), and once a delegation is in place the code keeps matching, so a match without a
+    change in this block is an alert, not urgent (review 2026-11-01, two passes)."""
     n = int(block["number"], 16)
     signed = {}
     for a in auths:
@@ -129,21 +131,24 @@ def _watched_signers(auths: list, block: dict, ctx, escalate: list, unknowns: li
         elif who in ctx.watchlist:
             signed.setdefault(who, set()).add(a["address"].lower())
     for who, delegates in sorted(signed.items()):
-        head, code = f"watched wallet {ctx.watchlist[who]} ({who})", ctx.rpc.code(who, n)
-        if code is not None and code.lower() in {DELEGATION_PREFIX + d[2:] for d in delegates}:
+        head = f"watched wallet {ctx.watchlist[who]} ({who})"
+        now, before = ctx.rpc.code(who, n), ctx.rpc.code(who, n - 1)
+        expected = {"0x" if d == ZERO_ADDRESS else DELEGATION_PREFIX + d[2:] for d in delegates}
+        if now is not None and before is not None and now.lower() in expected and before.lower() != now.lower():
             acted.append(who)
-            escalate.append(f"{head} signed a delegation and it took effect")
+            escalate.append(f"{head} signed a delegation and it took effect in this block")
             continue
         watched.append(who)
-        if code is None:
-            unknowns.append(f"code of {who} at {n} (cannot tell if the authorization took effect)")
+        if now is None or before is None:
+            unknowns.append(f"code of {who} at {n - 1} and {n} (cannot tell if the authorization took effect)")
             escalate.append(f"{head} signed a delegation (effect unknown)")
         else:
-            escalate.append(f"{head} signature carried, but its code does not match (stale or replayed authorization)")
+            escalate.append(f"{head} signature carried, but its code did not change (stale or replayed authorization)")
 
 
 def rule_7702_code_flip(block: dict, ctx) -> list:
-    """Watched wallet whose 7702 pointer appears or changes in this block (re-pointing counts)."""
+    """Watched wallet whose 7702 pointer appears, changes or is cleared in this block. Addresses
+    holding ordinary contract code are skipped (one code read); wallets cost two reads per block."""
     out = []
     n = int(block["number"], 16)
     for addr, label in ctx.watchlist.items():
@@ -152,15 +157,22 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
             out.append(_alert("7702_code_flip", block, None, addr,
                               ["could not read code"], [f"code of {addr} at {n}"], watched=[addr]))  # unknown, not urgent
             continue
-        if not now.startswith(DELEGATION_PREFIX):
-            continue
+        if now != "0x" and not now.startswith(DELEGATION_PREFIX):
+            continue                                   # a contract, not a 7702 wallet
         before = ctx.rpc.code(addr, n - 1)
-        if before is None or before != now:
-            was = "unknown" if before is None else ("none" if before == "0x" else f"0x{before[8:]}")
-            out.append(_alert("7702_code_flip", block, None, addr,
-                              [f"{label}: 7702 pointer is now 0x{now[8:]} (was {was})"],
-                              [] if before is not None else [f"code of {addr} at {n - 1}"], acted=[addr]))
+        if before == now:
+            continue
+        unknown = [f"code of {addr} at {n - 1}"] if before is None else []
+        out.append(_alert("7702_code_flip", block, None, addr,
+                          [f"{label}: 7702 pointer is now {_pointer(now)} (was {_pointer(before)})"],
+                          unknown, acted=[addr] if not unknown else (), watched=[addr]))
     return out
+
+
+def _pointer(code: str | None) -> str:
+    if code is None:
+        return "unknown"
+    return "none (delegation cleared)" if code == "0x" else f"0x{code[8:]}"
 
 
 def rule_watchlist_admin_call(block: dict, ctx) -> list:
