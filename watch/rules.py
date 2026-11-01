@@ -43,14 +43,17 @@ except ImportError:  # pragma: no cover
 
 
 def _alert(rule: str, block: dict, tx: dict | None, subject: str, reasons: list, unknowns=(), level="alert",
-           watched=()):
-    """`watched` lists the watchlist addresses this alert is about (signer, recipient, contract,
-    embedded target); the notifier puts such alerts first. It is set from the rule's own facts."""
+           watched=(), acted=()):
+    """`watched`: the watchlist addresses this alert is about. `acted`: those that did something
+    themselves (signed, flipped code, emitted an event); only these make the alert urgent. Being
+    targeted (a tx sent to a watched wallet, a deploy embedding its address) is open to anyone and
+    must not buy a place at the front of the digest (review 2026-11-01)."""
     return {
         "rule": rule, "version": 2, "level": level,
         "block": int(block["number"], 16), "block_ts": int(block["timestamp"], 16),
         "tx": tx["hash"] if tx else None, "subject": subject.lower(),
-        "reasons": reasons, "unknowns": list(unknowns), "watched": sorted(set(watched)),
+        "reasons": reasons, "unknowns": list(unknowns),
+        "watched": sorted(set(watched) | set(acted)), "acted": sorted(set(acted)),
     }
 
 
@@ -96,7 +99,7 @@ def rule_7702_type4(block: dict, ctx) -> list:
             continue
         auths = tx.get("authorizationList") or []
         reasons = [f"type-4 transaction with {len(auths)} authorization(s)"]
-        unknowns, escalate, watched = [], [], []
+        unknowns, escalate, watched, acted = [], [], [], []
         if _delegate_facts(sorted({a["address"].lower() for a in auths}), ctx, reasons, unknowns):
             escalate.append("delegate without code")
         pair = (tx["from"].lower(), tuple(sorted({a["address"].lower() for a in auths})))
@@ -111,9 +114,9 @@ def rule_7702_type4(block: dict, ctx) -> list:
             unknowns.append("authority of one or more authorizations (recovery unavailable)")
         for who in sorted(a for a in authorities if a and a in ctx.watchlist):
             escalate.append(f"watched wallet {ctx.watchlist[who]} ({who}) signed a delegation")
-            watched.append(who)
+            acted.append(who)
         level = "alert" if escalate else "info"
-        out.append(_alert("7702_type4", block, tx, tx["from"], reasons + escalate, unknowns, level, watched))
+        out.append(_alert("7702_type4", block, tx, tx["from"], reasons + escalate, unknowns, level, watched, acted))
     return out
 
 
@@ -125,7 +128,7 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
         now = ctx.rpc.code(addr, n)
         if now is None:
             out.append(_alert("7702_code_flip", block, None, addr,
-                              ["could not read code"], [f"code of {addr} at {n}"], watched=[addr]))
+                              ["could not read code"], [f"code of {addr} at {n}"], watched=[addr]))  # unknown, not urgent
             continue
         if not now.startswith(DELEGATION_PREFIX):
             continue
@@ -134,7 +137,7 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
             was = "unknown" if before is None else ("none" if before == "0x" else f"0x{before[8:]}")
             out.append(_alert("7702_code_flip", block, None, addr,
                               [f"{label}: 7702 pointer is now 0x{now[8:]} (was {was})"],
-                              [] if before is not None else [f"code of {addr} at {n - 1}"], watched=[addr]))
+                              [] if before is not None else [f"code of {addr} at {n - 1}"], acted=[addr]))
     return out
 
 
@@ -166,7 +169,7 @@ def rule_watchlist_admin_event(block: dict, ctx) -> list:
         if topic in ADMIN_TOPICS:
             addr = lg["address"].lower()
             out.append(_alert("watchlist_admin_event", block, {"hash": lg["transactionHash"]}, addr,
-                              [f"{ctx.watchlist[addr]}: {ADMIN_TOPICS[topic]} emitted"], watched=[addr]))
+                              [f"{ctx.watchlist[addr]}: {ADMIN_TOPICS[topic]} emitted"], acted=[addr]))
     return out
 
 

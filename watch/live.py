@@ -145,10 +145,11 @@ def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=
 
 
 def _send(notify, text: str, al: dict):
-    """An alert about a watched address goes out as urgent (first in any digest). Decided from the
-    rule's own `watched` field, never from the message text (review 2026-11-01: a watched address
-    planted in a reason line must not buy priority, and a batch signed by a watched wallet must get it)."""
-    if al.get("watched") and hasattr(notify, "urgent"):
+    """An alert where a watched address itself acted goes out as urgent (first in any digest).
+    Decided from the rule's own `acted` field, never from the message text and never from being
+    targeted (review 2026-11-01: a planted address, a tx sent to a watched wallet or a deploy
+    embedding it are all open to anyone; a signature from the watched key is not)."""
+    if al.get("acted") and hasattr(notify, "urgent"):
         notify.urgent(text)
     else:
         notify(text)
