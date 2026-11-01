@@ -233,14 +233,97 @@ def test_notifier_spaces_caps_digests_and_dedupes():
     assert len(sent) == 20 and len(n.held) == 7, "the 20/min cap holds the overflow"
     assert n.flush() is False, "no room in the minute yet"
     now[0] += 61
-    assert n.flush() and sent[-1].startswith("[Quorum watch] digest: 7 message(s)") and "msg 24" in sent[-1]
+    assert n.flush() and sent[-1].startswith("[Quorum watch] digest 1/1: 7 message(s)") and "msg 24" in sent[-1]
     al = {"rule": "7702_code_flip", "block": 5, "tx": None, "subject": BINANCE_14, "reasons": ["x"], "unknowns": []}
     assert n(format_alert("ethereum", al)) is True
+    assert n(format_alert("ethereum", al)) is False and n.stats["suppressed"] == 1, "byte-identical repeat"
     al["block"] = 6
-    assert n(format_alert("ethereum", al)) is False and n.stats["suppressed"] == 1
+    assert n(format_alert("ethereum", al)) is True, "same sender, new block: a new message, never hidden"
+    al["tx"] = "0x" + "ee" * 32
+    assert n(format_alert("ethereum", al)) is True, "same sender, new tx: sent"
     now[0] += 601
+    al["block"] = 5; al["tx"] = None
     assert n(format_alert("ethereum", al)) is True, "after the window the same alert goes out again"
     assert "suppressed" in n.summary()
+
+
+def test_notifier_digest_puts_watchlist_first_never_drops_and_marks_cuts():
+    from watch.notify import TELEGRAM_MAX, Notifier, fit
+    now, sent = [0.0], []
+    n = Notifier(sent.append, clock=lambda: now[0], sleep=lambda s: None, per_minute=3,
+                 priority=lambda t: BINANCE_14 in t)
+    for i in range(3):
+        n(f"fill {i}")
+    for i in range(30):
+        n(f"noise {i} " + "x" * 600)
+    n(f"[Quorum watch] 7702_code_flip subject {BINANCE_14}")
+    assert len(n.held) == 31
+    now[0] += 61
+    assert n.flush() is True
+    digests = [s for s in sent if s.startswith("[Quorum watch] digest")]
+    assert len(digests) == 3 and all(len(d) <= TELEGRAM_MAX for d in digests), "this minute takes 3 posts"
+    assert BINANCE_14 in digests[0] and digests[0].index(BINANCE_14) < digests[0].index("noise"), "watched first"
+    assert digests[0].startswith("[Quorum watch] digest 1/")
+    assert n.held and all(m.startswith("noise") for m in n.held), "the rest waits, nothing dropped"
+    total = sum(d.count("noise ") for d in digests) + len(n.held)
+    assert total == 30
+    big = fit("y" * 5000)
+    assert len(big) == TELEGRAM_MAX and big.endswith("[cut: message was 5000 characters; full text in the jsonl log]")
+
+
+def test_zcash_reader_unknown_on_regtest_and_catches_inflation():
+    from watch.zcash import MAX_BLOCK_SUBSIDY_ZAT, check, parse_info
+    info = json.loads((Path(__file__).parent / "fixtures" / "zebra-regtest-getblockchaininfo.json").read_text())["result"]
+    cur = parse_info(info)
+    assert cur["unknown"] == f"node not synced: height 0 of about {info['estimatedheight']}"
+    out = check(None, cur)
+    assert out[0]["level"] == "unknown" and out[0]["rule"] == "zcash_supply" and "NOT checked" in out[0]["reasons"][0]
+    synced = dict(info, blocks=3_000_000, estimatedheight=3_000_001)
+    for p in synced["valuePools"]:
+        p["chainValueZat"] = 1_000_000 * 10**8
+    synced["chainSupply"] = {"chainValueZat": 6_000_000 * 10**8}
+    prev = parse_info(synced)
+    assert "unknown" not in prev and check(None, prev)[0]["level"] == "info"
+    nxt = dict(prev, height=prev["height"] + 10, supply=prev["supply"] + 10 * MAX_BLOCK_SUBSIDY_ZAT,
+               pools=dict(prev["pools"], transparent=prev["pools"]["transparent"] + 10 * MAX_BLOCK_SUBSIDY_ZAT))
+    assert check(prev, nxt)[0]["level"] == "info", "10 blocks x 12.5 ZEC is allowed"
+    nxt["supply"] += 1; nxt["pools"]["transparent"] += 1
+    out = check(prev, nxt)
+    assert out[0]["level"] == "alert" and "supply rose" in out[0]["reasons"][0]
+    bad = dict(prev, supply=prev["supply"] - 5)
+    assert "chainSupply says" in check(None, bad)[0]["reasons"][0]
+    assert check(prev, dict(prev, height=prev["height"] - 1))[0]["reasons"][0].startswith("height fell")
+    assert check(None, parse_info(dict(synced, valuePools=synced["valuePools"][:5])))[0]["unknowns"] == ["pools missing: ironwood"]
+
+
+def test_drift_detects_change_and_never_calls_no_drift_on_failure():
+    from watch.drift import check, parse_facts, report
+    facts = parse_facts(Path("watch/zcash-facts.md").read_text())
+    assert [f["id"] for f in facts] == ["zebra-latest-release", "zebra-advisories-page-1",
+                                         "zebra-value-pool-ids", "zebra-max-block-subsidy"]
+    pages = {
+        facts[0]["upstream"]: "# Changelog\n\n## [Zebra 7.0.0](x) - 2026-10-22\n## [Zebra 7.0.0-rc.0](y)\n",
+        facts[2]["upstream"]: "\n".join(f'Self::new_internal("{p}", amount, delta)'
+                                        for p in ("transparent", "sprout", "sapling", "orchard", "lockbox", "ironwood")),
+        facts[3]["upstream"]: "pub(crate) const MAX_BLOCK_SUBSIDY: u64 = ((25 * COIN) / 2) as u64;\n",
+    }
+    def fake(url):
+        if url not in pages:
+            raise OSError("offline")
+        return pages[url]
+    rows = check(facts, fake)
+    assert [r.get("drift") for r in rows] == [False, None, False, False] and rows[1]["unknown"] == "offline"
+    code, lines = report(rows)
+    assert code == 2 and lines[1].startswith("[Quorum drift] UNKNOWN zebra-advisories-page-1")
+    pages[facts[0]["upstream"]] = "## [Zebra 7.1.0](x) - 2026-12-01\n"
+    pages[facts[2]["upstream"]] += '\nSelf::new_internal("newpool", amount, delta)'
+    rows = check(facts[:1] + facts[2:3], fake)
+    assert rows[0]["drift"] and rows[0]["current"] == "7.1.0" and rows[1]["drift"] and "newpool" in rows[1]["current"]
+    assert report(rows)[0] == 1
+    rows = check([dict(facts[0], upstream="https://example.com/x")], fake)
+    assert "host not allowed" in rows[0]["unknown"]
+    pages[facts[3]["upstream"]] = "nothing here"
+    assert check(facts[3:], fake)[0]["unknown"] == "extract pattern matched nothing"
 
 
 def test_heartbeat_reports_blocks_and_alerts(tmp_path):

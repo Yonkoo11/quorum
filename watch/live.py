@@ -197,12 +197,24 @@ def main(argv=None):
     sim = None
     if a.simulate:
         from .simulate import simulate as sim
-    has_tg = bool(os.environ.get("BUYBOT_TG_TOKEN")) and not a.dry_run
-    notify = Notifier((lambda t: post_telegram(t) or print(t)) if has_tg else print)
-    print(f"watch live: {a.chain}, {'Telegram' if has_tg else 'print only'}, state {a.state}, "
-          f"heartbeat every {a.heartbeat_minutes} min")
-    return run(a.chain, load_watchlist(a.watchlist), State(Path(a.state)), a.log, notify, a.max_blocks,
+    watchlist = load_watchlist(a.watchlist)
+    notify = make_notifier(a.dry_run, watchlist)
+    print(f"watch live: {a.chain}, {'Telegram' if has_telegram(a.dry_run) else 'print only'}, "
+          f"state {a.state}, heartbeat every {a.heartbeat_minutes} min")
+    return run(a.chain, watchlist, State(Path(a.state)), a.log, notify, a.max_blocks,
                simulate=sim, heartbeat_seconds=a.heartbeat_minutes * 60)
+
+
+def has_telegram(dry_run: bool) -> bool:
+    return bool(os.environ.get("BUYBOT_TG_TOKEN")) and not dry_run
+
+
+def make_notifier(dry_run: bool, watchlist: dict) -> Notifier:
+    """Telegram when the bot env is set, print otherwise; a message naming a watched address or
+    label goes first in any digest (review 2026-11-01: noise must not crowd out the watchlist)."""
+    send = (lambda t: post_telegram(t) or print(t)) if has_telegram(dry_run) else print
+    watched = [*watchlist] + [*watchlist.values()]
+    return Notifier(send, priority=lambda t: any(w in t for w in watched))
 
 
 if __name__ == "__main__":
