@@ -4,9 +4,9 @@ Usage:
   python3 -m watch.live --chain ethereum --watchlist watch/seeds/binance14-2026-10-29.json \
       [--state ai/watch-state.json] [--log ai/watch-live.jsonl] [--max-blocks 3] [--dry-run]
 
-Telegram posting reuses the buy bot's token (BUYBOT_TG_TOKEN) but posts to its own chat
-(QUORUM_WATCH_TG_CHAT): monitoring lines do not belong in the token's public group. Without
-both, alerts are printed. Messages go through watch/notify.Notifier (1 s apart, 20 per
+Telegram posting uses the watcher's own bot (QUORUM_WATCH_TG_TOKEN) and chat
+(QUORUM_WATCH_TG_CHAT), set up once by scripts/watch-telegram-setup.sh; the buy bot's identity
+is never borrowed. Without both, alerts are printed. Messages go through watch/notify.Notifier (1 s apart, 20 per
 minute, overflow digested, repeats suppressed) and a heartbeat line goes out every
 --heartbeat-minutes. Catch-up: after a gap (sleep, crash) it processes every missed block up
 to --catch-up, and logs the gap it skipped beyond that as unknown.
@@ -39,7 +39,7 @@ BLOCK_SECONDS = {"ethereum": 12, "arbitrum": 1, "base": 2}
 def post_telegram(text: str, sleep=time.sleep) -> bool:
     """One send; on HTTP 429 waits the API's own `retry_after` (Bot API ResponseParameters) and
     retries once. Any failure is printed (URLs redacted) and the message stays in the log."""
-    token, chat = os.environ.get("BUYBOT_TG_TOKEN"), os.environ.get("QUORUM_WATCH_TG_CHAT")
+    token, chat = os.environ.get("QUORUM_WATCH_TG_TOKEN"), os.environ.get("QUORUM_WATCH_TG_CHAT")
     if not token or not chat:
         return False
     body = json.dumps({"chat_id": chat, "text": text, "disable_web_page_preview": True}).encode()
@@ -263,7 +263,7 @@ def main(argv=None):
 
 
 def has_telegram(dry_run: bool) -> bool:
-    return bool(os.environ.get("BUYBOT_TG_TOKEN") and os.environ.get("QUORUM_WATCH_TG_CHAT")) and not dry_run
+    return bool(os.environ.get("QUORUM_WATCH_TG_TOKEN") and os.environ.get("QUORUM_WATCH_TG_CHAT")) and not dry_run
 
 
 def make_notifier(dry_run: bool) -> Notifier:

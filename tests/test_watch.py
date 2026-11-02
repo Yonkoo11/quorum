@@ -404,7 +404,7 @@ def test_heartbeat_reports_blocks_and_alerts(tmp_path):
 def test_telegram_429_waits_retry_after_and_retries_once(monkeypatch):
     import io, urllib.error, urllib.request
     from watch import live
-    monkeypatch.setenv("BUYBOT_TG_TOKEN", "t"); monkeypatch.setenv("QUORUM_WATCH_TG_CHAT", "c")
+    monkeypatch.setenv("QUORUM_WATCH_TG_TOKEN", "t"); monkeypatch.setenv("QUORUM_WATCH_TG_CHAT", "c")
     calls, naps = [], []
     class Ok:
         status = 200

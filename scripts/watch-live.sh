@@ -1,10 +1,10 @@
 #!/bin/bash
 # 24/7 watcher, one chain per launchd agent (com.quorum.watch-<chain>). Usage: watch-live.sh ethereum|arbitrum
-# Telegram: the bot token and the watch chat come from ~/.quorum-buybot.env (QUORUM_WATCH_TG_CHAT is
-# written by scripts/watch-telegram-setup.sh). Without them the watcher prints only.
+# Telegram: the watcher's own bot token and chat come from ~/.quorum-watch.env, written once by
+# scripts/watch-telegram-setup.sh. Without it the watcher prints only.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-ENV=$HOME/.quorum-buybot.env
+ENV=$HOME/.quorum-watch.env
 [ -f "$ENV" ] && source "$ENV"
 case ${1:?chain: ethereum or arbitrum} in
   ethereum)   # 12 s blocks: one block at a time, all five rules
