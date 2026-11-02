@@ -20,14 +20,29 @@ if [ -f "$ENV" ]; then
 fi
 if [ -z "$token" ]; then
   read -rsp "Paste the token BotFather gave you for the watch bot (not shown): " token; echo
+  token=$(printf '%s' "$token" | tr -d '[:space:]"'"'")   # pasted tokens pick up spaces, quotes, line breaks
+  token=${token#https://api.telegram.org/bot}; token=${token#bot}   # the "bot" prefix is BotFather's link, not the token
   [ -n "$token" ] || { echo "no token entered" >&2; exit 1; }
+  if ! printf '%s' "$token" | /usr/bin/grep -Eq '^[0-9]{6,}:[A-Za-z0-9_-]{30,}$'; then
+    echo "that does not look like a bot token (expected digits, a colon, then about 35 letters/digits; yours is ${#token} characters)." >&2
+    echo "In BotFather's reply, copy only the line under 'Use this token to access the HTTP API:'." >&2
+    exit 1
+  fi
+fi
+api="https://api.telegram.org/bot$token"
+reply=$(curl -s "$api/getMe")
+bot=$(printf '%s' "$reply" | python3 -c 'import sys, json
+try:
+    r = json.load(sys.stdin)
+except ValueError:
+    sys.exit("no answer from api.telegram.org (offline?)")
+if not r.get("ok"): sys.exit("Telegram says: " + str(r.get("description", r)))
+print("@" + r["result"]["username"])' 2>&1) || { echo "$bot" >&2; echo "Telegram rejected the token. In BotFather: /mybots, pick the bot, API Token. Then run again." >&2; rm -f "$ENV"; exit 1; }
+if ! /usr/bin/grep -qs "^export QUORUM_WATCH_TG_TOKEN=" "$ENV"; then
   umask 077
   printf 'export QUORUM_WATCH_TG_TOKEN=%s\n' "$token" > "$ENV"
   chmod 600 "$ENV"
 fi
-api="https://api.telegram.org/bot$token"
-bot=$(curl -sf "$api/getMe" | python3 -c 'import sys, json; print("@" + json.load(sys.stdin)["result"]["username"])') \
-  || { echo "Telegram rejected the token. Check it with BotFather and run again." >&2; rm -f "$ENV"; exit 1; }
 
 code="quorum-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \n')"   # (tr | head on urandom dies with SIGPIPE under pipefail)
 echo "Bot is $bot. Send this code to it from the chat you want alerts in (waiting up to 30 minutes):"
