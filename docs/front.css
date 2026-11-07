@@ -156,9 +156,9 @@ body { min-height: 0; }
 
 /* ---------- motion that only runs when it is welcome ---------- */
 @media (prefers-reduced-motion: no-preference) {
-  /* load reveal: a linear opacity ramp, each element on its own delay */
+  /* load reveal: an eased opacity ramp, each element on its own delay */
   .js [data-reveal]:not(.is-revealed) { opacity: 0; }
-  .js.is-ready [data-reveal]:not(.is-revealed) { animation: reveal var(--rv-dur, 600ms) linear var(--rv-delay, 0ms) both; }
+  .js.is-ready [data-reveal]:not(.is-revealed) { animation: reveal var(--rv-dur, 600ms) var(--ease) var(--rv-delay, 0ms) both; }
   @keyframes reveal { from { opacity: 0; } to { opacity: 1; } }
 
   /* screen B entrance, the first time only: the heading uncovers, the bars grow, the line draws, the rows rise */
