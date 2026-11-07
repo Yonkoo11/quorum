@@ -136,7 +136,7 @@ body { min-height: 0; }
 .morph-cue { position: absolute; bottom: calc(24 * var(--u) + 20px); left: 50%; translate: -50% 0; z-index: 6; appearance: none;
   width: var(--tap); height: var(--tap); display: grid; place-items: center; cursor: pointer; padding: 0;
   border: 2px solid var(--ink); border-radius: var(--radius-sm); background: var(--raised); color: var(--ink); box-shadow: var(--shadow-1); }
-.morph-cue svg { width: 14px; height: 14px; display: block; transition: rotate .4s var(--ease); }
+.morph-cue svg { width: 14px; height: 14px; display: block; transition: rotate .3s var(--ease); }
 .page[data-screen="numbers"] .morph-cue svg { rotate: 180deg; }
 .morph-cue__text { position: absolute; top: calc(100% + var(--sp-2)); left: 50%; translate: -50% 0; white-space: nowrap; color: var(--ink); }
 .morph-cue:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
