@@ -1,8 +1,8 @@
 #!/bin/zsh
 # Continuous, unedited Quorum session. Every command really runs.
 # Beat start times are logged so narration can be aligned without cutting the video.
-cd /Users/yonko/Projects/quorum || exit 1
-export PATH="/Users/yonko/Projects/quorum/.venv/bin:$PATH"
+cd "$HOME/Projects/quorum" || exit 1
+export PATH="$HOME/Projects/quorum/.venv/bin:$PATH"
 BEATS=/private/tmp/claude-501/-Users-yonko/76182d1a-b65b-464d-bfe0-728904884f6e/scratchpad/demo/beats.tsv
 : > "$BEATS"
 clear

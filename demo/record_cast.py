@@ -13,7 +13,7 @@ DENY = ("PRIVATE", "SECRET", "PASSW", "MNEMONIC", "SEED", "APIKEY", "API_KEY", "
 
 env = {k: v for k, v in os.environ.items() if not any(d in k.upper() for d in DENY)}
 env.update({"TERM": "xterm-256color", "COLUMNS": str(COLS), "LINES": str(ROWS),
-            "PATH": "/Users/yonko/Projects/quorum/.venv/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+            "PATH": os.path.expanduser("~/Projects/quorum/.venv/bin") + ":/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin",
             "HOME": "/Users/yonko"})
 
 child = pexpect.spawn("/bin/zsh", ["-f", "./run-demo.sh"], dimensions=(ROWS, COLS),
