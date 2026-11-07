@@ -1,4 +1,12 @@
 {
- "generated_at": "2026-11-07T16:41:07+00:00",
- "claims": []
+ "generated_at": "2026-11-07T16:46:34+00:00",
+ "claims": [
+  {
+   "kind": "fork-exploit",
+   "digest": "0x21ef7b3c8d3a43c80e9ce4b0b30b42bc56a63bbecf27e9ac47d999d154dcf634",
+   "claim_tx": "0xe38a1c2c818339a58281385800653bcf2514a8c1f4b712fd6efa90995c9f0d66",
+   "claimed_at": "2026-11-07T16:46:09+00:00",
+   "revealed": false
+  }
+ ]
 }
