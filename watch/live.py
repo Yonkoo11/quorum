@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.error
@@ -88,6 +89,68 @@ class Heartbeat:
             self.since, self.blocks, self.alerts, self.info = now, 0, 0, 0
 
 
+class Prover:
+    """Stage 5: a watched contract whose implementation or admin changed (Upgraded / AdminChanged
+    emitted by the contract itself) gets prove/hunt.py run on it in the background, at the alert's
+    block, so new code is attacked within minutes of going live. A run spends model compute, so it
+    is OFF unless --prove, capped at --prove-max-per-day, and one run per contract per day. The
+    alert goes out first; the prover never delays it. Finished runs are reported on the next poll."""
+    TRIGGERS = ("Upgraded emitted", "AdminChanged emitted")
+
+    def __init__(self, chain: str, notify, max_per_day: int = 2, spawn=subprocess.Popen,
+                 clock=time.time, log_dir: str = "ai/hunts", python: str = sys.executable):
+        self.chain, self.notify, self.max_per_day, self.spawn, self.clock = chain, notify, max_per_day, spawn, clock
+        self.log_dir, self.python = Path(log_dir), python
+        self.jobs = []            # running: {address, block, proc, log}
+        self.started = {}         # address -> day (YYYY-MM-DD) of its last run
+        self.day, self.today = None, 0
+
+    def _day(self) -> str:
+        return time.strftime("%Y-%m-%d", time.gmtime(self.clock()))
+
+    def consider(self, al: dict):
+        if al["rule"] != "watchlist_admin_event" or not al.get("acted"):
+            return
+        if not any(r.endswith(t) for r in al["reasons"] for t in self.TRIGGERS):
+            return
+        addr, block = al["subject"], al["block"]
+        day = self._day()
+        if day != self.day:
+            self.day, self.today = day, 0
+        if self.started.get(addr) == day:
+            return self.notify(f"[Quorum watch] prover skipped for {addr}: already ran today")
+        if self.today >= self.max_per_day:
+            return self.notify(f"[Quorum watch] prover skipped for {addr}: {self.max_per_day} run(s) today already (cap)")
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = self.log_dir / f"{self.chain}-{addr[:10]}-{block}.log"
+        cmd = [self.python, "-m", "prove.hunt", self.chain, addr, "--block", str(block),
+               "--name", f"watch-{self.chain}-{addr[:10]}-{block}"]
+        log = open(log_path, "w")
+        try:
+            proc = self.spawn(cmd, stdout=log, stderr=subprocess.STDOUT)
+        except OSError as exc:
+            log.close()
+            return self.notify(f"[Quorum watch] prover could NOT start for {addr}: {type(exc).__name__}: {redact(exc)}")
+        self.started[addr], self.today = day, self.today + 1
+        self.jobs.append({"address": addr, "block": block, "proc": proc, "log": log, "path": log_path})
+        self.notify(f"[Quorum watch] prover started on {addr} ({self.chain} block {block}); log {log_path}")
+
+    def reap(self):
+        """Report every finished run once: the hunt's own summary line, or the exit code."""
+        for job in list(self.jobs):
+            code = job["proc"].poll()
+            if code is None:
+                continue
+            self.jobs.remove(job); job["log"].close()
+            lines = [l for l in job["path"].read_text().splitlines() if l.strip()]
+            summary = next((l for l in reversed(lines) if l.startswith("===")), None)
+            if code == 0 and summary:
+                self.notify(f"[Quorum watch] prover finished on {job['address']}: {summary.strip('= ')}")
+            else:
+                tail = lines[-1] if lines else "no output"
+                self.notify(f"[Quorum watch] prover FAILED on {job['address']} (exit {code}): {redact(tail)[:300]}; log {job['path']}")
+
+
 def format_alert(chain: str, al: dict) -> str:
     head = f"[Quorum watch] {al['rule']} on {chain} block {al['block']}"
     body = "\n".join(f"- {r}" for r in al["reasons"])
@@ -125,10 +188,10 @@ class State:
                                          "seen_batches": [[s, list(d)] for s, d in self.seen]}))
 
 
-def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=None) -> dict:
+def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=None, prover=None) -> dict:
     block = rpc.block(n)
     if block is None:
-        rec = {"chain": chain, "block": n, "unknown": "block fetch failed", "error": redact(getattr(rpc, "last_error", None)), "wall": time.time()}
+        rec = {"chain": chain, "block": n, "unknown": "block fetch failed", "error": redact(getattr(rpc, "last_error", None), getattr(rpc, "url", None)), "wall": time.time()}
         log.write(json.dumps(rec) + "\n"); log.flush()
         notify(f"[Quorum watch] UNKNOWN: {chain} block {n} could not be fetched; it was NOT checked.")
         return rec
@@ -137,6 +200,8 @@ def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=
     real = [a for a in alerts if a["level"] == "alert"]
     for al in real:
         _send(notify, format_alert(chain, al), al)   # the alert goes out first; a slow or broken replay never delays it
+        if prover:
+            prover.consider(al)
         if simulate and al["tx"] and al["rule"] != "7702_type4":   # a delegation moves nothing by itself
             try:
                 al["simulation"] = simulate(chain, al["tx"], ctx.watchlist)
@@ -149,13 +214,13 @@ def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=
     return _finish(rec, log, len(real))
 
 
-def process_range(start: int, end: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify) -> dict:
+def process_range(start: int, end: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, prover=None) -> dict:
     """Range mode (sub-second chains): one pass over blocks start..end. Code and logs are read
     across the whole span, so the watched-address rules miss nothing; transaction bodies are not
     fetched, so the per-transaction rules do not run and the record says so."""
     header = rpc.header(end)
     if header is None:
-        rec = {"chain": chain, "blocks": [start, end], "unknown": "head block fetch failed", "error": redact(getattr(rpc, "last_error", None)), "wall": time.time()}
+        rec = {"chain": chain, "blocks": [start, end], "unknown": "head block fetch failed", "error": redact(getattr(rpc, "last_error", None), getattr(rpc, "url", None)), "wall": time.time()}
         log.write(json.dumps(rec) + "\n"); log.flush()
         notify(f"[Quorum watch] UNKNOWN: {chain} blocks {start}-{end} could not be fetched; they were NOT checked.")
         return rec
@@ -164,6 +229,8 @@ def process_range(start: int, end: int, chain: str, rpc: Rpc, ctx: Ctx, log, not
     real = [a for a in alerts if a["level"] == "alert"]
     for al in real:
         _send(notify, format_alert(chain, al), al)
+        if prover:
+            prover.consider(al)
     rec = {"chain": chain, "block": end, "blocks": [start, end], "span": end - start + 1, "txs": "not read",
            "alerts": alerts, "seconds": timing, "eval_seconds": round(time.perf_counter() - t0, 3),
            "lag_seconds": round(time.time() - int(header["timestamp"], 16), 1), "wall": time.time(),
@@ -210,7 +277,7 @@ def _targets(start: int, head: int, range_mode: bool) -> list:
 
 def run(chain: str, watchlist: dict, state: State, log_path: str, notify, max_blocks: int | None,
         catch_up: int = 50, rpc: Rpc | None = None, sleep=time.sleep, simulate=None,
-        heartbeat_seconds: int = 0, clock=time.time, range_mode: bool = False) -> int:
+        heartbeat_seconds: int = 0, clock=time.time, range_mode: bool = False, prover=None) -> int:
     rpc = rpc or Rpc(chain)
     ctx = Ctx(rpc, watchlist, state.codes)
     ctx.seen_batches = state.seen
@@ -219,16 +286,18 @@ def run(chain: str, watchlist: dict, state: State, log_path: str, notify, max_bl
         notify(f"[Quorum watch] UNKNOWN: {state.note}")
     with open(log_path, "a") as log:
         while max_blocks is None or done < max_blocks:
+            if prover:
+                prover.reap()
             head = rpc.head()
             if head is None:
-                log.write(json.dumps({"chain": chain, "unknown": "head fetch failed", "error": redact(getattr(rpc, "last_error", None)), "wall": time.time()}) + "\n")
+                log.write(json.dumps({"chain": chain, "unknown": "head fetch failed", "error": redact(getattr(rpc, "last_error", None), getattr(rpc, "url", None)), "wall": time.time()}) + "\n")
                 sleep(BLOCK_SECONDS.get(chain, 12)); continue
             start = _first_block(chain, state, head, catch_up, log, notify)
             if start > head:
                 sleep(BLOCK_SECONDS.get(chain, 12)); continue
             for a, b in _targets(start, head, range_mode):
-                beat.tick(process_block(a, chain, rpc, ctx, log, notify, simulate) if a == b
-                          else process_range(a, b, chain, rpc, ctx, log, notify))
+                beat.tick(process_block(a, chain, rpc, ctx, log, notify, simulate, prover) if a == b
+                          else process_range(a, b, chain, rpc, ctx, log, notify, prover))
                 state.last = b; state.save(); done += 1
                 if max_blocks is not None and done >= max_blocks:
                     break
@@ -249,17 +318,21 @@ def main(argv=None):
     p.add_argument("--heartbeat-minutes", type=int, default=60, help="0 = no heartbeat")
     p.add_argument("--range", action="store_true", help="one pass per poll over all new blocks (fast chains)")
     p.add_argument("--catch-up", type=int, default=50, help="blocks processed after a gap; the rest is logged unknown")
+    p.add_argument("--prove", action="store_true",
+                   help="Stage 5: run prove/hunt.py on a watched contract after its Upgraded/AdminChanged (spends model compute)")
+    p.add_argument("--prove-max-per-day", type=int, default=2, help="cap on prover runs per UTC day")
     a = p.parse_args(argv)
     sim = None
     if a.simulate:
         from .simulate import simulate as sim
+    prover = Prover(a.chain, make_notifier(a.dry_run), a.prove_max_per_day) if a.prove else None
     watchlist = load_watchlist(a.watchlist)
     notify = make_notifier(a.dry_run)
     print(f"watch live: {a.chain}, {'range' if a.range else 'per-block'} mode, "
           f"{'Telegram' if has_telegram(a.dry_run) else 'print only'}, state {a.state}, "
-          f"heartbeat every {a.heartbeat_minutes} min")
+          f"heartbeat every {a.heartbeat_minutes} min, prover {'on, ' + str(a.prove_max_per_day) + '/day' if prover else 'off'}")
     return run(a.chain, watchlist, State(Path(a.state)), a.log, notify, a.max_blocks, catch_up=a.catch_up,
-               simulate=sim, heartbeat_seconds=a.heartbeat_minutes * 60, range_mode=a.range)
+               simulate=sim, heartbeat_seconds=a.heartbeat_minutes * 60, range_mode=a.range, prover=prover)
 
 
 def has_telegram(dry_run: bool) -> bool:

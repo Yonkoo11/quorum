@@ -486,8 +486,14 @@ def test_unreadable_code_is_info_until_three_passes_then_one_alert():
     ctx = Ctx(HeadLag(), {BINANCE_14: "Binance 14"}, {BINANCE_14: "0x"})
     alerts, _ = evaluate_block(block(), ctx)
     flip = [a for a in alerts if a["rule"] == "7702_code_flip"]
-    assert flip and flip[0]["level"] == "alert" and flip[0]["acted"] == []   # a real flip, read at the head
-    assert any("read at the head" in u for u in flip[0]["unknowns"]) and ctx.unread == {}
+    assert [f["level"] for f in flip] == ["info", "alert"] and flip[1]["acted"] == [BINANCE_14]   # noted, then the real flip
+    assert "read at the head" in flip[0]["unknowns"][0] and ctx.unread == {}
+    alerts, _ = evaluate_block(block(), ctx)                  # same code again: the head-only read is still on record
+    flip = [a for a in alerts if a["rule"] == "7702_code_flip"]
+    assert [f["level"] for f in flip] == ["info"]
+
+    from watch.rpc import redact                               # the configured endpoint never reaches a log, URL or not
+    assert redact("boom key=abcdefghijkl at wss://h/abcdefghijkl", "abcdefghijkl") == "boom key=<endpoint> at <url>"
 
 
 def test_fetch_failures_log_the_rpc_error(tmp_path):
@@ -511,3 +517,48 @@ def test_fetch_failures_log_the_rpc_error(tmp_path):
         pass
     row = json.loads((tmp_path / "log.jsonl").read_text().splitlines()[0])
     assert row["unknown"] == "head fetch failed" and "timed out" in row["error"] and "https://" not in row["error"]
+
+
+def test_prover_starts_once_per_upgrade_capped_and_reports_the_finish(tmp_path):
+    """Stage 5: an Upgraded event emitted by a watched contract starts prove/hunt.py on it at that
+    block, in the background; the alert went out first. One run per contract per day, a daily cap,
+    the finished run's own summary line is reported on the next poll, a crash reports the exit code."""
+    from watch.live import Prover
+    UPG = "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b"
+    A, B, C = "0x" + "a1" * 20, "0x" + "b2" * 20, "0x" + "c3" * 20
+    spawned, sent = [], []
+
+    class Proc:
+        def __init__(self, cmd, stdout):
+            self.cmd, self.out, self.code = cmd, stdout, None
+        def poll(self):
+            return self.code
+
+    def spawn(cmd, stdout, stderr):
+        spawned.append(Proc(cmd, stdout)); return spawned[-1]
+
+    def upgraded(addr, block):
+        return {"rule": "watchlist_admin_event", "level": "alert", "block": block, "subject": addr,
+                "reasons": [f"X: Upgraded emitted"], "unknowns": [], "watched": [addr], "acted": [addr]}
+
+    pv = Prover("arbitrum", sent.append, max_per_day=2, spawn=spawn, clock=lambda: 1_700_000_000,
+                log_dir=str(tmp_path / "hunts"), python="py")
+    pv.consider(upgraded(A, 500))
+    assert spawned[0].cmd == ["py", "-m", "prove.hunt", "arbitrum", A, "--block", "500", "--name", f"watch-arbitrum-{A[:10]}-500"]
+    assert sent[-1].startswith(f"[Quorum watch] prover started on {A} (arbitrum block 500)")
+    pv.consider(upgraded(A, 501))                       # same contract, same day: no second run
+    assert len(spawned) == 1 and "already ran today" in sent[-1]
+    pv.consider({**upgraded(B, 502), "reasons": ["X: RoleGranted emitted"]})   # not a code change
+    pv.consider({**upgraded(B, 502), "acted": [], "reasons": ["could not read logs"]})
+    assert len(spawned) == 1
+    pv.consider(upgraded(B, 503)); pv.consider(upgraded(C, 504))
+    assert len(spawned) == 2 and "cap" in sent[-1] and C in sent[-1]
+    pv.reap(); assert len(pv.jobs) == 2                 # still running: nothing reported
+    spawned[0].out.write("target: Vault\n=== Vault: 1 proven of 3 tried, 7 found. report: r.json ===\n  PROVEN Vault.withdraw\n")
+    spawned[0].out.flush(); spawned[0].code = 0
+    spawned[1].out.write("Traceback\nRuntimeError: no RPC https://x.y/key\n"); spawned[1].out.flush(); spawned[1].code = 1
+    pv.reap()
+    assert any(m.startswith(f"[Quorum watch] prover finished on {A}: Vault: 1 proven of 3 tried") for m in sent)
+    fail = [m for m in sent if "prover FAILED" in m]
+    assert fail and B in fail[0] and "exit 1" in fail[0] and "https://" not in fail[0]
+    assert pv.jobs == [] and pv.reap() is None          # reported once

@@ -177,6 +177,9 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
                               [f"code of {addr} at {n}: {note}"], level=level, watched=[addr]))
             continue
         ctx.unread.pop(addr, None)
+        if note:   # the pass was checked, but at the head: say so even when nothing changed
+            out.append(_alert("7702_code_flip", block, None, addr,
+                              [f"{label}: checked at the head, not block {n}"], [note], level="info", watched=[addr]))
         if now != "0x" and not now.startswith(DELEGATION_PREFIX):
             continue                                   # a contract, not a 7702 wallet
         before = ctx.codes.get(addr)
@@ -186,8 +189,6 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
         if before == now:
             continue
         unknown = [f"code of {addr} at {first - 1}"] if before is None else []
-        if note:
-            unknown.append(note)
         out.append(_alert("7702_code_flip", block, None, addr,
                           [f"{label}: 7702 pointer is now {_pointer(now)} (was {_pointer(before)}) {where}"],
                           unknown, acted=[addr] if not unknown else (), watched=[addr]))
@@ -201,7 +202,7 @@ def _code_now(ctx, addr: str, n: int) -> tuple[str | None, str | None]:
     now = ctx.rpc.code(addr, n)
     if now is not None:
         return now, None
-    err = redact(getattr(ctx.rpc, "last_error", None) or "no error text")
+    err = redact(getattr(ctx.rpc, "last_error", None) or "no error text", getattr(ctx.rpc, "url", None))
     now = ctx.rpc.code(addr, "latest")
     if now is not None:
         return now, f"code of {addr} read at the head, not block {n} ({err})"

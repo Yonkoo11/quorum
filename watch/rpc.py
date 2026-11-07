@@ -32,9 +32,13 @@ def rpc_url(chain: str) -> str:
     return url or PUBLIC_RPC[chain]
 
 
-def redact(text) -> str:
-    """Strip URLs (an RPC URL can carry an API key) before an error reaches an alert or a log."""
-    return re.sub(r"https?://\S+", "<url>", str(text))
+def redact(text, secret: str | None = None) -> str:
+    """Strip URLs of any scheme (an RPC URL can carry an API key) before an error reaches an alert
+    or a log; `secret` (the configured endpoint, or any token) is removed wherever it appears, URL or not."""
+    text = str(text)
+    if secret and len(secret) > 8:
+        text = text.replace(secret, "<endpoint>")
+    return re.sub(r"\w+://\S+", "<url>", text)
 
 
 class Rpc:
