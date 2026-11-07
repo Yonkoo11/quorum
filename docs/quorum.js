@@ -244,4 +244,81 @@
     });
   }
 
+  /* Finding claims: rows from claims.json, grouped by kind. Unrevealed rows show no target. */
+  var claimsEl = document.getElementById("claims-list"),
+      claimsSec = document.getElementById("claims");
+  if (claimsEl && claimsSec) {
+    var EXPLORER = "https://robinhoodchain.blockscout.com/tx/";
+    var KIND_LABEL = { "fork-exploit": "Fork exploits", "failing-test": "Failing tests",
+                       "counterexample": "Counterexamples", "write-up": "Write-ups" };
+    function text(tag, cls, str) {
+      var el = document.createElement(tag);
+      if (cls) el.className = cls;
+      el.textContent = str;
+      return el;
+    }
+    function link(href, label, cls) {
+      var a = document.createElement("a");
+      a.href = href; a.textContent = label; if (cls) a.className = cls;
+      a.rel = "noopener";
+      return a;
+    }
+    function targetText(t) {
+      if (!t) return "";
+      if (t.address) return t.chain + " " + t.address;
+      return t.repo + "@" + t.commit + (t.path ? " " + t.path : "");
+    }
+    function row(dt, dd) {
+      var d = document.createElement("div");
+      d.appendChild(text("dt", "", dt));
+      var v = document.createElement("dd");
+      if (typeof dd === "string") v.textContent = dd; else v.appendChild(dd);
+      d.appendChild(v);
+      return d;
+    }
+    function render(claims) {
+      claimsEl.textContent = "";
+      if (!claims.some(function (c) { return c && Object.prototype.hasOwnProperty.call(KIND_LABEL, c.kind); })) {
+        claimsEl.appendChild(text("p", "fine", "No finding claims published yet."));
+        return;
+      }
+      var byKind = {};
+      claims.forEach(function (c) {
+        if (!c || typeof c !== "object" || !Object.prototype.hasOwnProperty.call(KIND_LABEL, c.kind)) return;
+        (byKind[c.kind] = byKind[c.kind] || []).push(c);
+      });
+      Object.keys(KIND_LABEL).forEach(function (kind) {
+        var rows = byKind[kind];
+        if (!rows) return;
+        claimsEl.appendChild(text("h3", "", KIND_LABEL[kind] + " (" + rows.length + ")"));
+        rows.forEach(function (c) {
+          var dl = document.createElement("dl");
+          dl.className = "rows";
+          dl.appendChild(row("Claim", link(EXPLORER + c.claim_tx, c.claim_tx, "hash")));
+          dl.appendChild(row("Claimed at", c.claimed_at || "unknown"));
+          dl.appendChild(row("Digest", text("span", "hash", c.digest)));
+          if (!c.revealed) {
+            dl.appendChild(row("Status", "claimed, not yet revealed: the fix is not public"));
+          } else {
+            dl.appendChild(row("Finding", c.title || ""));
+            dl.appendChild(row("Target", targetText(c.target)));
+            dl.appendChild(row("Severity", c.severity || ""));
+            dl.appendChild(row("Proof sha256", text("span", "hash", c.proof_sha256 || "")));
+            dl.appendChild(row("Reveal", link(EXPLORER + c.reveal_tx, c.reveal_tx, "hash")));
+            if (c.public_url && /^https:\/\//.test(c.public_url)) dl.appendChild(row("Public", link(c.public_url, c.public_url)));
+            if (c.program) dl.appendChild(row("Program", c.program));
+          }
+          claimsEl.appendChild(dl);
+        });
+      });
+    }
+    fetch(claimsSec.getAttribute("data-claims"), { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) { render(Array.isArray(j.claims) ? j.claims : []); })
+      .catch(function () {
+        claimsEl.textContent = "";
+        claimsEl.appendChild(text("p", "fine", "No finding claims published yet (claims.json is not on this site)."));
+      });
+  }
+
 })();

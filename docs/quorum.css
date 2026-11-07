@@ -210,6 +210,10 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
   border-bottom: 1px solid var(--hair); align-items: baseline; }
 .rows dt { color: var(--muted); padding-top: 2px; overflow-wrap: anywhere; }
 .rows dd { min-width: 0; overflow-wrap: anywhere; }
+
+/* finding claims: one ruled block per claim, grouped under a kind heading */
+.claims h3 { margin-block: var(--sp-6) var(--sp-2); min-width: 0; }
+.claims .rows + .rows { margin-top: var(--sp-4); }
 .rows dd.ok { color: var(--green-text); }
 .rows dd.bad { color: var(--bad); }
 .rows.narrow > div, .rows.pairs > div { grid-template-columns: minmax(0, 1fr); row-gap: var(--sp-1); }

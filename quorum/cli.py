@@ -208,9 +208,62 @@ def cmd_retire(args) -> int:
     return 1
 
 
+def _signer_line(chain) -> str:
+    fee = chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS
+    held = chain.token_balance() / 10**chain.TOKEN_DECIMALS
+    return (f"signer {chain.address()}  {chain.balance_wei()/1e18:.6f} ETH on {chain.chain_name()}  {held:,.0f} QUORUM on Robinhood Chain\n"
+            f"each claim burns {fee:,} QUORUM through the registry, in the same transaction that records it. Scanning is free; publishing is not.")
+
+
+def cmd_attest_files(args) -> int:
+    """Claim finding files (quorum/finding.py): any tool's finding with a hashed proof."""
+    from . import chain, finding as ff
+
+    fee = chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS
+    loaded = []
+    for path in args.finding:
+        try:
+            loaded.append((path, ff.load(path)))
+        except ValueError as exc:
+            print(f"{RED}not a finding file{RESET}: {exc}")
+            return 1
+    pending, seen = [], {}
+    for path, f in loaded:
+        if f.get("attested_tx"):
+            print(f"  {DIM}already claimed{RESET} {path}  {f['attested_tx'][:14]}...")
+            continue
+        digest = ff.digest(f)
+        if digest in seen:
+            print(f"  {DIM}same claim as{RESET} {seen[digest]}: {path} skipped, one digest is one claim")
+            continue
+        seen[digest] = path
+        pending.append((path, f))
+    if not pending:
+        return 0
+    print(_signer_line(chain))
+    for path, f in pending:
+        try:
+            result = chain.attest(f, dry_run=args.dry_run)
+        except RuntimeError as exc:
+            print(f"  {RED}not published{RESET} {path}: {exc}")
+            return 1
+        if args.dry_run:
+            print(f"  {YELLOW}dry run{RESET} {path}  {f['kind']}  digest 0x{result['digest'][:16]}...  would burn {fee:,} QUORUM through {result['registry']}")
+            continue
+        f["attested_tx"] = result["tx"]
+        f["attested_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        ff.save(path, f)
+        if result.get("approve"):
+            print(f"  {DIM}approved {fee:,} QUORUM for the registry{RESET}\n    {result['approve']['url']}")
+        print(f"  {GREEN}claimed through the registry on {chain.chain_name()}{RESET} {path}, {fee:,} QUORUM burned\n    {result['url']}")
+    return 0
+
+
 def cmd_attest(args) -> int:
     from . import chain
 
+    if args.finding:
+        return cmd_attest_files(args)
     memory = SwarmMemory(args.db)
     confirmed = memory.findings(status="confirmed")
     pending = [f for f in confirmed if not f.get("attested_tx")]
@@ -222,9 +275,7 @@ def cmd_attest(args) -> int:
         return 0
 
     fee = chain.CLAIM_FEE // 10**chain.TOKEN_DECIMALS
-    held = chain.token_balance() / 10**chain.TOKEN_DECIMALS
-    print(f"signer {chain.address()}  {chain.balance_wei()/1e18:.6f} ETH on {chain.chain_name()}  {held:,.0f} QUORUM on Robinhood Chain")
-    print(f"each claim burns {fee:,} QUORUM through the registry, in the same transaction that records it. Scanning is free; publishing is not.")
+    print(_signer_line(chain))
     for f in pending[: args.limit]:
         try:
             result = chain.attest(f, dry_run=args.dry_run)
@@ -280,6 +331,19 @@ def cmd_verify(args) -> int:
     else:
         print(f"  {DIM}v1 claim: published before the fee existed, no burn to check{RESET}")
 
+    from . import finding as ff
+    for path in args.finding or []:
+        try:
+            f = ff.load(path)
+        except ValueError as exc:
+            print(f"  {RED}not a finding file{RESET}: {exc}")
+            return 1
+        if chain.claim_digest(f).hex().lstrip("0x") == claim["digest"].lstrip("0x"):
+            print(f"\n  {GREEN}the finding file reproduces this claim{RESET}")
+            print(f"    {path}: {f['kind']}, {f['severity']}, proof sha256 {f['proof_sha256'][:16]}...")
+            print(f"\n  {GREEN}digest recomputed from the file matches the chain{RESET}")
+            return 0
+
     for finding in memory.findings():
         if chain.claim_digest(finding).hex().lstrip("0x") == claim["digest"].lstrip("0x"):
             print(f"\n  {GREEN}the evidence for this claim is still in memory{RESET}")
@@ -290,14 +354,50 @@ def cmd_verify(args) -> int:
             print(f"\n  {GREEN}digest recomputed from memory matches the chain{RESET}")
             return 0
 
-    print(f"\n  {RED}no finding in this memory reproduces that digest{RESET}")
+    print(f"\n  {RED}no finding in this memory{' or the given files' if args.finding else ''} reproduces that digest{RESET}")
     return 1
+
+
+def cmd_reveal_file(args) -> int:
+    """Disclose a claimed finding file. Only once the fix is public: a reveal is a disclosure."""
+    from . import chain, finding as ff
+
+    try:
+        f = ff.load(args.finding)
+    except ValueError as exc:
+        print(f"{RED}not a finding file{RESET}: {exc}")
+        return 1
+    if not f.get("attested_tx"):
+        print(f"{RED}not claimed{RESET} {args.finding}: run quorum attest --finding first")
+        return 1
+    if f.get("revealed_tx"):
+        print(f"  {DIM}already revealed{RESET} {args.finding}  {f['revealed_tx'][:14]}...")
+        return 0
+    if f.get("status") not in ff.REVEALABLE:
+        print(f"{RED}not revealed{RESET} {args.finding}: status is {f.get('status')!r}. A reveal names the target and the "
+              f"severity on a public chain, so set status to \"fixed\" only once the fix is public, then reveal.")
+        return 1
+    try:
+        result = chain.reveal(f)
+    except RuntimeError as exc:
+        print(f"{RED}not revealed{RESET} {args.finding}: {exc}")
+        return 1
+    f["revealed_tx"] = result["tx"]
+    f["status"] = "revealed"
+    ff.save(args.finding, f)
+    print(f"  {GREEN}revealed on {chain.chain_name()}{RESET} {args.finding}\n    {result['url']}")
+    return 0
 
 
 def cmd_reveal(args) -> int:
     """Disclose the pattern behind a paid claim so other swarms can import it."""
     from . import chain
 
+    if args.finding:
+        return cmd_reveal_file(args)
+    if not args.key:
+        print(f"{RED}give a finding key or --finding <file>{RESET}")
+        return 1
     memory = SwarmMemory(args.db)
     f = memory.get_finding(args.key)
     if not f or not f.get("attested_tx"):
@@ -314,9 +414,15 @@ def cmd_import(args) -> int:
     """Learn a pattern from someone else's reveal. Only paid, matching claims are learned."""
     from . import chain
 
+    from . import finding as ff
+
     r = chain.read_reveal(args.tx)
     fields = r["fields"]
-    print(f"\n{BOLD}reveal{RESET} {_shown(fields['risk'])}  {_shown(fields['signature'])}  by {r['revealed_by']}")
+    if ff.is_finding(fields):
+        head = f"finding {fields['kind']} ({fields['severity']}) against {json.dumps(fields['target'], sort_keys=True)}"
+    else:
+        head = f"{_shown(fields['risk'])}  {_shown(fields['signature'])}"
+    print(f"\n{BOLD}reveal{RESET} {head}  by {r['revealed_by']}")
     required = (r["burn"] or {}).get("required", chain.CLAIM_FEE) // 10**chain.TOKEN_DECIMALS
     checks = [("digest matches the claim", r["digest_matches"]), ("revealed by the claim's signer", r["same_signer"]),
               (f"claim fee of {required:,} QUORUM burned", r["fee_paid"])]
@@ -329,6 +435,10 @@ def cmd_import(args) -> int:
     if problem:
         print(f"\n  {RED}not imported{RESET}: {problem}")
         return 1
+    if ff.is_finding(fields):
+        print(f"\n  {GREEN}checked{RESET}: a paid finding claim, proof sha256 {fields['proof_sha256']}")
+        print(f"  {DIM}a finding is not a pattern: nothing to learn into memory. Hash the published proof and compare.{RESET}")
+        return 0
     memory = SwarmMemory(args.db)
     outcome = memory.import_pattern(fields, r["claim_tx"], r["payment"])
     if outcome == "imported":
@@ -339,6 +449,53 @@ def cmd_import(args) -> int:
     else:
         print(f"\n  {DIM}already known{RESET}")
     return 0
+
+
+def cmd_finding(args) -> int:
+    """Write a finding file from a proof on disk. The proof is hashed now and must not change after."""
+    from . import finding as ff
+
+    if args.address:
+        target = {"chain": args.chain, "address": args.address}
+    elif args.repo and args.commit:
+        target = {"repo": args.repo, "commit": args.commit, "path": args.path}
+    else:
+        print(f"{RED}give a target{RESET}: --chain and --address, or --repo and --commit")
+        return 1
+    try:
+        f = ff.new(args.title, args.kind, target, args.severity, args.proof, program=args.program, found_at=args.found_at)
+    except ValueError as exc:
+        print(f"{RED}not written{RESET}: {exc}")
+        return 1
+    ff.save(args.out, f)
+    print(f"  {GREEN}written{RESET} {args.out}\n    {f['kind']}  {f['severity']}  proof sha256 {f['proof_sha256']}\n"
+          f"    digest 0x{ff.digest(f).hex()}  (what a claim would commit to)")
+    return 0
+
+
+def cmd_claims(args) -> int:
+    """Export the public rows of claimed finding files for the registry page."""
+    from . import finding as ff
+
+    rows, skipped = [], 0
+    for path in sorted(args.finding):
+        try:
+            row = ff.public_row(ff.load(path))
+        except ValueError as exc:
+            print(f"  {RED}skipped{RESET} {exc}")
+            skipped += 1
+            continue
+        if row:
+            rows.append(row)
+    rows.sort(key=lambda r: r.get("claimed_at") or "", reverse=True)
+    out = {"generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "claims": rows}
+    if args.out:
+        with open(args.out, "w") as fh:
+            json.dump(out, fh, indent=1)
+        print(f"  {GREEN}wrote{RESET} {args.out}: {len(rows)} claim(s), {sum(r['revealed'] for r in rows)} revealed, {skipped} file(s) skipped")
+    else:
+        print(json.dumps(out, indent=1))
+    return 1 if skipped else 0
 
 
 def cmd_status(args) -> int:
@@ -385,18 +542,41 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--reason", required=True)
     p.set_defaults(func=cmd_retire, no_memory=False)
 
-    p = sub.add_parser("attest", help="publish confirmed findings to Robinhood Chain")
+    p = sub.add_parser("attest", help="publish confirmed findings, or finding files, to Robinhood Chain")
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--limit", type=int, default=3)
+    p.add_argument("--finding", nargs="+", metavar="FILE", help="claim these finding files instead of the swarm's memory")
     p.set_defaults(func=cmd_attest, no_memory=False)
 
-    p = sub.add_parser("verify", help="check a published claim against memory")
+    p = sub.add_parser("verify", help="check a published claim against memory, or against finding files")
     p.add_argument("tx")
+    p.add_argument("--finding", nargs="+", metavar="FILE", help="finding files to check the claim against first")
     p.set_defaults(func=cmd_verify, no_memory=False)
 
-    p = sub.add_parser("reveal", help="disclose the pattern behind a paid claim")
-    p.add_argument("key", help="finding key, e.g. VulnerableVault.sol:withdraw:reentrancy")
+    p = sub.add_parser("reveal", help="disclose the pattern behind a paid claim, or a claimed finding file once fixed")
+    p.add_argument("key", nargs="?", help="finding key, e.g. VulnerableVault.sol:withdraw:reentrancy")
+    p.add_argument("--finding", metavar="FILE", help="reveal this finding file (its status must be fixed)")
     p.set_defaults(func=cmd_reveal, no_memory=False)
+
+    p = sub.add_parser("finding", help="write a finding file from a proof on disk (any tool's finding)")
+    p.add_argument("--title", required=True)
+    p.add_argument("--kind", required=True, choices=("fork-exploit", "failing-test", "counterexample", "write-up"))
+    p.add_argument("--severity", required=True, choices=("critical", "high", "medium", "low", "info"))
+    p.add_argument("--proof", required=True, help="the PoC test, counterexample or write-up file; hashed now")
+    p.add_argument("--chain", default=DEFAULT_CHAIN, help="on-chain target: chain name (with --address)")
+    p.add_argument("--address", help="on-chain target: contract address")
+    p.add_argument("--repo", help="code target: owner/name (with --commit)")
+    p.add_argument("--commit", help="code target: commit hash")
+    p.add_argument("--path", help="code target: file path inside the repo")
+    p.add_argument("--program", help="where it is or will be reported")
+    p.add_argument("--found-at", help="YYYY-MM-DD, default today")
+    p.add_argument("--out", required=True, help="where to write the finding file")
+    p.set_defaults(func=cmd_finding, no_memory=True)
+
+    p = sub.add_parser("claims", help="export the public rows of claimed finding files for the registry page")
+    p.add_argument("finding", nargs="+", metavar="FILE")
+    p.add_argument("--out", help="JSON file to write (default: print)")
+    p.set_defaults(func=cmd_claims, no_memory=True)
 
     p = sub.add_parser("import", help="learn a revealed pattern whose claim fee was burned")
     p.add_argument("tx", help="reveal transaction hash")

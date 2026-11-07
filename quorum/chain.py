@@ -36,6 +36,8 @@ from typing import Any
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
 
+from . import finding as finding_file
+
 # Every chain a claim may live on. RPC comes from the first env var that is set,
 # else the public endpoint. The token is only ever on TOKEN_CHAIN_ID.
 CHAINS = {
@@ -148,7 +150,14 @@ def _account(w3: Web3):
 
 
 def claim_digest(finding: dict[str, Any]) -> bytes:
-    """Deterministic digest of the published claim."""
+    """Deterministic digest of the published claim.
+
+    Two shapes share the registry: a swarm finding (risk, signature, contract, function, lenses)
+    and a finding file (kind, target, severity, proof hash; see quorum/finding.py). The key sets
+    never overlap, so a reveal of one can never recompute to a claim of the other.
+    """
+    if finding_file.is_finding(finding):
+        return finding_file.digest(finding)
     payload = json.dumps(
         {
             "risk": finding["risk"],
@@ -261,6 +270,8 @@ PREFIX_REVEAL = b"QUORUM3"  # reveal: claim tx hash (32) | JSON of the claimed f
 
 def reveal_fields(finding: dict[str, Any]) -> dict[str, Any]:
     """Exactly the fields the claim digest was computed over, nothing more."""
+    if finding_file.is_finding(finding):
+        return finding_file.digest_fields(finding)
     return {
         "risk": finding["risk"],
         "signature": finding["signature"],
@@ -284,9 +295,24 @@ def decode_reveal(data: bytes) -> dict[str, Any]:
         fields = json.loads(body[32:].decode())
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise RuntimeError(f"not a Quorum reveal: the fields are not JSON ({exc.__class__.__name__})") from exc
-    if not isinstance(fields, dict) or not isinstance(fields.get("risk"), str) or not isinstance(fields.get("signature"), str):
-        raise RuntimeError("not a Quorum reveal: the fields are not an object with a risk and a signature")
+    if not isinstance(fields, dict):
+        raise RuntimeError("not a Quorum reveal: the fields are not an object")
+    # Classify once, the same way claim_digest will: a proof hash means a finding file, else swarm.
+    if finding_file.is_finding(fields):
+        if not finding_file.revealed_fields_ok(fields):
+            raise RuntimeError("not a Quorum reveal: a finding reveal must be exactly a kind, "
+                               "a canonical target, a severity and a proof hash")
+    elif not (isinstance(fields.get("risk"), str) and isinstance(fields.get("signature"), str)):
+        raise RuntimeError("not a Quorum reveal: the fields are neither a risk and a signature "
+                           "nor a kind, target, severity and proof hash")
     return {"claim_tx": "0x" + body[:32].hex(), "fields": fields}
+
+
+def finding_from_fields(fields: dict[str, Any]) -> dict[str, Any]:
+    """The revealed fields as the finding the digest is recomputed from."""
+    if finding_file.is_finding(fields):
+        return fields
+    return {**fields, "seen_by": fields.get("corroborated_by", [])}
 
 
 def reveal(finding: dict[str, Any]) -> dict[str, Any]:
@@ -301,6 +327,8 @@ def reveal(finding: dict[str, Any]) -> dict[str, Any]:
     tx = {"from": acct.address, "to": acct.address, "value": 0,
           "data": encode_reveal(claim_tx, reveal_fields(finding)), "chainId": CHAIN_ID}
     result = _send(w3, acct, tx)
+    if result["status"] != 1:
+        raise RuntimeError(f"reveal transaction reverted: {EXPLORER}{result['tx']}")
     result["url"] = EXPLORER + result["tx"]
     return result
 
@@ -311,7 +339,7 @@ def read_reveal(tx_hash: str) -> dict[str, Any]:
     parsed = decode_reveal(bytes(tx["input"]))
     claim = read_claim(parsed["claim_tx"])
     f = parsed["fields"]
-    recomputed = "0x" + claim_digest({**f, "seen_by": f.get("corroborated_by", [])}).hex().removeprefix("0x")
+    recomputed = "0x" + claim_digest(finding_from_fields(f)).hex().removeprefix("0x")
     burn = read_burn(claim["burn_tx"]) if claim.get("burn_tx") else None
     return {
         "fields": parsed["fields"],
