@@ -224,6 +224,8 @@ body[data-memory="off"] .term-on .aside .off, body[data-memory="off"] .term-off 
 .rows.code dt { font-size: var(--t-body); letter-spacing: 0; text-transform: none; color: var(--ink); padding-top: 0; line-height: 1.55; }
 .vstatus { color: var(--muted); }
 .vstatus:empty { display: none; }
+.vstatus.ok { color: var(--green-text); }
+.vstatus.bad { color: var(--bad); }
 
 /* the ruled ledger: every row starts with a mark, and a refused row carries an empty one */
 .tablewrap { overflow-x: auto; min-width: 0; }

@@ -276,6 +276,51 @@
       d.appendChild(v);
       return d;
     }
+    /* Per-row check: read the claim's receipt from Robinhood Chain and look for one Claimed log from the registry with this digest. */
+    function verifyBox(c) {
+      var wrap = document.createElement("span");
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "btn"; btn.textContent = "Verify against the chain";
+      var msg = text("span", "vstatus", "");
+      msg.setAttribute("role", "status"); msg.setAttribute("aria-live", "polite");
+      wrap.appendChild(btn); wrap.appendChild(msg);
+      var reg = document.getElementById("verify");
+      var REG = reg ? (reg.getAttribute("data-registry") || "").toLowerCase() : "";
+      var TOPIC = reg ? (reg.getAttribute("data-claimed-topic") || "").toLowerCase() : "";
+      var RPC = "https://rpc.mainnet.chain.robinhood.com";
+      var rpc = function (method, params) {
+        return fetch(RPC, { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: method, params: params }) })
+          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+          .then(function (j) { if (j.error) throw new Error(j.error.message || "RPC error"); return j.result; });
+      };
+      btn.addEventListener("click", function () {
+        btn.disabled = true; msg.className = "vstatus"; msg.textContent = " Reading Robinhood Chain…";
+        rpc("eth_getTransactionReceipt", [c.claim_tx]).then(function (rc) {
+          if (!rc) throw new Error("transaction not found on Robinhood Chain");
+          if (rc.status !== "0x1") throw new Error("that transaction reverted");
+          var logs = (rc.logs || []).filter(function (l) {
+            return REG && TOPIC && l.address.toLowerCase() === REG && l.topics[0] === TOPIC;
+          });
+          if (logs.length !== 1) throw new Error("expected one Claimed log from the registry, found " + logs.length);
+          var same = String(logs[0].topics[1]).toLowerCase() === String(c.digest).toLowerCase();
+          return rpc("eth_blockNumber", []).then(function (h) {
+            var block = parseInt(rc.blockNumber, 16), burn = parseInt(logs[0].data, 16) / 1e18;
+            msg.className = "vstatus " + (same ? "ok" : "bad");
+            msg.textContent = same
+              ? " Matches: block " + block.toLocaleString() + ", " + (parseInt(h, 16) - block).toLocaleString() +
+                " confirmations, " + burn.toLocaleString() + " QUORUM burned in the same transaction."
+              : " Does NOT match: the chain holds a different digest for that transaction.";
+            btn.disabled = false; btn.textContent = "Read it again";
+          });
+        }).catch(function (e) {
+          msg.className = "vstatus bad";
+          msg.textContent = " Could not verify (" + e.message + ").";
+          btn.disabled = false;
+        });
+      });
+      return wrap;
+    }
     function render(claims) {
       claimsEl.textContent = "";
       if (!claims.some(function (c) { return c && Object.prototype.hasOwnProperty.call(KIND_LABEL, c.kind); })) {
@@ -308,6 +353,7 @@
             if (c.public_url && /^https:\/\//.test(c.public_url)) dl.appendChild(row("Public", link(c.public_url, c.public_url)));
             if (c.program) dl.appendChild(row("Program", c.program));
           }
+          dl.appendChild(row("Check", verifyBox(c)));
           claimsEl.appendChild(dl);
         });
       });
