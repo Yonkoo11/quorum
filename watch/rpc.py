@@ -6,6 +6,7 @@ Callers must log unknowns; they must not treat them as a pass.
 from __future__ import annotations
 
 import json
+import re
 import os
 import time
 import urllib.error
@@ -29,6 +30,11 @@ def rpc_url(chain: str) -> str:
     env = CHAIN_ENV.get(chain)
     url = os.getenv(env, "") if env else ""
     return url or PUBLIC_RPC[chain]
+
+
+def redact(text) -> str:
+    """Strip URLs (an RPC URL can carry an API key) before an error reaches an alert or a log."""
+    return re.sub(r"https?://\S+", "<url>", str(text))
 
 
 class Rpc:

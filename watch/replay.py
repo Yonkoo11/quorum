@@ -28,6 +28,7 @@ class Ctx:
         self._code = {}
         self.seen_batches = set()   # (sender, delegates) batches already alerted this run
         self.codes = {} if codes is None else codes   # watched address -> code last seen (live loop persists it)
+        self.unread = {}            # watched address -> passes in a row its code could not be read
 
     def cached_code(self, address: str):
         if address not in self._code:

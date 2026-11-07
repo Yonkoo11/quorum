@@ -128,7 +128,7 @@ class State:
 def process_block(n: int, chain: str, rpc: Rpc, ctx: Ctx, log, notify, simulate=None) -> dict:
     block = rpc.block(n)
     if block is None:
-        rec = {"chain": chain, "block": n, "unknown": "block fetch failed", "wall": time.time()}
+        rec = {"chain": chain, "block": n, "unknown": "block fetch failed", "error": redact(getattr(rpc, "last_error", None)), "wall": time.time()}
         log.write(json.dumps(rec) + "\n"); log.flush()
         notify(f"[Quorum watch] UNKNOWN: {chain} block {n} could not be fetched; it was NOT checked.")
         return rec
@@ -155,7 +155,7 @@ def process_range(start: int, end: int, chain: str, rpc: Rpc, ctx: Ctx, log, not
     fetched, so the per-transaction rules do not run and the record says so."""
     header = rpc.header(end)
     if header is None:
-        rec = {"chain": chain, "blocks": [start, end], "unknown": "head block fetch failed", "wall": time.time()}
+        rec = {"chain": chain, "blocks": [start, end], "unknown": "head block fetch failed", "error": redact(getattr(rpc, "last_error", None)), "wall": time.time()}
         log.write(json.dumps(rec) + "\n"); log.flush()
         notify(f"[Quorum watch] UNKNOWN: {chain} blocks {start}-{end} could not be fetched; they were NOT checked.")
         return rec
@@ -221,7 +221,7 @@ def run(chain: str, watchlist: dict, state: State, log_path: str, notify, max_bl
         while max_blocks is None or done < max_blocks:
             head = rpc.head()
             if head is None:
-                log.write(json.dumps({"chain": chain, "unknown": "head fetch failed", "wall": time.time()}) + "\n")
+                log.write(json.dumps({"chain": chain, "unknown": "head fetch failed", "error": redact(getattr(rpc, "last_error", None)), "wall": time.time()}) + "\n")
                 sleep(BLOCK_SECONDS.get(chain, 12)); continue
             start = _first_block(chain, state, head, catch_up, log, notify)
             if start > head:

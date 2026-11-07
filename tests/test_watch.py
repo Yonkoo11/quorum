@@ -459,3 +459,55 @@ def test_range_pass_reads_code_and_logs_over_the_span(tmp_path):
     saved = json.loads((tmp_path / "state.json").read_text())
     assert saved["codes"][BINANCE_14] == "0xef0100" + SWEEPER[2:]
     assert any("Binance 14" in m and "between blocks 101 and 350" in m for m in sent)
+
+
+def test_unreadable_code_is_info_until_three_passes_then_one_alert():
+    """Measured 2026-11-07: 3.5% of Arbitrum passes could not read code, in bursts, every re-probe
+    fine; one alert per miss buried the real ones. Now: retry at the head, info row with the RPC's
+    own error (URL stripped), one alert on the third miss in a row, reset on a good read."""
+    class FlakyRpc(FakeRpc):
+        last_error = "eth_getCode: header not found https://rpc.example/secret-key"
+        def code(self, address, block="latest"):
+            return None
+    ctx = Ctx(FlakyRpc(), {BINANCE_14: "Binance 14"})
+    levels = []
+    for _ in range(4):
+        alerts, _ = evaluate_block(block(), ctx)
+        flip = [a for a in alerts if a["rule"] == "7702_code_flip"]
+        assert flip and flip[0]["unknowns"], "a failed read must surface as unknown, never as clean"
+        levels.append(flip[0]["level"])
+    assert levels == ["info", "info", "alert", "info"]
+    assert "header not found" in flip[0]["unknowns"][0] and "https://" not in flip[0]["unknowns"][0]
+    assert "4 pass(es) in a row" in flip[0]["reasons"][0]
+
+    class HeadLag(FakeRpc):          # the block read fails, the head read works: a checked pass
+        def code(self, address, block="latest"):
+            return ("0xef0100" + SWEEPER[2:]) if block == "latest" else None
+    ctx = Ctx(HeadLag(), {BINANCE_14: "Binance 14"}, {BINANCE_14: "0x"})
+    alerts, _ = evaluate_block(block(), ctx)
+    flip = [a for a in alerts if a["rule"] == "7702_code_flip"]
+    assert flip and flip[0]["level"] == "alert" and flip[0]["acted"] == []   # a real flip, read at the head
+    assert any("read at the head" in u for u in flip[0]["unknowns"]) and ctx.unread == {}
+
+
+def test_fetch_failures_log_the_rpc_error(tmp_path):
+    """A head/block fetch failure now records the endpoint's own error (URL stripped) in the log row."""
+    from watch.live import State, run
+
+    class DeadHead(FakeRpc):
+        last_error = "eth_blockNumber: timed out https://rpc.example/k"
+        def head(self):
+            return None
+
+    class Stop(Exception):
+        pass
+
+    def sleep(_):
+        raise Stop
+    try:
+        run("ethereum", {}, State(tmp_path / "s.json"), str(tmp_path / "log.jsonl"), print,
+            max_blocks=1, rpc=DeadHead(), sleep=sleep)
+    except Stop:
+        pass
+    row = json.loads((tmp_path / "log.jsonl").read_text().splitlines()[0])
+    assert row["unknown"] == "head fetch failed" and "timed out" in row["error"] and "https://" not in row["error"]

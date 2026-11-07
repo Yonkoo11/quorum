@@ -19,14 +19,9 @@ import sys
 import time
 
 from .replay import load_watchlist
-from .rpc import Rpc
+from .rpc import Rpc, redact  # noqa: F401  (zcash, drift, live import it from here)
 
 TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"  # keccak("Transfer(address,address,uint256)")
-
-
-def redact(text) -> str:
-    """Strip URLs (an RPC URL can carry an API key) before an error reaches an alert."""
-    return re.sub(r"https?://\S+", "<url>", str(text))
 
 
 def free_port() -> int:

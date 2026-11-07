@@ -7,6 +7,8 @@ An alert is a plain dict with: rule, version, block, tx, subject, reasons, unkno
 """
 from __future__ import annotations
 
+from .rpc import redact
+
 DELEGATION_PREFIX = "0xef0100"          # EIP-7702: code = 0xef0100 || address
 TYPE_SET_CODE = "0x4"                   # EIP-7702 transaction type
 ZERO_ADDRESS = "0x" + "00" * 20         # as a 7702 delegate it clears the delegation (spec)
@@ -31,6 +33,10 @@ ADMIN_TOPICS = {
     "0x7e644d79422f17c01e4894b5f4f588d331ebfa28653d42ae832dc59e38c9798f": "AdminChanged",
 }
 
+
+UNREAD_ALERT_AFTER = 3   # passes in a row an address stays unreadable before ONE alert goes out. Measured
+                         # 2026-11-07 on the public Arbitrum RPC: 1,263 single-pass read failures in 36,332 passes
+                         # (3.5%), bursty, every live re-probe succeeded; alerting each one buried the real ones.
 
 BATCH_AUTHS = 5                         # measured: ordinary type-4 txs carry 1 (2026-11-01, 123 of 125 seen)
 
@@ -162,11 +168,15 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
     n, first = int(block["number"], 16), span_start(block)
     where = f"in block {n}" if first == n else f"between blocks {first} and {n}"
     for addr, label in ctx.watchlist.items():
-        now = ctx.rpc.code(addr, n)
+        now, note = _code_now(ctx, addr, n)
         if now is None:
+            misses = ctx.unread[addr] = ctx.unread.get(addr, 0) + 1
+            level = "alert" if misses == UNREAD_ALERT_AFTER else "info"   # unknown, not clean; loud once
             out.append(_alert("7702_code_flip", block, None, addr,
-                              ["could not read code"], [f"code of {addr} at {n}"], watched=[addr]))  # unknown, not urgent
+                              [f"{label}: code unreadable, {misses} pass(es) in a row; a flip {where} is unchecked"],
+                              [f"code of {addr} at {n}: {note}"], level=level, watched=[addr]))
             continue
+        ctx.unread.pop(addr, None)
         if now != "0x" and not now.startswith(DELEGATION_PREFIX):
             continue                                   # a contract, not a 7702 wallet
         before = ctx.codes.get(addr)
@@ -176,10 +186,26 @@ def rule_7702_code_flip(block: dict, ctx) -> list:
         if before == now:
             continue
         unknown = [f"code of {addr} at {first - 1}"] if before is None else []
+        if note:
+            unknown.append(note)
         out.append(_alert("7702_code_flip", block, None, addr,
                           [f"{label}: 7702 pointer is now {_pointer(now)} (was {_pointer(before)}) {where}"],
                           unknown, acted=[addr] if not unknown else (), watched=[addr]))
     return out
+
+
+def _code_now(ctx, addr: str, n: int) -> tuple[str | None, str | None]:
+    """Code at block n, else once more at the head: a load-balanced public RPC can hand out a head
+    its other replica has not stored yet. Returns (code, note); the note carries the endpoint's own
+    error text (URLs stripped) so the log says WHY a read failed, which it never did before."""
+    now = ctx.rpc.code(addr, n)
+    if now is not None:
+        return now, None
+    err = redact(getattr(ctx.rpc, "last_error", None) or "no error text")
+    now = ctx.rpc.code(addr, "latest")
+    if now is not None:
+        return now, f"code of {addr} read at the head, not block {n} ({err})"
+    return None, err
 
 
 def _pointer(code: str | None) -> str:
