@@ -171,7 +171,7 @@ body { min-height: 0; }
   .entrance-active .big { animation: settle .66s cubic-bezier(.16, 1, .3, 1) calc(var(--ed) + .3s) both; }
   .entrance-active .bar-fill { animation: grow .8s var(--ease) calc(var(--ed) + .42s) both; }
   .entrance-active .chart__line { stroke-dasharray: 1; animation: draw 1s var(--ease) calc(var(--ed) + .3s) both; }
-  .entrance-active .chart__area, .entrance-active .chart__dot { animation: reveal .5s linear calc(var(--ed) + 1.1s) both; }
+  .entrance-active .chart__area, .entrance-active .chart__dot { animation: reveal .5s var(--ease) calc(var(--ed) + 1.1s) both; }
   .entrance-active .vs tbody tr { animation: rise .5s cubic-bezier(.22, 1, .36, 1) calc(var(--ed) + .3s) both; }
   .entrance-active .vs tbody tr:nth-child(2) { animation-delay: calc(var(--ed) + .4s); }
   .entrance-active .vs tbody tr:nth-child(3) { animation-delay: calc(var(--ed) + .54s); }
